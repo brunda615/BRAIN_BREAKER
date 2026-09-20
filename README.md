@@ -18,9 +18,3 @@ An interactive, authentic multiplayer Tambola (Housie) web application where tea
    - If players don't know the answer, they can click **Skip Puzzle ⏭** to move directly to the next question.
 5. **Full House Victory**:
    - The first team to hit all 15 ticket numbers wins the Full House with confetti celebration.
-6. **Dedicated Admin Portal (`/admin`)**:
-   - Completely separate website with password authentication (**`BMS123`**).
-   - Live tracking of all teams, questions answered, questions skipped, and numbers hit ($0–15$).
-   - Inspect tool to view any team's live ticket and drawn numbers.
-   - Announcement broadcast tool to send banners to all active players.
-   - Game reset controls.
