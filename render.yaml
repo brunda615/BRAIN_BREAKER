@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: brain-breaker
+    runtime: python
+    buildCommand: ""
+    startCommand: python server.py
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: ADMIN_PASSWORD
+        value: BMS123
+      - key: TICKET_HIT_CHANCE
+        value: 1.0

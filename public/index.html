@@ -3,15 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tambola Puzzle Arena</title>
-  <!-- Tailwind CSS CDN -->
+  <title>Brain Breaker — Tambola Puzzle Arena</title>
+  <meta name="description" content="Solve puzzles, earn numbers, hit Full House! Multi-level team puzzle game." />
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
-  <!-- Canvas Confetti -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Courier+Prime:wght@700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script src="/maze.js"></script>
 
   <script>
     tailwind.config = {
@@ -19,19 +18,18 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-            ticket: ['Courier Prime', 'monospace'],
-            stamp: ['Special Elite', 'cursive']
+            sans:    ['Inter', 'sans-serif'],
+            mono:    ['JetBrains Mono', 'monospace'],
+            ticket:  ['Courier Prime', 'monospace'],
+            stamp:   ['Special Elite', 'cursive'],
+            riddle:  ['Space Grotesk', 'sans-serif'],
+            cipher:  ['Cinzel', 'serif'],
+            display: ['Outfit', 'sans-serif']
           },
           colors: {
             dark: {
-              900: '#0d0f12',
-              850: '#12141a',
-              800: '#171922',
-              750: '#1e212d',
-              700: '#262a38',
-              600: '#353a4c'
+              900: '#0d0f12', 850: '#12141a', 800: '#171922',
+              750: '#1e212d', 700: '#262a38', 600: '#353a4c'
             }
           }
         }
@@ -40,244 +38,191 @@
   </script>
 
   <style>
-    /* Custom authentic paper ticket styling */
-    .tambola-paper {
-      background-color: #171922;
-      position: relative;
-    }
-    
-    /* Authentic ticket perforation notches */
-    .ticket-perforated {
-      position: relative;
-    }
+    .tambola-paper { background-color: #171922; position: relative; }
+    .ticket-perforated { position: relative; }
     .ticket-perforated::before, .ticket-perforated::after {
-      content: '';
-      position: absolute;
-      width: 22px;
-      height: 22px;
-      background-color: #0d0f12;
-      border-radius: 50%;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 10;
+      content: ''; position: absolute; width: 22px; height: 22px;
+      background-color: #0d0f12; border-radius: 50%; top: 50%;
+      transform: translateY(-50%); z-index: 10;
     }
     .ticket-perforated::before { left: -11px; }
-    .ticket-perforated::after { right: -11px; }
-
-    /* Dabber Stamp / Strike animation */
+    .ticket-perforated::after  { right: -11px; }
     @keyframes stamp-pop {
-      0% { transform: scale(2.2); opacity: 0; filter: blur(4px); }
-      50% { transform: scale(0.9); opacity: 0.9; }
-      100% { transform: scale(1); opacity: 1; filter: blur(0); }
+      0%   { transform: scale(2.2); opacity: 0; filter: blur(4px); }
+      50%  { transform: scale(0.9); opacity: 0.9; }
+      100% { transform: scale(1);   opacity: 1;   filter: blur(0); }
     }
-    .animate-stamp {
-      animation: stamp-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    }
-
-    /* Ink dabber texture overlay */
+    .animate-stamp { animation: stamp-pop 0.35s cubic-bezier(0.175,0.885,0.32,1.275) forwards; }
     .dabber-mark {
-      background: radial-gradient(circle, rgba(16, 185, 129, 0.95) 0%, rgba(5, 150, 105, 0.85) 75%, rgba(4, 120, 87, 0.6) 100%);
-      box-shadow: 0 0 15px rgba(16, 185, 129, 0.55), inset 0 0 6px rgba(255, 255, 255, 0.3);
+      background: radial-gradient(circle, rgba(16,185,129,.95) 0%, rgba(5,150,105,.85) 75%, rgba(4,120,87,.6) 100%);
+      box-shadow: 0 0 15px rgba(16,185,129,.55), inset 0 0 6px rgba(255,255,255,.3);
       border: 2px solid #34d399;
     }
-
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #12141a;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #2a2f3f;
-      border-radius: 3px;
-    }
-
-    /* Living arena: subtle ambient motion and responsive interaction feedback */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track  { background: #12141a; }
+    ::-webkit-scrollbar-thumb  { background: #2a2f3f; border-radius: 3px; }
     body {
       isolation: isolate;
       background-image:
-        radial-gradient(ellipse at 12% 8%, rgba(99, 102, 241, .14), transparent 36%),
-        radial-gradient(ellipse at 88% 24%, rgba(217, 70, 239, .10), transparent 34%),
-        radial-gradient(ellipse at 48% 100%, rgba(14, 165, 233, .09), transparent 42%);
+        radial-gradient(ellipse at 12% 8%,  rgba(99,102,241,.14),  transparent 36%),
+        radial-gradient(ellipse at 88% 24%, rgba(217,70,239,.10),  transparent 34%),
+        radial-gradient(ellipse at 48% 100%,rgba(14,165,233,.09),  transparent 42%);
       background-size: 140% 140%;
       animation: arena-ambient 22s ease-in-out infinite alternate;
     }
     body::before {
-      content: "";
-      position: fixed;
-      inset: -18%;
-      z-index: -1;
-      pointer-events: none;
-      opacity: .45;
+      content: ""; position: fixed; inset: -18%; z-index: -1;
+      pointer-events: none; opacity: .45;
       background:
-        radial-gradient(circle at 18% 34%, rgba(129, 140, 248, .13) 0 2px, transparent 3px),
-        radial-gradient(circle at 76% 66%, rgba(232, 121, 249, .12) 0 3px, transparent 4px),
-        radial-gradient(circle at 58% 14%, rgba(56, 189, 248, .10) 0 2px, transparent 3px);
+        radial-gradient(circle at 18% 34%, rgba(129,140,248,.13) 0 2px, transparent 3px),
+        radial-gradient(circle at 76% 66%, rgba(232,121,249,.12) 0 3px, transparent 4px),
+        radial-gradient(circle at 58% 14%, rgba(56,189,248,.10)  0 2px, transparent 3px);
       background-size: 230px 230px, 310px 310px, 270px 270px;
       animation: particle-drift 35s linear infinite;
     }
-    main > section, main > div {
-      animation: arena-enter .65s cubic-bezier(.2,.75,.25,1) both;
-    }
-    .tambola-paper, .bg-\[\#151821\], .bg-\[\#141821\], .bg-\[\#171922\] {
-      transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
-    }
-    .tambola-paper:hover {
-      border-color: rgba(129, 140, 248, .5);
-      box-shadow: 0 18px 55px rgba(79, 70, 229, .12);
-    }
-    button {
-      transition: transform .18s ease, filter .18s ease, box-shadow .18s ease;
-    }
-    button:not(:disabled):hover {
-      transform: translateY(-2px);
-      filter: brightness(1.08);
-    }
-    button:not(:disabled):active {
-      transform: translateY(0) scale(.98);
-    }
-    input, select, textarea {
-      transition: border-color .2s ease, box-shadow .2s ease;
-    }
-    input:focus, select:focus, textarea:focus {
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, .18);
-    }
-    .animate-stamp {
-      animation: stamp-pop .42s cubic-bezier(.175,.885,.32,1.275) both, dabber-glow 1.1s ease-out;
-    }
-    @keyframes arena-ambient {
-      from { background-position: 0% 0%; }
-      to { background-position: 100% 100%; }
-    }
-    @keyframes particle-drift {
-      from { transform: translate3d(-1%, -1%, 0) rotate(0deg); }
-      to { transform: translate3d(2%, 2%, 0) rotate(5deg); }
-    }
-    @keyframes arena-enter {
-      from { opacity: 0; transform: translateY(14px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes dabber-glow {
-      0% { box-shadow: 0 0 0 rgba(16,185,129,0); }
-      45% { box-shadow: 0 0 22px rgba(16,185,129,.55); }
-      100% { box-shadow: 0 0 0 rgba(16,185,129,0); }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: .01ms !important;
-        animation-iteration-count: 1 !important;
-        scroll-behavior: auto !important;
-        transition-duration: .01ms !important;
-      }
+    main > section, main > div { animation: arena-enter .65s cubic-bezier(.2,.75,.25,1) both; }
+    button { transition: transform .18s ease, filter .18s ease, box-shadow .18s ease; }
+    button:not(:disabled):hover  { transform: translateY(-2px); filter: brightness(1.08); }
+    button:not(:disabled):active { transform: translateY(0) scale(.98); }
+    input, select, textarea { transition: border-color .2s ease, box-shadow .2s ease; }
+    input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 3px rgba(99,102,241,.18); }
+    .animate-stamp { animation: stamp-pop .42s cubic-bezier(.175,.885,.32,1.275) both, dabber-glow 1.1s ease-out; }
+    @keyframes arena-ambient { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }
+    @keyframes particle-drift { from { transform: translate3d(-1%,-1%,0) rotate(0deg); } to { transform: translate3d(2%,2%,0) rotate(5deg); } }
+    @keyframes arena-enter  { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes dabber-glow  { 0%{ box-shadow:0 0 0 rgba(16,185,129,0);} 45%{ box-shadow:0 0 22px rgba(16,185,129,.55);} 100%{ box-shadow:0 0 0 rgba(16,185,129,0);} }
+    @media (prefers-reduced-motion:reduce) {
+      *,*::before,*::after { animation-duration:.01ms!important; animation-iteration-count:1!important; scroll-behavior:auto!important; transition-duration:.01ms!important; }
     }
 
+    /* Immersive full-screen maze mode */
+    #viewLevel2.maze-fullscreen {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 100 !important;
+      width: 100vw !important;
+      max-width: 100vw !important;
+      height: 100vh !important;
+      max-height: 100vh !important;
+      min-height: 100vh !important;
+      margin: 0 !important;
+      padding: 12px 18px 10px 18px !important;
+      background: radial-gradient(circle at 50% 50%, #060914 0%, #020308 100%) !important;
+      border-radius: 0 !important;
+      box-sizing: border-box !important;
+    }
+    #viewLevel2.maze-fullscreen #mazeCanvasFrame {
+      border-radius: 16px !important;
+      border-color: rgba(79, 216, 255, 0.25) !important;
+      box-shadow: 0 0 60px rgba(0, 0, 0, 0.95), inset 0 0 30px rgba(0, 0, 0, 0.8) !important;
+    }
+    #viewLevel2.maze-fullscreen #mazeCanvasClickHint {
+      display: none !important;
+    }
   </style>
 </head>
 <body class="bg-[#0d0f12] text-zinc-100 font-sans min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
 
-  <!-- TOP NAVIGATION HEADER (MATCHING USER REQUIREMENT: JUST TAMBOLA PUZZLE ARENA) -->
+  <!-- HEADER -->
   <header class="border-b border-zinc-800/80 bg-[#12141a]/90 backdrop-blur sticky top-0 z-40 px-4 sm:px-8 py-3.5 flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-xl font-bold">
-        🎟️
-      </div>
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-xl font-bold">🎟️</div>
       <div>
         <h1 class="text-base font-black tracking-tight text-white flex items-center gap-2">
-          TAMBOLA <span class="text-indigo-400 font-black">PUZZLE ARENA</span>
+          BRAIN <span class="text-indigo-400 font-black">BREAKER</span>
         </h1>
       </div>
     </div>
-
-    <!-- Sound Toggle Button -->
     <div class="flex items-center gap-2">
-      <button id="soundToggleBtn" onclick="toggleSound()" class="p-2 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700/60 transition text-xs flex items-center gap-1.5" title="Toggle Sound FX">
+      <!-- Level badge (visible when logged in) -->
+      <div id="levelBadge" class="hidden items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-600/20 border border-indigo-500/30 text-xs font-bold text-indigo-300">
+        <span>⚡</span><span id="levelBadgeText">Level 1</span>
+      </div>
+      <button id="soundToggleBtn" onclick="toggleSound()" class="p-2 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700/60 transition text-xs flex items-center gap-1.5" title="Toggle Sound">
         <span id="soundIcon">🔊</span>
         <span class="hidden sm:inline text-[11px] font-semibold text-zinc-300">Sound</span>
+      </button>
+      <button id="logoutBtn" onclick="handleLogout()" class="hidden p-2 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700/60 transition text-xs" title="Logout">
+        Sign Out
       </button>
     </div>
   </header>
 
-  <!-- LIVE BROADCAST TOAST BANNER -->
+  <!-- BROADCAST BANNER -->
   <div id="broadcastBanner" class="hidden bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 border-b border-amber-500/30 px-4 py-2 text-center text-xs font-medium text-amber-200 flex items-center justify-center gap-2">
     <span>📢</span>
     <span id="broadcastText"></span>
     <button onclick="document.getElementById('broadcastBanner').classList.add('hidden')" class="ml-3 text-zinc-400 hover:text-white">&times;</button>
   </div>
 
-  <!-- MAIN CONTAINER -->
   <main class="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
 
-    <!-- ============================================================= -->
-    <!-- VIEW 1: TEAM REGISTRATION / LOGIN VIEW                         -->
-    <!-- ============================================================= -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- VIEW 1: LOGIN                                          -->
+    <!-- ═══════════════════════════════════════════════════════ -->
     <section id="viewLogin" class="max-w-md mx-auto my-10 sm:my-20">
       <div class="bg-[#151821] border border-zinc-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black/60 relative overflow-hidden">
         <div class="absolute -right-12 -top-12 w-36 h-36 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
         <div class="absolute -left-12 -bottom-12 w-36 h-36 bg-pink-500/10 rounded-full blur-2xl pointer-events-none"></div>
 
         <div class="text-center mb-8">
-          <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-3xl mb-3 shadow-inner">
-            🎯
-          </div>
-          <h2 class="text-2xl font-bold tracking-tight text-white">Enter Team Name</h2>
-          <p class="text-xs text-zinc-400 mt-1">Join the challenge, solve puzzles, and collect numbers to hit a Full House!</p>
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-3xl mb-3 shadow-inner">🎯</div>
+          <h2 class="text-2xl font-bold tracking-tight text-white">Team Login</h2>
+          <p class="text-xs text-zinc-400 mt-1">Use your team credentials to enter the arena</p>
         </div>
 
-        <form id="teamLoginForm" onsubmit="handleTeamLogin(event)" class="space-y-5">
+        <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">Team Name</label>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">Username</label>
             <div class="relative">
-              <input 
-                type="text" 
-                id="loginTeamName" 
-                required 
-                maxlength="30"
-                placeholder="e.g. Code Ninjas, ByteBusters..." 
-                class="w-full bg-[#0e1017] border border-zinc-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition"
-              />
-              <span class="absolute right-3.5 top-3.5 text-zinc-500 text-sm">👥</span>
+              <input type="text" id="loginUsername" required autocomplete="username"
+                placeholder="Your team username"
+                class="w-full bg-[#0e1017] border border-zinc-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition" />
+              <span class="absolute right-3.5 top-3.5 text-zinc-500 text-sm">👤</span>
             </div>
           </div>
 
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">Choose Avatar</label>
-            <div class="grid grid-cols-6 gap-2" id="avatarPicker">
-              <!-- Dynamically rendered avatars -->
+            <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">Password</label>
+            <div class="relative">
+              <input type="password" id="loginPassword" required autocomplete="current-password"
+                placeholder="Your team password"
+                class="w-full bg-[#0e1017] border border-zinc-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition" />
+              <span class="absolute right-3.5 top-3.5 text-zinc-500 text-sm">🔒</span>
             </div>
           </div>
 
-          <button 
-            type="submit" 
-            id="loginSubmitBtn"
-            class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition transform active:scale-[0.98] flex items-center justify-center gap-2"
-          >
-            <span>Start Game</span>
-            <span class="text-base">&rarr;</span>
+          <!-- Error message -->
+          <div id="loginError" class="hidden p-3 rounded-xl text-xs font-semibold text-red-300 bg-red-500/10 border border-red-500/30 flex items-center gap-2">
+            <span>❌</span><span id="loginErrorText">Invalid credentials.</span>
+          </div>
+
+          <button type="submit" id="loginSubmitBtn"
+            class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition transform active:scale-[0.98] flex items-center justify-center gap-2">
+            <span>Enter Arena</span><span class="text-base">&rarr;</span>
           </button>
         </form>
       </div>
     </section>
 
-    <!-- ============================================================= -->
-    <!-- VIEW 2: PLAYER DASHBOARD                                       -->
-    <!-- ============================================================= -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- VIEW 2: PLAYER DASHBOARD (Level 1 — Tambola)          -->
+    <!-- ═══════════════════════════════════════════════════════ -->
     <section id="viewDashboard" class="hidden">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-        <!-- ==================== LEFT COLUMN ==================== -->
+        <!-- LEFT COLUMN -->
         <div class="lg:col-span-6 space-y-6">
-          
-          <!-- TEAM NAME & METRICS CARD -->
+
+          <!-- Team header + stats -->
           <div class="bg-[#14161f] border border-zinc-800/80 rounded-2xl p-5 sm:p-6 shadow-xl">
-            <!-- Team Name Header (Without CURRENT PLAYER or YOUR TURN) -->
             <div class="flex items-center gap-3 mb-5">
               <span id="playerAvatar" class="text-3xl">🚀</span>
-              <h2 id="playerName" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Player 1</h2>
+              <div>
+                <h2 id="playerName" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Team</h2>
+                <span class="text-xs text-indigo-400 font-bold">LEVEL 1 — TAMBOLA PUZZLE</span>
+              </div>
             </div>
-
-            <!-- Stats 3-Column Metrics -->
             <div class="grid grid-cols-3 gap-2 sm:gap-4 pt-4 border-t border-zinc-800/70 text-center">
               <div class="p-2">
                 <div id="statQuestionsSolved" class="text-2xl sm:text-3xl font-black text-white">0</div>
@@ -294,9 +239,8 @@
             </div>
           </div>
 
-          <!-- AUTHENTIC TAMBOLA TICKET CARD -->
+          <!-- Tambola Ticket -->
           <div class="bg-[#14161f] border border-zinc-800/80 rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden">
-            <!-- Header Row with Authentic Ticket Label -->
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center gap-2">
                 <span class="text-lg">🎟️</span>
@@ -306,124 +250,72 @@
                 3 &times; 9 &bull; 15 numbers
               </div>
             </div>
-
-            <!-- Authentic 3x9 Ticket Layout with Ticket Skin -->
             <div class="p-2 sm:p-3.5 rounded-xl border border-zinc-700/60 bg-[#171922] shadow-inner ticket-perforated">
-              <!-- Ticket Header Ribbon -->
               <div class="flex items-center justify-between border-b border-zinc-800 pb-2 mb-3 text-[10px] font-ticket uppercase text-zinc-400 tracking-wider">
-                <span id="ticketSerialNo">TICKET #TB-8921</span>
+                <span id="ticketSerialNo">TICKET #—</span>
                 <span class="text-emerald-400 font-bold">● CLASSIC HOUSIE</span>
                 <span id="ticketTeamTag">TEAM: ---</span>
               </div>
-
-              <!-- 3 Rows x 9 Columns Grid -->
-              <div id="ticketGrid" class="grid grid-rows-3 gap-1.5 sm:gap-2">
-                <!-- Dynamically generated rows -->
-              </div>
+              <div id="ticketGrid" class="grid grid-rows-3 gap-1.5 sm:gap-2"></div>
             </div>
-
-            <!-- Legend Subtext -->
             <div class="mt-3.5 text-xs text-zinc-400 font-medium leading-relaxed">
               <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1.5 align-middle"></span>
               <strong class="text-zinc-200">Green</strong> = number obtained and matched. Empty cells are not part of your ticket.
             </div>
           </div>
 
-          <!-- NUMBERS YOU'VE COLLECTED SECTION -->
+          <!-- Collected numbers -->
           <div class="bg-[#14161f] border border-zinc-800/80 rounded-2xl p-5 sm:p-6 shadow-xl">
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-base font-bold text-white tracking-tight">Numbers you've collected</h3>
               <span id="collectedCountBadge" class="text-xs bg-zinc-800 text-zinc-300 font-mono px-2 py-0.5 rounded">0 numbers</span>
             </div>
-
-            <!-- Empty state or Chip Grid -->
             <div id="collectedNumbersEmpty" class="text-xs text-zinc-400 py-3">
               Solve a puzzle to start collecting numbers.
             </div>
-
-            <div id="collectedNumbersGrid" class="hidden flex flex-wrap gap-2 max-h-44 overflow-y-auto pr-1 pt-1">
-              <!-- Dynamically populated collection chips -->
-            </div>
+            <div id="collectedNumbersGrid" class="hidden flex flex-wrap gap-2 max-h-44 overflow-y-auto pr-1 pt-1"></div>
           </div>
-
         </div>
 
-        <!-- ==================== RIGHT COLUMN: PUZZLE CORNER ==================== -->
+        <!-- RIGHT COLUMN: PUZZLE -->
         <div class="lg:col-span-6 space-y-6">
-
-          <!-- PUZZLE BOX -->
           <div class="bg-[#14161f] border border-zinc-800/80 rounded-2xl p-6 sm:p-7 shadow-xl">
-            <!-- Header Row -->
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center gap-2">
                 <span class="text-emerald-400 text-lg">🧩</span>
                 <h3 class="text-lg font-bold text-white tracking-tight">Puzzle corner</h3>
               </div>
-              <span id="puzzleNumberBadge" class="text-xs font-mono font-bold bg-zinc-800/80 text-zinc-300 px-3 py-1 rounded-lg border border-zinc-700/60">
-                PUZZLE 1
-              </span>
+              <span id="puzzleNumberBadge" class="text-xs font-mono font-bold bg-zinc-800/80 text-zinc-300 px-3 py-1 rounded-lg border border-zinc-700/60">PUZZLE 1</span>
             </div>
-
-            <!-- Category Pill and Instruction -->
             <div class="flex items-center gap-2.5 mb-5">
-              <span id="puzzleCategoryBadge" class="text-xs font-bold uppercase tracking-wide bg-purple-600/20 text-purple-400 border border-purple-500/30 px-2.5 py-0.5 rounded-md">
-                RIDDLE
-              </span>
+              <span id="puzzleCategoryBadge" class="text-xs font-bold uppercase tracking-wide bg-purple-600/20 text-purple-400 border border-purple-500/30 px-2.5 py-0.5 rounded-md">RIDDLE</span>
               <span class="text-xs text-zinc-400 font-medium">Solve correctly to earn a number</span>
             </div>
-
-            <!-- Puzzle Question Statement Card -->
             <div class="mb-6">
-              <div id="puzzleQuestionText" class="text-lg sm:text-xl font-bold text-white leading-snug whitespace-pre-line font-sans">
-                Loading question...
-              </div>
+              <div id="puzzleQuestionText" class="text-lg sm:text-xl font-bold text-white leading-snug whitespace-pre-line font-sans">Loading question...</div>
             </div>
-
-            <!-- Feedback Alert -->
             <div id="answerFeedback" class="hidden mb-5 p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all">
               <div class="flex items-center gap-2" id="feedbackMessage"></div>
               <button onclick="document.getElementById('answerFeedback').classList.add('hidden')" class="text-zinc-400 hover:text-white">&times;</button>
             </div>
-
-            <!-- Form -->
             <form id="puzzleAnswerForm" onsubmit="handleAnswerSubmit(event)" class="space-y-4">
               <div>
                 <label class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-2">YOUR ANSWER</label>
-                <input 
-                  type="text" 
-                  id="puzzleAnswerInput" 
-                  autocomplete="off"
-                  required
+                <input type="text" id="puzzleAnswerInput" autocomplete="off" required
                   placeholder="Type your answer here..."
-                  class="w-full bg-[#0e1017] border border-zinc-700/80 rounded-xl px-4 py-3.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25 font-sans transition"
-                />
+                  class="w-full bg-[#0e1017] border border-zinc-700/80 rounded-xl px-4 py-3.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25 font-sans transition" />
               </div>
-
-              <!-- Action Buttons Row: Submit & Skip Puzzle -->
               <div class="flex items-center gap-3 pt-1">
-                <button 
-                  type="submit" 
-                  id="submitAnswerBtn"
-                  class="flex-1 py-3.5 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition transform active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <span>Submit answer</span>
-                  <span class="text-base">&nearr;</span>
+                <button type="submit" id="submitAnswerBtn"
+                  class="flex-1 py-3.5 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition transform active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer">
+                  <span>Submit answer</span><span class="text-base">&nearr;</span>
                 </button>
-
-                <!-- Skip Puzzle Button -->
-                <button 
-                  type="button" 
-                  id="skipPuzzleBtn" 
-                  onclick="handleSkipPuzzle()"
-                  class="py-3.5 px-5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 font-bold text-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
-                  title="Skip this question and move to the next"
-                >
-                  <span>Skip Puzzle ⏭</span>
+                <button type="button" id="skipPuzzleBtn" onclick="handleSkipPuzzle()"
+                  class="py-3.5 px-5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 font-bold text-sm transition flex items-center justify-center gap-1.5 cursor-pointer">
+                  Skip ⏭
                 </button>
               </div>
             </form>
-
-            <!-- "How it works" Instructional Card -->
             <div class="mt-6 pt-5 border-t border-zinc-800/80">
               <div class="flex items-center gap-2 text-xs font-bold text-amber-400 mb-2">
                 <span>💡</span> How it works
@@ -433,47 +325,325 @@
               </p>
             </div>
           </div>
-
         </div>
 
       </div>
     </section>
 
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- VIEW 3: LEVEL 2 (STAGE 02 — FOG MAZE RUN)            -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <section id="viewLevel2" class="hidden w-full max-w-5xl mx-auto my-2 flex flex-col h-[calc(100vh-125px)] min-h-[580px] select-none">
+      <!-- HUD Header -->
+      <div class="flex items-center justify-between pb-3 px-2">
+        <div>
+          <div class="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-300/80">Brain Breaker</div>
+          <div class="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+            <span>Stage 02</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold font-mono">FOG MAZE</span>
+          </div>
+          <div class="text-[11px] uppercase tracking-[0.18em] text-zinc-400">Find the correct key among the fog</div>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-3">
+          <button onclick="openMazeRiddleModal()" class="px-3 py-1.5 rounded-xl border border-indigo-500/30 bg-indigo-950/40 hover:bg-indigo-900/50 text-indigo-300 hover:text-white text-xs font-semibold backdrop-blur-md transition flex items-center gap-1.5 cursor-pointer" title="View or solve your team's color riddle">
+            <span>📜</span> <span class="hidden sm:inline">Riddle Clue</span>
+          </button>
+          <button id="mazeFullscreenBtn" onclick="toggleMazeFullscreen()" class="px-3 py-1.5 rounded-xl border border-cyan-500/30 bg-cyan-950/40 hover:bg-cyan-900/50 text-cyan-300 hover:text-white text-xs font-semibold backdrop-blur-md transition flex items-center gap-1.5 cursor-pointer" title="Toggle Fullscreen Mode">
+            <span id="mazeFsIcon">⛶</span> <span id="mazeFsText" class="hidden sm:inline">Fullscreen</span>
+          </button>
+          <div class="rounded-xl border border-white/10 bg-zinc-900/60 px-3.5 py-1.5 text-right backdrop-blur-md">
+            <div class="text-[9px] uppercase tracking-[0.2em] text-zinc-400">Round</div>
+            <div id="mazeRoundDisplay" class="font-mono text-sm font-bold text-white">01</div>
+          </div>
+          <div class="min-w-[85px] rounded-xl border border-cyan-500/20 bg-cyan-950/40 px-3.5 py-1.5 text-right backdrop-blur-md">
+            <div class="text-[9px] uppercase tracking-[0.2em] text-cyan-300/70">Time</div>
+            <div id="mazeTimerDisplay" class="font-mono text-base sm:text-lg font-extrabold text-cyan-200">00:00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Canvas Frame -->
+      <div id="mazeCanvasFrame" onclick="onMazeCanvasClick(event)" class="relative flex-1 w-full overflow-hidden rounded-2xl border border-white/10 bg-[#04060d] shadow-2xl flex items-center justify-center cursor-pointer group">
+        <canvas id="mazeCanvas" class="w-full h-full block"></canvas>
+        <div id="mazeCanvasClickHint" class="absolute top-3 right-3 z-20 px-2.5 py-1 rounded-lg bg-black/75 border border-cyan-500/30 text-[10px] font-mono font-bold text-cyan-300 pointer-events-none backdrop-blur-sm opacity-80 group-hover:opacity-100 transition shadow-lg flex items-center gap-1.5">
+          <span>⛶</span> <span>Click for Fullscreen</span>
+        </div>
+
+        <!-- Ready Overlay (Mission Briefing & Color Riddle) -->
+        <div id="mazeReadyOverlay" class="absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-[#02050b]/85 px-4 py-5 backdrop-blur-md">
+          <div class="my-auto w-full max-w-xl rounded-3xl border border-white/10 bg-[#07101a]/95 p-6 shadow-2xl space-y-4">
+            <div class="text-center">
+              <div class="text-[10px] font-semibold uppercase tracking-[0.3em] text-cyan-300/70">Brain Breaker · Stage 02</div>
+              <h1 class="mt-1 text-2xl sm:text-3xl font-black tracking-tight text-white">The Fog Maze</h1>
+              <p class="mt-1 text-xs text-zinc-400">Navigate the dark corridors and find your team's authentic key.</p>
+            </div>
+
+            <!-- Color Riddle Section -->
+            <div class="rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-[#121429]/90 to-[#0c0f1c]/90 p-4 space-y-3 shadow-lg">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="text-lg">📜</span>
+                  <div>
+                    <div id="riddleCardTitle" class="text-xs font-bold uppercase tracking-wider text-indigo-300 font-cipher">The Color Riddle</div>
+                    <div class="text-[10px] text-zinc-400 font-sans">Solve this riddle to identify your authentic key color!</div>
+                  </div>
+                </div>
+                <span id="riddleStatusBadge" class="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 font-mono text-[10px] font-bold">Unsolved</span>
+              </div>
+
+              <div class="bg-black/50 border border-white/5 p-3 rounded-xl">
+                <p id="mazeRiddleText" class="text-xs sm:text-sm text-indigo-100/90 leading-relaxed font-riddle font-medium tracking-wide">Loading riddle...</p>
+              </div>
+
+              <div id="readyRiddleInputArea" class="flex items-center gap-2">
+                <input type="text" id="mazeRiddleAnswerInput" placeholder="Enter key color (RED, BLUE, GREEN, YELLOW)"
+                  class="flex-1 bg-black/40 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-400 font-mono uppercase"
+                  onkeydown="if(event.key==='Enter') checkMazeRiddleAnswer(false)" />
+                <button onclick="checkMazeRiddleAnswer(false)" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition cursor-pointer">
+                  Check
+                </button>
+              </div>
+
+              <div id="readyRiddleFeedback" class="hidden text-xs font-semibold p-2.5 rounded-xl"></div>
+            </div>
+
+            <!-- Rules Grid -->
+            <div class="grid gap-3 sm:grid-cols-2 text-xs">
+              <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-3 space-y-1.5">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-cyan-300">How to Win</div>
+                <div class="text-zinc-300 space-y-1 leading-relaxed text-[11px]">
+                  <div>• <strong class="text-white">4 keys</strong> hidden in distant dead ends.</div>
+                  <div>• Walk onto your authentic key to clear Stage 02.</div>
+                </div>
+              </div>
+
+              <div class="rounded-2xl border border-red-500/20 bg-red-950/20 p-3 space-y-1.5">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-red-300">If Wrong Key</div>
+                <div class="text-zinc-300 space-y-1 leading-relaxed text-[11px]">
+                  <div>• Must return to <strong class="text-red-300">START</strong>.</div>
+                  <div>• Maze &amp; locations reshuffle, but <strong class="text-cyan-300">your key color stays the same</strong>!</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs">
+              <div>
+                <span class="text-[10px] text-zinc-400 uppercase font-semibold">Controls: </span>
+                <span class="text-white font-mono text-[11px] font-bold">WASD</span> <span class="text-zinc-500">or</span> <span class="text-zinc-300">Arrow Keys</span>
+              </div>
+              <div class="text-right text-[10px] text-amber-300/90 font-mono">
+                ⏱ Continuous Timer
+              </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center gap-3 pt-1">
+              <button id="startMazeBtn" onclick="startMazeRun()"
+                class="w-full sm:flex-1 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-black text-xs uppercase tracking-wider shadow-lg shadow-cyan-500/25 transition transform active:scale-[0.99] cursor-pointer">
+                Enter the Maze &rarr;
+              </button>
+              <button onclick="skipMazeRiddleAndStart()"
+                class="w-full sm:w-auto px-4 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 border border-zinc-700 font-semibold text-xs transition cursor-pointer"
+                title="Enter the maze without solving the riddle. You will test keys by brute-force.">
+                Skip Riddle (Brute Force)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- In-Game Riddle Modal -->
+        <div id="mazeRiddleModal" class="hidden absolute inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div class="w-full max-w-lg rounded-3xl border border-indigo-500/40 bg-[#0b0e1b]/95 p-6 shadow-2xl space-y-4 text-left">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <div class="flex items-center gap-2">
+                <span class="text-xl">📜</span>
+                <div>
+                  <h3 class="text-sm font-bold text-white uppercase tracking-wider font-cipher" id="modalRiddleTitle">Color Riddle</h3>
+                  <p class="text-[10px] text-zinc-400 font-sans">Solve to identify which key color is authentic</p>
+                </div>
+              </div>
+              <button onclick="closeMazeRiddleModal()" class="text-zinc-400 hover:text-white text-xl font-mono cursor-pointer">&times;</button>
+            </div>
+
+            <div class="bg-black/50 border border-white/5 p-4 rounded-2xl">
+              <p id="modalRiddleText" class="text-sm sm:text-base text-indigo-100/90 leading-relaxed font-riddle font-medium tracking-wide"></p>
+            </div>
+
+            <div id="modalRiddleInputArea" class="space-y-2">
+              <div class="flex items-center gap-2">
+                <input type="text" id="modalRiddleAnswerInput" placeholder="Enter color (RED, BLUE, GREEN, YELLOW)"
+                  class="flex-1 bg-black/40 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-400 font-mono uppercase"
+                  onkeydown="if(event.key==='Enter') checkMazeRiddleAnswer(true)" />
+                <button onclick="checkMazeRiddleAnswer(true)" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition cursor-pointer">
+                  Verify
+                </button>
+              </div>
+              <div id="modalRiddleFeedback" class="hidden text-xs font-semibold p-2.5 rounded-xl"></div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2">
+              <button onclick="closeMazeRiddleModal()" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition cursor-pointer">
+                Resume Maze
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Success Overlay -->
+        <div id="mazeSuccessOverlay" class="hidden absolute inset-0 z-30 flex items-center justify-center bg-[#02050b]/85 backdrop-blur-md p-4">
+          <div class="w-full max-w-md rounded-3xl border border-emerald-400/30 bg-[#07130f]/95 p-8 text-center shadow-2xl space-y-4">
+            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/10 text-3xl text-emerald-300 shadow-[0_0_40px_rgba(52,211,153,0.3)] animate-bounce">
+              ✓
+            </div>
+            <div class="text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-300">Key Verified</div>
+            <h2 class="text-3xl font-black text-white">Stage 02 Complete!</h2>
+            <p class="text-xs text-zinc-300">You discovered the authentic key and conquered the Fog Maze.</p>
+            <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div class="text-[10px] uppercase tracking-wider text-zinc-400">Total Stage Time</div>
+              <div id="mazeFinalTime" class="mt-1 font-mono text-4xl font-black text-emerald-300">00:00</div>
+              <div id="mazeFinalRounds" class="mt-1 text-xs text-zinc-400 font-mono">Completed in 1 attempt</div>
+            </div>
+            <button onclick="proceedToLevel3()"
+              class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-black text-sm uppercase tracking-wider shadow-lg shadow-emerald-500/25 transition cursor-pointer">
+              Proceed to Stage 03 &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Objective Bar -->
+      <div class="pt-3">
+        <div id="mazeObjectiveBar" class="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/40 px-5 py-2.5 backdrop-blur-xl transition-all">
+          <div class="flex items-center gap-3">
+            <div id="mazeStatusDot" class="h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(79,216,255,0.9)] animate-pulse"></div>
+            <div>
+              <div id="mazeStatusLabel" class="text-[9px] font-bold uppercase tracking-[0.24em] text-white/40">Objective</div>
+              <div id="mazeStatusMessage" class="text-xs text-zinc-200 font-medium">Find the correct key hidden in the fog.</div>
+            </div>
+          </div>
+          <div id="mazeStatusHint" class="hidden sm:block text-right text-[10px] font-mono uppercase tracking-wider text-zinc-400">
+            WASD / ARROWS · 4 KEYS · 1 CORRECT
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- VIEW 4: LEVEL 3 (STAGE 03: GIT SECRET & MORSE CIPHER) -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <section id="viewLevel3" class="hidden max-w-2xl mx-auto my-8 space-y-6">
+      <!-- Banner Card -->
+      <div class="bg-gradient-to-b from-[#1a1c2a] to-[#12131b] border border-purple-500/30 rounded-3xl p-6 sm:p-7 shadow-2xl relative overflow-hidden">
+        <div class="absolute -top-10 -right-10 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-10 -left-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+          <div class="text-5xl p-3 bg-purple-600/15 rounded-2xl border border-purple-500/30 shrink-0">🎯</div>
+          <div class="space-y-1">
+            <div class="text-xs font-bold uppercase tracking-[0.25em] text-emerald-400 flex items-center justify-center sm:justify-start gap-1.5">
+              <span>✓</span> ROUND 2 COMPLETED · FINAL ROUND
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black text-white font-display tracking-tight">Stage 03: The Final Challenge</h2>
+            <p class="text-xs sm:text-sm text-zinc-300 font-riddle">Everything you need lies within.</p>
+          </div>
+        </div>
+
+        <div class="mt-5 py-2.5 px-4 rounded-xl bg-zinc-900/60 border border-zinc-800 text-xs text-zinc-300 flex flex-wrap items-center justify-between gap-2 font-mono">
+          <div id="lvl3Stats" class="text-xs flex flex-wrap gap-4"></div>
+          <span class="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold font-mono text-[11px]">FINAL STAGE</span>
+        </div>
+      </div>
+
+      <!-- Presentable GitHub Repository Card -->
+      <div class="bg-[#0e111a] border border-zinc-700/60 hover:border-purple-500/50 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 transition-all relative overflow-hidden group">
+        <div class="absolute top-0 right-0 w-40 h-40 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none"></div>
+
+        <!-- Repo Header -->
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex items-center gap-3.5">
+            <!-- GitHub SVG Icon -->
+            <div class="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-700/80 flex items-center justify-center text-white shrink-0 shadow-inner group-hover:border-zinc-500 transition">
+              <svg class="w-7 h-7 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <a href="https://github.com/AkshatOP/gradient_l3" target="_blank" rel="noopener noreferrer"
+                  class="text-lg sm:text-xl font-black text-white hover:text-indigo-400 transition underline-offset-4 hover:underline font-display tracking-tight">
+                  AkshatOP / gradient_l3
+                </a>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold border border-zinc-700 bg-zinc-800 text-zinc-400">
+                  Public
+                </span>
+              </div>
+              <p class="text-xs text-zinc-400 mt-1 font-sans">Official GitHub Repository</p>
+            </div>
+          </div>
+          <a href="https://github.com/AkshatOP/gradient_l3" target="_blank" rel="noopener noreferrer"
+            class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-xs font-semibold text-white transition cursor-pointer font-sans">
+            <span>View on GitHub</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+          </a>
+        </div>
+
+        <!-- Clone / Terminal Box -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-[11px] text-zinc-400 font-mono">
+            <span class="uppercase tracking-wider">Repository URL</span>
+            <button onclick="copyRepoUrl()" id="copyRepoBtn" class="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 font-bold transition cursor-pointer">
+              <span>📋 Copy Clone Command</span>
+            </button>
+          </div>
+          <div class="bg-[#05070d] border border-zinc-800 rounded-2xl p-3.5 flex items-center justify-between gap-3 font-mono text-xs sm:text-sm text-zinc-300 overflow-x-auto select-all">
+            <span class="text-zinc-500 select-none">$</span>
+            <span class="flex-1 text-emerald-400 font-mono" id="repoCloneCmd">git clone https://github.com/AkshatOP/gradient_l3.git</span>
+            <button onclick="copyRepoUrl()" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-sans transition shrink-0 cursor-pointer">
+              Copy
+            </button>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="pt-2">
+          <a href="https://github.com/AkshatOP/gradient_l3" target="_blank" rel="noopener noreferrer"
+            class="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-teal-500 hover:from-purple-500 hover:to-teal-400 text-white font-black text-sm uppercase tracking-wider shadow-xl shadow-purple-600/25 flex items-center justify-center gap-2 transition transform active:scale-[0.99] cursor-pointer font-display">
+            <span>Open Repository</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+          </a>
+        </div>
+      </div>
+    </section>
+
   </main>
 
-  <!-- ============================================================= -->
-  <!-- MODAL: WINNER / FULL HOUSE CELEBRATION                         -->
-  <!-- ============================================================= -->
+  <!-- WINNER MODAL -->
   <div id="winnerModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
     <div class="bg-gradient-to-b from-[#1c1d28] to-[#12131b] border-2 border-amber-500/50 rounded-3xl max-w-md w-full p-8 shadow-2xl text-center space-y-5 relative overflow-hidden">
       <div class="text-6xl animate-bounce">🏆</div>
-      <h2 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-500">
-        FULL HOUSE!
-      </h2>
+      <h2 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-500">FULL HOUSE!</h2>
       <p class="text-sm text-zinc-300">
-        Congratulations <span id="winnerTeamName" class="font-bold text-amber-300"></span>! You hit all 15 ticket numbers and won the Tambola Challenge!
+        Congratulations <span id="winnerTeamName" class="font-bold text-amber-300"></span>! You hit all 15 ticket numbers and completed Level 1!
       </p>
-
       <div class="py-3 px-4 rounded-xl bg-zinc-800/80 border border-zinc-700/60 text-xs font-mono text-zinc-300 space-y-1">
         <div>Questions Solved: <span id="winnerQuestionsCount" class="font-bold text-white"></span></div>
         <div>Numbers Collected: <span id="winnerCollectedCount" class="font-bold text-white"></span></div>
       </div>
-
-      <button onclick="document.getElementById('winnerModal').classList.add('hidden')" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-extrabold text-sm shadow-lg shadow-amber-500/30 hover:opacity-90 transition cursor-pointer">
-        Continue Celebrating 🎉
+      <button onclick="handleLevelComplete()"
+        class="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-extrabold text-sm shadow-lg shadow-amber-500/30 hover:opacity-90 transition cursor-pointer">
+        Proceed to Level 2 &rarr;
       </button>
     </div>
   </div>
 
-  <!-- ============================================================= -->
-  <!-- OVERLAY: FOCUS LOST WARNING (tab switch / exited fullscreen)   -->
-  <!-- ============================================================= -->
+  <!-- FOCUS LOST OVERLAY -->
   <div id="focusLostOverlay" class="hidden fixed inset-0 z-[60] bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
     <div class="bg-gradient-to-b from-[#241417] to-[#12131b] border-2 border-red-500/50 rounded-3xl max-w-md w-full p-8 shadow-2xl text-center space-y-4">
       <div class="text-5xl">⚠️</div>
       <h2 class="text-xl font-black text-red-400">You left the puzzle screen!</h2>
       <p class="text-sm text-zinc-300">
-        Switching tabs, minimizing the window, or exiting fullscreen during the game is not allowed. This has been reported to the admin (<span id="violationCount" class="font-bold text-red-300">1</span> flagged so far).
+        Switching tabs, minimizing the window, or exiting fullscreen during the game is not allowed.
+        This has been reported to the admin (<span id="violationCount" class="font-bold text-red-300">1</span> flagged so far).
       </p>
       <button onclick="returnToGame()" class="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-sm shadow-lg shadow-red-600/30 transition cursor-pointer">
         Return to Game
@@ -481,20 +651,16 @@
     </div>
   </div>
 
-  <!-- ============================================================= -->
-  <!-- OVERLAY: GAME ENDED BY ADMIN                                   -->
-  <!-- ============================================================= -->
+  <!-- GAME ENDED OVERLAY -->
   <div id="gameEndedOverlay" class="hidden fixed inset-0 z-[70] bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
     <div class="bg-gradient-to-b from-[#1c1d28] to-[#12131b] border-2 border-indigo-500/50 rounded-3xl max-w-md w-full p-8 shadow-2xl text-center space-y-4">
       <div class="text-5xl">🏁</div>
       <h2 class="text-xl font-black text-indigo-300">Game Ended by Admin</h2>
-      <p class="text-sm text-zinc-300">The Tambola Puzzle Arena has been closed by the admin. Thanks for playing! Check the announcement board or ask the admin for final results.</p>
+      <p class="text-sm text-zinc-300">The Brain Breaker arena has been closed. Thanks for playing! Check with the admin for final results.</p>
     </div>
   </div>
 
-  <!-- ============================================================= -->
-  <!-- OVERLAY: REMOVED FROM GAME BY ADMIN                            -->
-  <!-- ============================================================= -->
+  <!-- REMOVED OVERLAY -->
   <div id="removedOverlay" class="hidden fixed inset-0 z-[70] bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
     <div class="bg-gradient-to-b from-[#241417] to-[#12131b] border-2 border-red-500/50 rounded-3xl max-w-md w-full p-8 shadow-2xl text-center space-y-4">
       <div class="text-5xl">🚫</div>
@@ -503,40 +669,38 @@
     </div>
   </div>
 
-  <!-- ============================================================= -->
-  <!-- CLIENT JAVASCRIPT APP LOGIC                                   -->
-  <!-- ============================================================= -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- CLIENT-SIDE APP LOGIC                                  -->
+  <!-- ═══════════════════════════════════════════════════════ -->
   <script>
-    let currentTeam = localStorage.getItem("tambola_team") || "";
-    let selectedAvatar = localStorage.getItem("tambola_avatar") || "🚀";
-    let soundEnabled = true;
-    let eventSource = null;
+    // ── State ────────────────────────────────────────────────────────────────
+    let currentToken    = localStorage.getItem("brain_token")    || "";
+    let currentTeamName = localStorage.getItem("brain_teamname") || "";
+    let currentLevel    = 1;
+    let soundEnabled    = true;
+    let eventSource     = null;
     let cachedTeamState = null;
-    let awayFromGame = false;
-    let gameLocked = false; // true once game_ended or removed — stops all further violation checks
+    let awayFromGame    = false;
+    let gameLocked      = false;
+    let anticheatEnabled = false;  // set by server, toggled via SSE
 
-    const AVATARS = ["🚀", "⚡", "🦁", "🐉", "🤖", "🔥", "💎", "🎯", "🦊", "👑", "🍕", "🎮"];
-
-    // Web Audio synthesizer
+    // ── Audio ─────────────────────────────────────────────────────────────────
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playTone(freq, type, duration, delay = 0) {
       if (!soundEnabled) return;
       setTimeout(() => {
         try {
-          const osc = audioCtx.createOscillator();
+          const osc  = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
           osc.type = type;
           osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
           gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
           gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start();
-          osc.stop(audioCtx.currentTime + duration);
+          osc.connect(gain); gain.connect(audioCtx.destination);
+          osc.start(); osc.stop(audioCtx.currentTime + duration);
         } catch(e) {}
       }, delay);
     }
-
     function playDabberSound(isHit) {
       if (!soundEnabled) return;
       if (isHit) {
@@ -547,85 +711,694 @@
         playTone(330, 'triangle', 0.12);
       }
     }
-
     function playHousieFanfare() {
       if (!soundEnabled) return;
-      const notes = [523.25, 659.25, 783.99, 1046.50];
-      notes.forEach((f, i) => playTone(f, 'square', 0.4, i * 150));
+      [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => playTone(f, 'square', 0.4, i * 150));
     }
-
     function toggleSound() {
       soundEnabled = !soundEnabled;
       document.getElementById("soundIcon").innerText = soundEnabled ? "🔊" : "🔇";
     }
 
-    function renderAvatarPicker() {
-      const container = document.getElementById("avatarPicker");
-      container.innerHTML = "";
-      AVATARS.forEach((av) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = `p-2 rounded-xl text-xl border transition ${selectedAvatar === av ? 'border-indigo-500 bg-indigo-600/20' : 'border-zinc-800 bg-[#0e1017] hover:border-zinc-700'}`;
-        btn.innerText = av;
-        btn.onclick = () => {
-          selectedAvatar = av;
-          renderAvatarPicker();
-        };
-        container.appendChild(btn);
-      });
-    }
-
-    async function handleTeamLogin(e) {
+    // ── Login ─────────────────────────────────────────────────────────────────
+    async function handleLogin(e) {
       e.preventDefault();
-      const teamName = document.getElementById("loginTeamName").value.trim();
-      if (!teamName) return;
+      const username = document.getElementById("loginUsername").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
+      if (!username || !password) return;
 
-      requestGameFullscreen();
+      const btn = document.getElementById("loginSubmitBtn");
+      btn.disabled = true;
+      btn.innerHTML = `<svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg><span>Logging in...</span>`;
 
       try {
-        const res = await fetch("/api/register", {
+        const res  = await fetch("/api/login", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ team_name: teamName, avatar: selectedAvatar })
+          headers: {"Content-Type": "application/json"},
+          body:    JSON.stringify({username, password}),
         });
         const data = await res.json();
-        if (data.success) {
-          currentTeam = teamName;
-          localStorage.setItem("tambola_team", teamName);
-          localStorage.setItem("tambola_avatar", selectedAvatar);
-          showDashboardView();
+
+        if (data.success && data.token) {
+          currentToken    = data.token;
+          currentTeamName = data.team_name;
+          currentLevel    = data.current_level || 1;
+          anticheatEnabled = !!data.anticheat_enabled;
+          localStorage.setItem("brain_token",    currentToken);
+          localStorage.setItem("brain_teamname", currentTeamName);
+          hideLoginError();
+          if (anticheatEnabled) requestGameFullscreen();
+          routeToLevel(currentLevel, data);
         } else {
-          alert(data.error || "Failed to enter arena.");
+          showLoginError(data.error || "Invalid credentials. Please try again.");
+          btn.disabled = false;
+          btn.innerHTML = `<span>Enter Arena</span><span class="text-base">&rarr;</span>`;
         }
       } catch (err) {
-        alert("Cannot connect to server. Please ensure server.py is running!");
+        showLoginError("Cannot connect to server. Ensure server.py is running.");
+        btn.disabled = false;
+        btn.innerHTML = `<span>Enter Arena</span><span class="text-base">&rarr;</span>`;
       }
     }
 
-    function showDashboardView() {
-      document.getElementById("viewLogin").classList.add("hidden");
-      document.getElementById("viewDashboard").classList.remove("hidden");
+    function showLoginError(msg) {
+      document.getElementById("loginErrorText").innerText = msg;
+      document.getElementById("loginError").classList.remove("hidden");
+    }
+    function hideLoginError() {
+      document.getElementById("loginError").classList.add("hidden");
+    }
+
+    function handleLogout() {
+      localStorage.removeItem("brain_token");
+      localStorage.removeItem("brain_teamname");
+      currentToken = ""; currentTeamName = ""; gameLocked = false;
+      if (document.fullscreenElement) { try { document.exitFullscreen(); } catch(e) {} }
+      showView("viewLogin");
+      document.getElementById("logoutBtn").classList.add("hidden");
+      document.getElementById("levelBadge").classList.add("hidden");
+    }
+
+    // ── Level routing ─────────────────────────────────────────────────────────
+    function routeToLevel(level, stateData) {
+      // Update header
+      document.getElementById("levelBadgeText").innerText = `Level ${level}`;
+      document.getElementById("levelBadge").classList.remove("hidden");
+      document.getElementById("levelBadge").classList.add("flex");
+      document.getElementById("logoutBtn").classList.remove("hidden");
+
+      if (level === 1) {
+        showView("viewDashboard");
+        if (stateData) renderDashboard(stateData);
+        else loadTeamState();
+      } else if (level === 2) {
+        showView("viewLevel2");
+        setupMazeGame(stateData);
+      } else {
+        showView("viewLevel3");
+        if (stateData) renderLevel3(stateData);
+      }
+    }
+
+    function reloadToCurrentLevel() {
       loadTeamState();
     }
 
-    function showLoginView() {
-      document.getElementById("viewLogin").classList.remove("hidden");
-      document.getElementById("viewDashboard").classList.add("hidden");
+    // ── Views ─────────────────────────────────────────────────────────────────
+    function showView(id) {
+      ["viewLogin","viewDashboard","viewLevel2","viewLevel3"].forEach(v => {
+        const el = document.getElementById(v);
+        if (el) el.classList.add("hidden");
+      });
+      const target = document.getElementById(id);
+      if (target) target.classList.remove("hidden");
     }
 
-    async function loadTeamState() {
-      if (!currentTeam) return;
-      try {
-        const res = await fetch(`/api/state?team=${encodeURIComponent(currentTeam)}`);
-        if (res.status === 404) {
-          localStorage.removeItem("tambola_team");
-          currentTeam = "";
-          showLoginView();
+    // ── Level 2: Maze Run Engine & Renderer ───────────────────────────────────
+    let mazeEngine = null;
+    let mazeAnimId = null;
+    let mazeLightCanvas = null;
+    let mazeSyncTimer = null;
+    let mazeLastTime = 0;
+    let mazeInputBound = false;
+
+    function formatMazeTime(elapsedMs) {
+      const totalSeconds = Math.floor(elapsedMs / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    const CLIENT_COLOR_RIDDLES = {
+      RED: {
+        color: "RED",
+        title: "The Crimson Cipher",
+        riddle: "I am the spark of a wild flame, the ruby in a king's crown, and the urgent signal where traffic halts. What color key unlocks your path?",
+        accepted: ["red", "red key", "the red key", "crimson", "ruby"]
+      },
+      BLUE: {
+        color: "BLUE",
+        title: "The Azure Cipher",
+        riddle: "I am the expanse of the cloudless sky, the depths of the ocean trench, and royalty's proudest sapphire. What color key unlocks your path?",
+        accepted: ["blue", "blue key", "the blue key", "azure", "sapphire", "cyan"]
+      },
+      GREEN: {
+        color: "GREEN",
+        title: "The Emerald Cipher",
+        riddle: "I am the breath of ancient pine forests, the coat of moss upon stones, and the rarest emerald gem. What color key unlocks your path?",
+        accepted: ["green", "green key", "the green key", "emerald", "jade"]
+      },
+      YELLOW: {
+        color: "YELLOW",
+        title: "The Amber Cipher",
+        riddle: "I am the morning sunrise breaking dark skies, the warmth of midday noon, and the bright crown of a sunflower. What color key unlocks your path?",
+        accepted: ["yellow", "yellow key", "the yellow key", "amber", "gold", "golden"]
+      }
+    };
+
+    let currentMazeRiddle = null;
+    let mazeRiddleSolved = false;
+    let mazeBruteForceMode = false;
+
+    function ensureMazeRiddle(stateData) {
+      if (stateData && stateData.maze_riddle && stateData.maze_riddle.riddle) {
+        currentMazeRiddle = stateData.maze_riddle;
+        return currentMazeRiddle;
+      }
+      if (currentMazeRiddle && currentMazeRiddle.riddle) {
+        return currentMazeRiddle;
+      }
+      // Derive color deterministically from team name or avatar
+      const raw = String((stateData && stateData.team_name) || (currentTeam && currentTeam.team_name) || "team");
+      const colors = ["RED", "BLUE", "GREEN", "YELLOW"];
+      let sum = 0;
+      for (let i = 0; i < raw.length; i++) sum += raw.charCodeAt(i);
+      const chosenColor = (stateData && stateData.maze_assigned_color) || colors[sum % colors.length];
+      currentMazeRiddle = CLIENT_COLOR_RIDDLES[chosenColor];
+      return currentMazeRiddle;
+    }
+
+    function renderMazeRiddleUI(riddle) {
+      if (!riddle) riddle = ensureMazeRiddle();
+      if (!riddle) return;
+
+      const titleEl = document.getElementById("riddleCardTitle");
+      const textEl  = document.getElementById("mazeRiddleText");
+      const mTitle  = document.getElementById("modalRiddleTitle");
+      const mText   = document.getElementById("modalRiddleText");
+
+      const titleText = riddle.title || "The Color Riddle";
+      const riddleQuote = `"${riddle.riddle || ''}"`;
+
+      if (titleEl) titleEl.innerText = titleText;
+      if (textEl)  textEl.innerText  = riddleQuote;
+
+      if (mTitle) mTitle.innerText = titleText;
+      if (mText)  mText.innerText  = riddleQuote;
+    }
+
+    async function checkMazeRiddleAnswer(isModal = false) {
+      const inputId = isModal ? "modalRiddleAnswerInput" : "mazeRiddleAnswerInput";
+      const feedId  = isModal ? "modalRiddleFeedback"    : "readyRiddleFeedback";
+      const inputEl = document.getElementById(inputId);
+      const feedEl  = document.getElementById(feedId);
+      if (!inputEl || !feedEl) return;
+
+      const val = inputEl.value.trim().toLowerCase();
+      if (!val) return;
+
+      if (!currentMazeRiddle) ensureMazeRiddle();
+      let correct = false;
+      let targetColor = currentMazeRiddle ? currentMazeRiddle.color : null;
+      if (currentMazeRiddle && currentMazeRiddle.accepted) {
+        const accepted = currentMazeRiddle.accepted.map(a => a.toLowerCase());
+        if (accepted.includes(val) || (targetColor && val === targetColor.toLowerCase())) {
+          correct = true;
+        }
+      }
+
+      // Also support server API check
+      if (!correct && currentToken) {
+        try {
+          const res = await fetch("/api/level2/solve-riddle", {
+            method: "POST", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({token: currentToken, answer: val}),
+          });
+          const d = await res.json();
+          if (d.correct) {
+            correct = true;
+            targetColor = d.color;
+          }
+        } catch(e) {}
+      }
+
+      if (correct && targetColor) {
+        mazeRiddleSolved = true;
+        mazeBruteForceMode = false;
+        playTone(660, 'sine', 0.2);
+
+        feedEl.className = "text-xs font-bold p-2.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 block";
+        feedEl.innerHTML = `✓ Solved! Your authentic key is <strong class="text-white uppercase font-mono tracking-wider">${targetColor}</strong>. Hunt for the ${targetColor} key in the maze!`;
+
+        const badge = document.getElementById("riddleStatusBadge");
+        if (badge) {
+          badge.className = "px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono text-[10px] font-bold";
+          badge.innerText = `Solved: ${targetColor}`;
+        }
+
+        const startBtn = document.getElementById("startMazeBtn");
+        if (startBtn) {
+          startBtn.innerHTML = `Enter Maze (Target: ${targetColor} Key) &rarr;`;
+        }
+
+        if (mazeEngine) {
+          mazeEngine.setAssignedColor(targetColor);
+          updateMazeHud(mazeEngine.getSnapshot());
+        }
+      } else {
+        playTone(280, 'sine', 0.25);
+        feedEl.className = "text-xs font-bold p-2.5 rounded-xl bg-red-950/80 border border-red-500/40 text-red-300 block";
+        feedEl.innerText = "✗ Not quite! Think carefully about the clue or skip to brute-force.";
+      }
+    }
+
+    function skipMazeRiddleAndStart() {
+      mazeRiddleSolved = false;
+      mazeBruteForceMode = true;
+      startMazeRun();
+    }
+
+    function openMazeRiddleModal() {
+      ensureMazeRiddle();
+      renderMazeRiddleUI(currentMazeRiddle);
+      const modal = document.getElementById("mazeRiddleModal");
+      if (modal) {
+        modal.classList.remove("hidden");
+        const input = document.getElementById("modalRiddleAnswerInput");
+        if (input) input.focus();
+      }
+    }
+
+    function closeMazeRiddleModal() {
+      const modal = document.getElementById("mazeRiddleModal");
+      if (modal) modal.classList.add("hidden");
+    }
+
+    function setupMazeGame(stateData) {
+      const canvas = document.getElementById("mazeCanvas");
+      if (!canvas || !window.BrainBreakerMaze) return;
+
+      if (!mazeLightCanvas) {
+        mazeLightCanvas = document.createElement("canvas");
+      }
+
+      ensureMazeRiddle(stateData);
+      renderMazeRiddleUI(currentMazeRiddle);
+
+      const assignedColor = (stateData && stateData.maze_assigned_color) || (currentMazeRiddle && currentMazeRiddle.color) || null;
+
+      if (!mazeEngine) {
+        const initialElapsed = (stateData && stateData.maze_elapsed_ms) || 0;
+        const initialRound   = (stateData && stateData.maze_round) || 0;
+        mazeEngine = new BrainBreakerMaze.GameEngine(initialElapsed, initialRound, assignedColor);
+      } else if (assignedColor) {
+        mazeEngine.setAssignedColor(assignedColor);
+      }
+
+      updateMazeHud(mazeEngine.getSnapshot());
+
+      mazeEngine.onStateChange = (snap) => {
+        updateMazeHud(snap);
+      };
+
+      mazeEngine.onSuccess = (elapsedMs, round) => {
+        handleMazeSuccess(elapsedMs, round);
+      };
+
+      resizeMazeCanvas();
+      window.addEventListener("resize", resizeMazeCanvas);
+
+      if (!mazeInputBound) {
+        bindMazeControls();
+        mazeInputBound = true;
+      }
+
+      if (mazeAnimId) cancelAnimationFrame(mazeAnimId);
+      mazeLastTime = performance.now();
+      mazeAnimId = requestAnimationFrame(mazeLoop);
+
+      // Start the timer and engine immediately as soon as players enter Round 2!
+      mazeEngine.start();
+      if (mazeSyncTimer) clearInterval(mazeSyncTimer);
+      mazeSyncTimer = setInterval(syncMazeState, 8000);
+    }
+
+    function resizeMazeCanvas() {
+      const canvas = document.getElementById("mazeCanvas");
+      if (!canvas || !canvas.parentElement) return;
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.floor(rect.width);
+      const h = Math.floor(rect.height);
+
+      if (w > 0 && h > 0 && (canvas.width !== w * dpr || canvas.height !== h * dpr)) {
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        if (mazeLightCanvas) {
+          mazeLightCanvas.width = w * dpr;
+          mazeLightCanvas.height = h * dpr;
+        }
+      }
+    }
+
+    let isMazeFullscreen = false;
+
+    function toggleMazeFullscreen(forceState) {
+      const lvl2 = document.getElementById("viewLevel2");
+      const btn = document.getElementById("mazeFullscreenBtn");
+      const icon = document.getElementById("mazeFsIcon");
+      const text = document.getElementById("mazeFsText");
+      if (!lvl2) return;
+
+      if (typeof forceState === "boolean") {
+        isMazeFullscreen = forceState;
+      } else {
+        isMazeFullscreen = !isMazeFullscreen;
+      }
+
+      if (isMazeFullscreen) {
+        lvl2.classList.add("maze-fullscreen");
+        if (icon) icon.innerText = "✕";
+        if (text) text.innerText = "Exit";
+        if (btn) {
+          btn.title = "Exit Fullscreen (Esc)";
+          btn.className = "px-3 py-1.5 rounded-xl border border-rose-500/40 bg-rose-950/50 hover:bg-rose-900/60 text-rose-300 hover:text-white text-xs font-semibold backdrop-blur-md transition flex items-center gap-1.5 cursor-pointer";
+        }
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+      } else {
+        lvl2.classList.remove("maze-fullscreen");
+        if (icon) icon.innerText = "⛶";
+        if (text) text.innerText = "Fullscreen";
+        if (btn) {
+          btn.title = "Expand to Fullscreen";
+          btn.className = "px-3 py-1.5 rounded-xl border border-cyan-500/30 bg-cyan-950/40 hover:bg-cyan-900/50 text-cyan-300 hover:text-white text-xs font-semibold backdrop-blur-md transition flex items-center gap-1.5 cursor-pointer";
+        }
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+
+      resizeMazeCanvas();
+      requestAnimationFrame(resizeMazeCanvas);
+      setTimeout(resizeMazeCanvas, 60);
+      setTimeout(resizeMazeCanvas, 200);
+    }
+
+    function onMazeCanvasClick(e) {
+      const readyOverlay = document.getElementById("mazeReadyOverlay");
+      if (readyOverlay && !readyOverlay.classList.contains("hidden")) return;
+      const successOverlay = document.getElementById("mazeSuccessOverlay");
+      if (successOverlay && !successOverlay.classList.contains("hidden")) return;
+      const riddleModal = document.getElementById("mazeRiddleModal");
+      if (riddleModal && !riddleModal.classList.contains("hidden")) return;
+
+      if (!isMazeFullscreen) {
+        toggleMazeFullscreen(true);
+      }
+    }
+
+    document.addEventListener("fullscreenchange", () => {
+      const lvl2 = document.getElementById("viewLevel2");
+      if (!lvl2 || lvl2.classList.contains("hidden")) return;
+      if (!document.fullscreenElement && isMazeFullscreen) {
+        toggleMazeFullscreen(false);
+      }
+    });
+
+    function bindMazeControls() {
+      window.addEventListener("keydown", (e) => {
+        const lvl2 = document.getElementById("viewLevel2");
+        if (!lvl2 || lvl2.classList.contains("hidden")) return;
+
+        // Escape exits fullscreen
+        if (e.key === "Escape" && isMazeFullscreen) {
+          e.preventDefault();
+          toggleMazeFullscreen(false);
           return;
+        }
+
+        if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+        if (!mazeEngine) return;
+
+        // Dev mode cheat: Ctrl + Shift + D
+        if (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+          e.preventDefault();
+          mazeEngine.toggleDebug();
+          return;
+        }
+
+        const key = e.key;
+        let dir = null;
+        if (key === 'ArrowUp' || key === 'w' || key === 'W') dir = 'up';
+        else if (key === 'ArrowDown' || key === 's' || key === 'S') dir = 'down';
+        else if (key === 'ArrowLeft' || key === 'a' || key === 'A') dir = 'left';
+        else if (key === 'ArrowRight' || key === 'd' || key === 'D') dir = 'right';
+
+        if (dir) {
+          e.preventDefault();
+          mazeEngine.press(dir);
+        }
+      });
+
+      window.addEventListener("keyup", (e) => {
+        const lvl2 = document.getElementById("viewLevel2");
+        if (!lvl2 || lvl2.classList.contains("hidden")) return;
+        if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+        if (!mazeEngine) return;
+
+        const key = e.key;
+        let dir = null;
+        if (key === 'ArrowUp' || key === 'w' || key === 'W') dir = 'up';
+        else if (key === 'ArrowDown' || key === 's' || key === 'S') dir = 'down';
+        else if (key === 'ArrowLeft' || key === 'a' || key === 'A') dir = 'left';
+        else if (key === 'ArrowRight' || key === 'd' || key === 'D') dir = 'right';
+
+        if (dir) {
+          e.preventDefault();
+          mazeEngine.release(dir);
+        }
+      });
+    }
+
+    function startMazeRun() {
+      if (!mazeEngine) return;
+      document.getElementById("mazeReadyOverlay").classList.add("hidden");
+      // Auto-enter fullscreen for immersive experience!
+      toggleMazeFullscreen(true);
+      mazeEngine.start();
+      playTone(520, 'sine', 0.15);
+
+      if (mazeSyncTimer) clearInterval(mazeSyncTimer);
+      mazeSyncTimer = setInterval(syncMazeState, 8000);
+    }
+
+    async function syncMazeState() {
+      if (!currentToken || !mazeEngine) return;
+      const snap = mazeEngine.getSnapshot();
+      try {
+        await fetch("/api/level2/sync", {
+          method: "POST", headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({token: currentToken, elapsed_ms: Math.round(snap.elapsedMs), round: snap.round}),
+        });
+      } catch(e) {}
+    }
+
+    async function handleMazeSuccess(elapsedMs, round) {
+      if (mazeSyncTimer) clearInterval(mazeSyncTimer);
+      confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+      playTone(659.25, 'sine', 0.2);
+      setTimeout(() => playTone(880, 'sine', 0.3), 150);
+
+      document.getElementById("mazeFinalTime").innerText = formatMazeTime(elapsedMs);
+      document.getElementById("mazeFinalRounds").innerText = `Completed in ${round + 1} attempt${round > 0 ? 's' : ''}`;
+      document.getElementById("mazeSuccessOverlay").classList.remove("hidden");
+
+      try {
+        await fetch("/api/level2/complete", {
+          method: "POST", headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({token: currentToken, elapsed_ms: Math.round(elapsedMs), round: round}),
+        });
+      } catch(e) {}
+    }
+
+    function proceedToLevel3() {
+      if (isMazeFullscreen) {
+        toggleMazeFullscreen(false);
+      }
+      document.getElementById("mazeSuccessOverlay").classList.add("hidden");
+      loadTeamState();
+    }
+
+    function renderLevel3(stateData) {
+      const statsEl = document.getElementById("lvl3Stats");
+      if (statsEl && stateData) {
+        const timeStr = formatMazeTime(stateData.maze_elapsed_ms || 0);
+        const attempts = (stateData.maze_round || 0) + 1;
+        statsEl.innerHTML = `
+          <div>Level 1 Questions: <strong class="text-white">${stateData.questions_solved || 15}</strong></div>
+          <div>Level 2 Time: <strong class="text-emerald-300 font-mono">${timeStr}</strong></div>
+          <div>Level 2 Attempts: <strong class="text-white font-mono">${attempts}</strong></div>
+        `;
+      }
+    }
+
+    function copyRepoUrl() {
+      const cmd = "git clone https://github.com/AkshatOP/gradient_l3.git";
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(cmd).then(showCopiedNotice).catch(() => fallbackCopy(cmd));
+      } else {
+        fallbackCopy(cmd);
+      }
+    }
+
+    function showCopiedNotice() {
+      const btn = document.getElementById("copyRepoBtn");
+      if (btn) {
+        btn.innerHTML = '<span class="text-emerald-400">✓ Copied!</span>';
+        setTimeout(() => {
+          btn.innerHTML = '<span>📋 Copy Clone Command</span>';
+        }, 2000);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); showCopiedNotice(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+
+    // ── Morse Code Decoder (Internal Support) ─────────────────────────────────
+    const MORSE_MAP = {
+      '.-': 'A', '-...': 'B', '-.-.': 'C', '-..': 'D', '.': 'E', '..-.': 'F',
+      '--.': 'G', '....': 'H', '..': 'I', '.---': 'J', '-.-': 'K', '.-..': 'L',
+      '--': 'M', '-.': 'N', '---': 'O', '.--.': 'P', '--.-': 'Q', '.-.': 'R',
+      '...': 'S', '-': 'T', '..-': 'U', '...-': 'V', '.--': 'W', '-..-': 'X',
+      '-.--': 'Y', '--..': 'Z',
+      '-----': '0', '.----': '1', '..---': '2', '...--': '3', '....-': '4',
+      '.....': '5', '-....': '6', '--...': '7', '---..': '8', '----.': '9',
+      '.-.-.-': '.', '--..--': ',', '..--..': '?', '.----.': "'", '-.-.--': '!',
+      '-..-.': '/', '-.--.': '(', '-.--.-': ')', '---...': ':', '-....-': '-',
+    };
+
+    function decodeMorse(morseStr) {
+      if (!morseStr || !morseStr.trim()) return '';
+      const words = morseStr.trim().split(/\s*\/\s*|\s{2,}/);
+      return words.map(word => {
+        const letters = word.trim().split(/\s+/);
+        return letters.map(code => MORSE_MAP[code] || (code === '' ? '' : '?')).join('');
+      }).join(' ');
+    }
+
+    function handleMorseInput() {
+      const inputEl = document.getElementById("morseInput");
+      const outEl = document.getElementById("morseOutput");
+      if (!inputEl || !outEl) return;
+      const decoded = decodeMorse(inputEl.value);
+      outEl.innerText = decoded || "(Waiting for input...)";
+    }
+
+    function appendMorse(token) {
+      const inputEl = document.getElementById("morseInput");
+      if (!inputEl) return;
+      inputEl.value += token;
+      if (token === '.') playTone(600, 'sine', 0.08);
+      else if (token === '-') playTone(600, 'sine', 0.22);
+      handleMorseInput();
+      inputEl.focus();
+    }
+
+    function clearMorseDecoder() {
+      const inputEl = document.getElementById("morseInput");
+      if (inputEl) inputEl.value = "";
+      handleMorseInput();
+    }
+
+    function updateMazeHud(snap) {
+      const timerEl = document.getElementById("mazeTimerDisplay");
+      const roundEl = document.getElementById("mazeRoundDisplay");
+      if (timerEl) timerEl.innerText = formatMazeTime(snap.elapsedMs);
+      if (roundEl) roundEl.innerText = String(snap.round + 1).padStart(2, '0');
+
+      const dot = document.getElementById("mazeStatusDot");
+      const label = document.getElementById("mazeStatusLabel");
+      const msg = document.getElementById("mazeStatusMessage");
+      const hint = document.getElementById("mazeStatusHint");
+
+      if (!dot || !label || !msg) return;
+
+      if (snap.status === 'RETURN_TO_START') {
+        dot.className = "h-2.5 w-2.5 shrink-0 rounded-full bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.9)] animate-pulse";
+        label.innerText = "Wrong Key";
+        label.className = "text-[9px] font-bold uppercase tracking-[0.24em] text-red-300";
+        msg.innerText = "Wrong key rejected! Follow the glowing path back to START.";
+        if (hint) hint.innerText = "FOLLOW RED PATH BACK TO START";
+      } else if (snap.status === 'SUCCESS') {
+        dot.className = "h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.9)]";
+        label.innerText = "Complete";
+        label.className = "text-[9px] font-bold uppercase tracking-[0.24em] text-emerald-300";
+        msg.innerText = "Authentic key found! Stage 02 complete.";
+        if (hint) hint.innerText = "PROCEED TO STAGE 03";
+      } else {
+        if (mazeRiddleSolved && snap.correctKey) {
+          const colorStyles = {
+            RED:    { dot: "bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.9)]", text: "text-rose-400" },
+            BLUE:   { dot: "bg-sky-400 shadow-[0_0_12px_rgba(56,189,248,0.9)]", text: "text-sky-300" },
+            GREEN:  { dot: "bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.9)]", text: "text-emerald-300" },
+            YELLOW: { dot: "bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.9)]", text: "text-amber-300" },
+          };
+          const cs = colorStyles[snap.correctKey] || { dot: "bg-cyan-400 shadow-[0_0_12px_rgba(79,216,255,0.9)]", text: "text-cyan-300" };
+          dot.className = `h-2.5 w-2.5 shrink-0 rounded-full ${cs.dot} animate-pulse`;
+          label.innerText = "Target Locked";
+          label.className = `text-[9px] font-bold uppercase tracking-[0.24em] ${cs.text}`;
+          msg.innerHTML = `Find the <strong class="${cs.text} font-bold">${snap.correctKey}</strong> key hidden in the fog.`;
+          if (hint) hint.innerText = `TARGET: ${snap.correctKey} KEY`;
+        } else {
+          dot.className = "h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(79,216,255,0.9)] animate-pulse";
+          label.innerText = "Objective (Brute Force)";
+          label.className = "text-[9px] font-bold uppercase tracking-[0.24em] text-white/50";
+          msg.innerText = "Find the authentic key. Test keys or click 📜 Riddle Clue above!";
+          if (hint) hint.innerText = "4 KEYS · BRUTE FORCE OR SOLVE RIDDLE";
+        }
+      }
+    }
+
+    function mazeLoop(now) {
+      const lvl2 = document.getElementById("viewLevel2");
+      if (!lvl2 || lvl2.classList.contains("hidden")) {
+        mazeAnimId = null;
+        return;
+      }
+
+      const dt = Math.min(now - mazeLastTime, 100);
+      mazeLastTime = now;
+
+      if (mazeEngine) {
+        mazeEngine.update(dt);
+        const canvas = document.getElementById("mazeCanvas");
+        if (canvas && mazeLightCanvas) {
+          const ctx = canvas.getContext("2d");
+          const lightCtx = mazeLightCanvas.getContext("2d");
+          BrainBreakerMaze.renderScene(ctx, lightCtx, mazeEngine.state, canvas.width, canvas.height, now);
+        }
+        updateMazeHud(mazeEngine.getSnapshot());
+      }
+
+      mazeAnimId = requestAnimationFrame(mazeLoop);
+    }
+
+    // ── Team state ────────────────────────────────────────────────────────────
+    async function loadTeamState() {
+      if (!currentToken) return;
+      try {
+        const res = await fetch(`/api/state?token=${encodeURIComponent(currentToken)}`);
+        if (res.status === 401) {
+          handleLogout(); return;
         }
         const state = await res.json();
         cachedTeamState = state;
-        renderDashboard(state);
+        currentLevel    = state.current_level || 1;
+        document.getElementById("levelBadgeText").innerText = `Level ${currentLevel}`;
+
+        if (currentLevel > 1) {
+          routeToLevel(currentLevel, state);
+        } else {
+          renderDashboard(state);
+        }
       } catch (err) {
         console.error("Error fetching state:", err);
       }
@@ -634,13 +1407,16 @@
     function renderDashboard(state) {
       applyLockState(state);
       if (gameLocked) return;
+      // Sync anticheat setting from server state
+      anticheatEnabled = !!state.anticheat_enabled;
 
-      document.getElementById("playerName").innerText = state.team_name;
+      document.getElementById("playerName").innerText   = state.team_name;
       document.getElementById("playerAvatar").innerText = state.avatar || "🚀";
       document.getElementById("ticketTeamTag").innerText = `TEAM: ${state.team_name.toUpperCase()}`;
+      document.getElementById("ticketSerialNo").innerText = `TICKET #TB-${Math.floor(Math.random()*9000+1000)}`;
 
-      document.getElementById("statQuestionsSolved").innerText = state.questions_solved;
-      document.getElementById("statNumbersCollected").innerText = state.numbers_collected.length;
+      document.getElementById("statQuestionsSolved").innerText  = state.questions_solved;
+      document.getElementById("statNumbersCollected").innerText = (state.numbers_collected || []).length;
       document.getElementById("statTicketNumbersHit").innerText = `${state.ticket_numbers_hit_count}/15`;
 
       renderTicketGrid(state.ticket, state.numbers_hit);
@@ -653,48 +1429,40 @@
       }
     }
 
-    // Centralized check: locks the whole screen if the admin ended the game or removed this team.
-    // Once locked, we stop bothering with fullscreen/tab-switch monitoring since the game is over for this team either way.
     function applyLockState(state) {
       if (gameLocked) return;
       if (state.removed) {
         gameLocked = true;
         document.getElementById("removedOverlay").classList.remove("hidden");
         document.getElementById("focusLostOverlay").classList.add("hidden");
-        if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (e) {} }
+        if (document.fullscreenElement) { try { document.exitFullscreen(); } catch(e) {} }
       } else if (state.game_ended) {
         gameLocked = true;
         document.getElementById("gameEndedOverlay").classList.remove("hidden");
         document.getElementById("focusLostOverlay").classList.add("hidden");
-        if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (e) {} }
+        if (document.fullscreenElement) { try { document.exitFullscreen(); } catch(e) {} }
       }
     }
 
     function renderTicketGrid(ticket, numbersHit) {
-      const grid = document.getElementById("ticketGrid");
+      const grid   = document.getElementById("ticketGrid");
       grid.innerHTML = "";
       const hitSet = new Set(numbersHit || []);
-
-      ticket.forEach((row) => {
+      ticket.forEach(row => {
         const rowDiv = document.createElement("div");
         rowDiv.className = "grid grid-cols-9 gap-1 sm:gap-2";
-
-        row.forEach((val) => {
+        row.forEach(val => {
           const cell = document.createElement("div");
           cell.className = "h-10 sm:h-12 flex items-center justify-center rounded-lg sm:rounded-xl text-sm sm:text-base font-extrabold transition-all relative select-none";
-
           if (val === null) {
             cell.className += " border border-zinc-800/80 bg-zinc-900/40 text-zinc-600 font-mono text-xs";
             cell.innerHTML = `<span>&bull;</span>`;
+          } else if (hitSet.has(val)) {
+            cell.className += " dabber-mark text-white font-mono shadow-md animate-stamp";
+            cell.innerHTML = `<span>${val}</span>`;
           } else {
-            const isHit = hitSet.has(val);
-            if (isHit) {
-              cell.className += " dabber-mark text-white font-mono shadow-md animate-stamp";
-              cell.innerHTML = `<span>${val}</span>`;
-            } else {
-              cell.className += " border border-zinc-700/80 bg-[#1c1f2b] text-zinc-100 font-mono hover:border-zinc-500 shadow-sm";
-              cell.innerHTML = `<span>${val}</span>`;
-            }
+            cell.className += " border border-zinc-700/80 bg-[#1c1f2b] text-zinc-100 font-mono hover:border-zinc-500 shadow-sm";
+            cell.innerHTML = `<span>${val}</span>`;
           }
           rowDiv.appendChild(cell);
         });
@@ -704,107 +1472,81 @@
 
     function renderCollectedNumbers(numbers) {
       const container = document.getElementById("collectedNumbersGrid");
-      const emptyMsg = document.getElementById("collectedNumbersEmpty");
-      const badge = document.getElementById("collectedCountBadge");
-
-      badge.innerText = `${numbers.length} numbers`;
-
-      if (!numbers || numbers.length === 0) {
-        emptyMsg.classList.remove("hidden");
-        container.classList.add("hidden");
-        return;
+      const emptyMsg  = document.getElementById("collectedNumbersEmpty");
+      const badge     = document.getElementById("collectedCountBadge");
+      badge.innerText = `${(numbers||[]).length} numbers`;
+      if (!numbers || !numbers.length) {
+        emptyMsg.classList.remove("hidden"); container.classList.add("hidden"); return;
       }
-
-      emptyMsg.classList.add("hidden");
-      container.classList.remove("hidden");
+      emptyMsg.classList.add("hidden"); container.classList.remove("hidden");
       container.innerHTML = "";
-
-      const reversed = [...numbers].reverse();
-      reversed.forEach(item => {
+      [...numbers].reverse().forEach(item => {
         const chip = document.createElement("div");
-        chip.className = `px-2.5 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition ${item.hit ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-zinc-800/90 text-zinc-300 border border-zinc-700/60'}`;
+        chip.className = `px-2.5 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition ${item.hit
+          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+          : 'bg-zinc-800/90 text-zinc-300 border border-zinc-700/60'}`;
         chip.innerHTML = `<span>${item.number}</span>${item.hit ? '<span class="text-[10px] text-emerald-400">✓ Hit</span>' : ''}`;
         container.appendChild(chip);
       });
     }
 
     function renderPuzzleCorner(puzzle, isWinner) {
-      const input = document.getElementById("puzzleAnswerInput");
+      const input     = document.getElementById("puzzleAnswerInput");
       const submitBtn = document.getElementById("submitAnswerBtn");
-      const skipBtn = document.getElementById("skipPuzzleBtn");
-
+      const skipBtn   = document.getElementById("skipPuzzleBtn");
       if (isWinner) {
-        document.getElementById("puzzleNumberBadge").innerText = "COMPLETE";
-        document.getElementById("puzzleCategoryBadge").innerText = "VICTORY";
-        document.getElementById("puzzleQuestionText").innerHTML = "🎉 Congratulations! You have completed all 15 numbers on your ticket and achieved Full House!";
-        input.disabled = true;
-        input.placeholder = "Full House Achieved!";
-        submitBtn.disabled = true;
+        document.getElementById("puzzleNumberBadge").innerText    = "COMPLETE";
+        document.getElementById("puzzleCategoryBadge").innerText  = "VICTORY";
+        document.getElementById("puzzleQuestionText").innerHTML   = "🎉 Full House achieved! Proceeding to Level 2...";
+        input.disabled = true; submitBtn.disabled = true; skipBtn.disabled = true;
         submitBtn.className = "flex-1 py-3.5 px-5 rounded-xl bg-zinc-700 text-zinc-400 font-bold text-sm cursor-not-allowed";
-        skipBtn.disabled = true;
         return;
       }
-
       if (!puzzle) {
         document.getElementById("puzzleQuestionText").innerText = "All puzzles have been completed!";
-        input.disabled = true;
-        submitBtn.disabled = true;
-        skipBtn.disabled = true;
+        input.disabled = true; submitBtn.disabled = true; skipBtn.disabled = true;
         return;
       }
-
-      document.getElementById("puzzleNumberBadge").innerText = `PUZZLE ${puzzle.puzzle_number}`;
+      document.getElementById("puzzleNumberBadge").innerText   = `PUZZLE ${puzzle.puzzle_number}`;
       document.getElementById("puzzleCategoryBadge").innerText = puzzle.category || "PUZZLE";
-      
-      const catBadge = document.getElementById("puzzleCategoryBadge");
       const cat = (puzzle.category || "").toUpperCase();
-      if (cat === "CODING") {
-        catBadge.className = "text-xs font-bold uppercase tracking-wide bg-blue-600/20 text-blue-400 border border-blue-500/30 px-2.5 py-0.5 rounded-md";
-      } else if (cat === "APTITUDE") {
-        catBadge.className = "text-xs font-bold uppercase tracking-wide bg-amber-600/20 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-md";
-      } else if (cat === "MATH") {
-        catBadge.className = "text-xs font-bold uppercase tracking-wide bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-md";
-      } else if (cat === "REASONING") {
-        catBadge.className = "text-xs font-bold uppercase tracking-wide bg-cyan-600/20 text-cyan-400 border border-cyan-500/30 px-2.5 py-0.5 rounded-md";
-      } else {
-        catBadge.className = "text-xs font-bold uppercase tracking-wide bg-purple-600/20 text-purple-400 border border-purple-500/30 px-2.5 py-0.5 rounded-md";
-      }
-
+      const catBadge = document.getElementById("puzzleCategoryBadge");
+      const catStyles = {
+        "CODING":    "text-xs font-bold uppercase tracking-wide bg-blue-600/20 text-blue-400 border border-blue-500/30 px-2.5 py-0.5 rounded-md",
+        "APTITUDE":  "text-xs font-bold uppercase tracking-wide bg-amber-600/20 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-md",
+        "MATH":      "text-xs font-bold uppercase tracking-wide bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-md",
+        "REASONING": "text-xs font-bold uppercase tracking-wide bg-cyan-600/20 text-cyan-400 border border-cyan-500/30 px-2.5 py-0.5 rounded-md",
+      };
+      catBadge.className = catStyles[cat] || "text-xs font-bold uppercase tracking-wide bg-purple-600/20 text-purple-400 border border-purple-500/30 px-2.5 py-0.5 rounded-md";
       document.getElementById("puzzleQuestionText").innerText = puzzle.question;
-
-      input.disabled = false;
-      input.value = "";
-      input.focus();
-      submitBtn.disabled = false;
-      skipBtn.disabled = false;
+      input.disabled = false; input.value = ""; input.focus();
+      submitBtn.disabled = false; skipBtn.disabled = false;
       submitBtn.className = "flex-1 py-3.5 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition transform active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer";
     }
 
+    // ── Submit answer ─────────────────────────────────────────────────────────
     async function handleAnswerSubmit(e) {
       e.preventDefault();
       if (gameLocked) return;
-      const input = document.getElementById("puzzleAnswerInput");
+      const input  = document.getElementById("puzzleAnswerInput");
       const answer = input.value.trim();
-      if (!answer || !currentTeam) return;
+      if (!answer || !currentToken) return;
 
       const submitBtn = document.getElementById("submitAnswerBtn");
       submitBtn.disabled = true;
       submitBtn.innerText = "Checking...";
 
       try {
-        const res = await fetch("/api/submit-answer", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ team_name: currentTeam, answer: answer })
+        const res    = await fetch("/api/submit-answer", {
+          method:  "POST",
+          headers: {"Content-Type": "application/json"},
+          body:    JSON.stringify({token: currentToken, answer}),
         });
         const result = await res.json();
         submitBtn.disabled = false;
         submitBtn.innerHTML = `<span>Submit answer</span> <span class="text-base">&nearr;</span>`;
 
-        if (result.game_ended || result.removed) {
-          applyLockState(result);
-          return;
-        }
+        if (result.game_ended || result.removed) { applyLockState(result); return; }
 
         const feedbackBox = document.getElementById("answerFeedback");
         const feedbackMsg = document.getElementById("feedbackMessage");
@@ -812,24 +1554,27 @@
 
         if (result.correct) {
           playDabberSound(result.hit);
-
           if (result.hit) {
             feedbackBox.className = "mb-5 p-3.5 rounded-xl text-xs font-bold flex items-center justify-between bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
-            feedbackMsg.innerHTML = `<span>🎯 <strong>CORRECT!</strong> Random number awarded: <span class="font-mono text-base text-white px-2 py-0.5 rounded bg-emerald-600">${result.awarded_number}</span> — <strong>MATCHED YOUR TICKET!</strong></span>`;
+            feedbackMsg.innerHTML = `<span>🎯 <strong>CORRECT!</strong> Awarded: <span class="font-mono text-base text-white px-2 py-0.5 rounded bg-emerald-600">${result.awarded_number}</span> — <strong>MATCHED YOUR TICKET!</strong></span>`;
           } else {
             feedbackBox.className = "mb-5 p-3.5 rounded-xl text-xs font-bold flex items-center justify-between bg-blue-500/20 text-blue-300 border border-blue-500/40";
-            feedbackMsg.innerHTML = `<span>💡 <strong>CORRECT!</strong> Random number awarded: <span class="font-mono text-base text-white px-2 py-0.5 rounded bg-blue-600">${result.awarded_number}</span> (Added to your collection tray)</span>`;
+            feedbackMsg.innerHTML = `<span>💡 <strong>CORRECT!</strong> Awarded: <span class="font-mono text-base text-white px-2 py-0.5 rounded bg-blue-600">${result.awarded_number}</span> (Added to collection tray)</span>`;
           }
-
           loadTeamState();
-
-          if (result.is_winner) {
+          if (result.level_completed) {
+            setTimeout(() => {
+              document.getElementById("winnerModal").classList.add("hidden");
+              showLevelCompleteScreen();
+            }, 3500);
+          }
+          if (result.is_winner && !result.level_completed) {
             showWinnerCelebration(cachedTeamState);
           }
         } else {
           playTone(220, 'sawtooth', 0.25);
           feedbackBox.className = "mb-5 p-3.5 rounded-xl text-xs font-bold flex items-center justify-between bg-red-500/20 text-red-300 border border-red-500/40";
-          feedbackMsg.innerHTML = `<span>❌ ${result.message || 'Incorrect answer. Try again, or click Skip Puzzle!'}</span>`;
+          feedbackMsg.innerHTML = `<span>❌ ${result.message || 'Incorrect answer. Try again!'}</span>`;
           input.select();
         }
       } catch (err) {
@@ -839,60 +1584,52 @@
       }
     }
 
+    // ── Skip puzzle ───────────────────────────────────────────────────────────
     async function handleSkipPuzzle() {
-      if (!currentTeam || gameLocked) return;
-
+      if (!currentToken || gameLocked) return;
       const skipBtn = document.getElementById("skipPuzzleBtn");
-      skipBtn.disabled = true;
-      skipBtn.innerText = "Skipping...";
-
+      skipBtn.disabled = true; skipBtn.innerText = "Skipping...";
       try {
-        const res = await fetch("/api/skip-puzzle", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ team_name: currentTeam })
+        const res  = await fetch("/api/skip-puzzle", {
+          method:  "POST",
+          headers: {"Content-Type": "application/json"},
+          body:    JSON.stringify({token: currentToken}),
         });
         const data = await res.json();
-        skipBtn.disabled = false;
-        skipBtn.innerText = "Skip Puzzle ⏭";
-
-        if (data.game_ended || data.removed) {
-          applyLockState(data);
-          return;
-        }
-
+        skipBtn.disabled = false; skipBtn.innerHTML = "Skip ⏭";
+        if (data.game_ended || data.removed) { applyLockState(data); return; }
         if (data.success) {
           document.getElementById("answerFeedback").classList.add("hidden");
           loadTeamState();
         }
       } catch (err) {
-        skipBtn.disabled = false;
-        skipBtn.innerText = "Skip Puzzle ⏭";
-        console.error(err);
+        skipBtn.disabled = false; skipBtn.innerHTML = "Skip ⏭";
       }
     }
 
+    // ── Winner celebration ────────────────────────────────────────────────
     function showWinnerCelebration(state) {
+      if (!state) return;
       playHousieFanfare();
-      document.getElementById("winnerTeamName").innerText = state.team_name;
+      document.getElementById("winnerTeamName").innerText      = state.team_name;
       document.getElementById("winnerQuestionsCount").innerText = state.questions_solved;
-      document.getElementById("winnerCollectedCount").innerText = state.numbers_collected.length;
+      document.getElementById("winnerCollectedCount").innerText = (state.numbers_collected||[]).length;
       document.getElementById("winnerModal").classList.remove("hidden");
-
       if (typeof confetti === 'function') {
         const end = Date.now() + 3500;
-        const interval = setInterval(() => {
-          if (Date.now() > end) return clearInterval(interval);
-          confetti({
-            startVelocity: 30,
-            spread: 360,
-            ticks: 60,
-            origin: { x: Math.random(), y: Math.random() - 0.2 }
-          });
+        const iv  = setInterval(() => {
+          if (Date.now() > end) return clearInterval(iv);
+          confetti({ startVelocity:30, spread:360, ticks:60, origin:{x:Math.random(),y:Math.random()-0.2} });
         }, 300);
       }
     }
 
+    function handleLevelComplete() {
+      document.getElementById("winnerModal").classList.add("hidden");
+      loadTeamState();
+    }
+
+    // ── SSE ───────────────────────────────────────────────────────────────────
     function setupSSE() {
       if (eventSource) eventSource.close();
       try {
@@ -901,92 +1638,87 @@
           try {
             const event = JSON.parse(e.data);
             if (event.type === "admin_broadcast") {
-              const banner = document.getElementById("broadcastBanner");
-              const text = document.getElementById("broadcastText");
-              text.innerText = event.data?.message || "";
-              banner.classList.remove("hidden");
+              document.getElementById("broadcastText").innerText = event.data?.message || "";
+              document.getElementById("broadcastBanner").classList.remove("hidden");
               playTone(440, 'sine', 0.2);
-            } else if (event.type === "game_reset") {
-              if (currentTeam) loadTeamState();
-            } else if (event.type === "game_ended") {
-              if (currentTeam) loadTeamState();
+            } else if (event.type === "anticheat_changed") {
+              // Admin toggled anti-cheat in real time
+              const wasEnabled = anticheatEnabled;
+              anticheatEnabled = !!event.data?.enabled;
+              // If turned off, dismiss the focus-lost overlay immediately
+              if (wasEnabled && !anticheatEnabled) {
+                awayFromGame = false;
+                document.getElementById("focusLostOverlay").classList.add("hidden");
+                if (document.fullscreenElement) { try { document.exitFullscreen(); } catch(e) {} }
+              }
+            } else if (["game_reset","game_ended","game_resumed","team_level_changed"].includes(event.type)) {
+              if (currentToken) loadTeamState();
             } else if (event.type === "team_removed") {
-              if (currentTeam && event.data?.team_name === currentTeam) loadTeamState();
+              if (currentToken) loadTeamState();
             }
-          } catch (err) {}
+          } catch(err) {}
         };
-      } catch (err) {}
+      } catch(err) {}
     }
 
-    // ---------------------------------------------------------------
-    // Anti-cheat: fullscreen lock + tab-switch / focus-loss detection
-    // (Honest limitation: this deters casual cheating and flags it to
-    // the admin — a browser cannot block opening another app/device.)
-    // ---------------------------------------------------------------
+    // ── Anti-cheat ────────────────────────────────────────────────────────────
+    // All enforcement is strictly gated on anticheatEnabled, which is set
+    // by the server and toggled live by admin via SSE.
     function requestGameFullscreen() {
+      if (!anticheatEnabled) return;
       const el = document.documentElement;
-      try {
-        const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-        if (req) req.call(el).catch(() => {});
-      } catch (err) {}
+      const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+      if (req) req.call(el).catch(() => {});
     }
-
     function isInFullscreen() {
       return !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
     }
-
     async function reportTabViolation() {
-      if (!currentTeam) return;
+      if (!anticheatEnabled || !currentToken) return;
       try {
-        const res = await fetch("/api/tab-violation", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ team_name: currentTeam })
+        const res  = await fetch("/api/tab-violation", {
+          method:  "POST",
+          headers: {"Content-Type": "application/json"},
+          body:    JSON.stringify({token: currentToken}),
         });
         const data = await res.json();
         if (data.tab_switch_count) {
           document.getElementById("violationCount").innerText = data.tab_switch_count;
         }
-      } catch (err) {}
+      } catch(err) {}
     }
-
     function flagFocusLost() {
-      if (gameLocked || awayFromGame || !currentTeam) return;
-      // Only enforce once the player is actually in the game (not on the login screen)
+      if (!anticheatEnabled) return;
+      if (gameLocked || awayFromGame || !currentToken) return;
       if (document.getElementById("viewDashboard").classList.contains("hidden")) return;
       awayFromGame = true;
       document.getElementById("focusLostOverlay").classList.remove("hidden");
       reportTabViolation();
     }
-
     function returnToGame() {
       awayFromGame = false;
       document.getElementById("focusLostOverlay").classList.add("hidden");
-      requestGameFullscreen();
+      if (anticheatEnabled) requestGameFullscreen();
     }
 
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) flagFocusLost();
-    });
-    window.addEventListener("blur", () => flagFocusLost());
-    document.addEventListener("fullscreenchange", () => {
-      if (!isInFullscreen()) flagFocusLost();
-    });
-    document.addEventListener("webkitfullscreenchange", () => {
-      if (!isInFullscreen()) flagFocusLost();
-    });
+    document.addEventListener("visibilitychange", () => { if (anticheatEnabled && document.hidden) flagFocusLost(); });
+    window.addEventListener("blur", () => { if (anticheatEnabled) flagFocusLost(); });
+    document.addEventListener("fullscreenchange",       () => { if (anticheatEnabled && !isInFullscreen()) flagFocusLost(); });
+    document.addEventListener("webkitfullscreenchange", () => { if (anticheatEnabled && !isInFullscreen()) flagFocusLost(); });
     document.addEventListener("contextmenu", (e) => {
-      if (!document.getElementById("viewDashboard").classList.contains("hidden")) e.preventDefault();
+      if (anticheatEnabled && !document.getElementById("viewDashboard").classList.contains("hidden")) e.preventDefault();
     });
 
+    // ── Init ──────────────────────────────────────────────────────────────────
     window.addEventListener("DOMContentLoaded", () => {
-      renderAvatarPicker();
       setupSSE();
-
-      if (currentTeam) {
-        showDashboardView();
+      if (currentToken) {
+        // Restore session — validate with server
+        document.getElementById("logoutBtn").classList.remove("hidden");
+        showView("viewDashboard"); // temp, loadTeamState will redirect if needed
+        loadTeamState();
       } else {
-        showLoginView();
+        showView("viewLogin");
       }
     });
   </script>

@@ -3,51 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Control Center - Tambola Puzzle Arena</title>
+  <title>Admin Control Center — Brain Breaker</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-
   <script>
     tailwind.config = {
       darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-            ticket: ['Courier Prime', 'monospace']
-          }
-        }
-      }
+      theme: { extend: { fontFamily: { sans: ['Inter','sans-serif'], mono: ['JetBrains Mono','monospace'], ticket: ['Courier Prime','monospace'] } } }
     }
   </script>
-
   <style>
-    /* Authentic ticket perforation notches */
-    .ticket-perforated {
-      position: relative;
-    }
+    .ticket-perforated { position: relative; }
     .ticket-perforated::before, .ticket-perforated::after {
-      content: '';
-      position: absolute;
-      width: 18px;
-      height: 18px;
-      background-color: #151821;
-      border-radius: 50%;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 10;
+      content:''; position:absolute; width:18px; height:18px;
+      background-color:#151821; border-radius:50%; top:50%;
+      transform:translateY(-50%); z-index:10;
     }
-    .ticket-perforated::before { left: -9px; }
-    .ticket-perforated::after { right: -9px; }
-
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #12141a; }
-    ::-webkit-scrollbar-thumb { background: #2a2f3f; border-radius: 3px; }
-
-    /* Admin control center motion polish */
+    .ticket-perforated::before { left:-9px; }
+    .ticket-perforated::after  { right:-9px; }
+    ::-webkit-scrollbar { width:6px; height:6px; }
+    ::-webkit-scrollbar-track { background:#12141a; }
+    ::-webkit-scrollbar-thumb { background:#2a2f3f; border-radius:3px; }
     body {
       isolation: isolate;
       background-image:
@@ -56,126 +34,91 @@
       background-size: 150% 150%;
       animation: admin-ambient 26s ease-in-out infinite alternate;
     }
-    main > *, section, article {
-      animation: admin-rise .55s cubic-bezier(.2,.75,.25,1) both;
-    }
-    button {
-      transition: transform .18s ease, filter .18s ease, box-shadow .18s ease;
-    }
-    button:not(:disabled):hover {
-      transform: translateY(-2px);
-      filter: brightness(1.08);
-    }
+    main > *, section, article { animation: admin-rise .55s cubic-bezier(.2,.75,.25,1) both; }
+    button { transition: transform .18s ease, filter .18s ease, box-shadow .18s ease; }
+    button:not(:disabled):hover { transform: translateY(-2px); filter: brightness(1.08); }
     button:not(:disabled):active { transform: scale(.98); }
-    @keyframes admin-ambient {
-      from { background-position: 0% 0%; }
-      to { background-position: 100% 100%; }
+    @keyframes admin-ambient { from{background-position:0% 0%;} to{background-position:100% 100%;} }
+    @keyframes admin-rise    { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+    @media (prefers-reduced-motion:reduce) {
+      *,*::before,*::after { animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; }
     }
-    @keyframes admin-rise {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: .01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: .01ms !important;
-      }
-    }
-
   </style>
 </head>
 <body class="bg-[#0d0f12] text-zinc-100 font-sans min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
 
-  <!-- TOP HEADER -->
+  <!-- HEADER -->
   <header class="border-b border-zinc-800/80 bg-[#12141a]/95 backdrop-blur sticky top-0 z-40 px-4 sm:px-8 py-3.5 flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-xl font-bold">
-        🛡️
-      </div>
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-xl font-bold">🛡️</div>
       <div>
         <h1 class="text-base font-black tracking-tight text-white flex items-center gap-2">
           ADMIN <span class="text-indigo-400 font-black">CONTROL CENTER</span>
         </h1>
-        <p class="text-xs text-zinc-400">Tambola Puzzle Arena Live Master</p>
+        <p class="text-xs text-zinc-400">Brain Breaker — Live Master</p>
       </div>
     </div>
-
     <div id="adminHeaderActions" class="hidden flex items-center gap-3">
       <span class="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> LIVE SYNC
       </span>
-      <button onclick="handleLogout()" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-xs border border-zinc-700 transition">
-        Logout
-      </button>
+      <button onclick="handleLogout()" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-xs border border-zinc-700 transition">Logout</button>
     </div>
   </header>
 
-  <!-- Live Violation Toast Notifications -->
+  <!-- VIOLATION TOASTS -->
   <div id="violationToastContainer" class="fixed top-4 right-4 z-[80] flex flex-col gap-2 w-72 max-w-[90vw]"></div>
 
-  <!-- MAIN WRAPPER -->
   <main class="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
 
-    <!-- ============================================================= -->
-    <!-- VIEW 1: PASSWORD GATE (Requires BMS123)                        -->
-    <!-- ============================================================= -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- VIEW 1: ADMIN LOGIN                                    -->
+    <!-- ═══════════════════════════════════════════════════════ -->
     <section id="adminLoginSection" class="max-w-md mx-auto my-12 sm:my-20">
       <div class="bg-[#151821] border border-zinc-800 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
         <div class="text-center mb-6">
-          <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-2xl mb-3">
-            🔒
-          </div>
+          <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-2xl mb-3">🔒</div>
           <h2 class="text-2xl font-black text-white">Admin Authentication</h2>
-          <p class="text-xs text-zinc-400 mt-1">Enter your admin passcode to access real-time team tracking.</p>
+          <p class="text-xs text-zinc-400 mt-1">Enter your admin passcode to access the control center.</p>
         </div>
-
         <form onsubmit="handleAdminLogin(event)" class="space-y-4">
           <div>
             <label class="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">Admin Passcode</label>
-            <input 
-              type="password" 
-              id="adminPasswordInput" 
-              required
-              placeholder="Enter passcode..."
-              class="w-full bg-[#0e1017] border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 font-mono tracking-wider transition"
-            />
+            <input type="password" id="adminPasswordInput" required placeholder="Enter passcode..."
+              class="w-full bg-[#0e1017] border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 font-mono tracking-wider transition" />
           </div>
-
           <div id="loginErrorMsg" class="hidden text-xs text-red-400 font-semibold bg-red-500/10 p-2.5 rounded-lg border border-red-500/30">
             Incorrect passcode! Please try again.
           </div>
-
-          <button 
-            type="submit" 
-            class="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition cursor-pointer"
-          >
+          <button type="submit" class="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition cursor-pointer">
             Access Admin Portal &rarr;
           </button>
         </form>
       </div>
     </section>
 
-    <!-- ============================================================= -->
-    <!-- VIEW 2: ADMIN LIVE DASHBOARD                                   -->
-    <!-- ============================================================= -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- VIEW 2: ADMIN DASHBOARD                               -->
+    <!-- ═══════════════════════════════════════════════════════ -->
     <section id="adminDashboardSection" class="hidden space-y-6">
-      
-      <!-- Game Ended Banner -->
+
+      <!-- Game ended banner -->
       <div id="gameEndedBanner" class="hidden bg-indigo-600/15 border border-indigo-500/40 text-indigo-300 text-xs font-bold px-5 py-3 rounded-2xl flex items-center gap-2">
         <span>🏁</span> Game has been ended — players can no longer submit answers or register.
       </div>
 
-      <!-- Top Action Bar -->
+      <!-- Top action bar -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#14161f] border border-zinc-800/80 p-5 rounded-2xl">
         <div>
-          <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Live Team Tracking & Standings</h2>
-          <p class="text-xs text-zinc-400 mt-1">Real-time status of all participating teams, ticket numbers hit, and questions answered.</p>
+          <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight">Live Team Tracking &amp; Standings</h2>
+          <p class="text-xs text-zinc-400 mt-1">Real-time status of all teams across all levels.</p>
         </div>
-
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <button onclick="refreshAdminData()" class="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold border border-zinc-700 transition flex items-center gap-1.5 cursor-pointer">
             <span>🔄</span> Refresh
+          </button>
+          <button onclick="openCreateTeamModal()" class="px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition flex items-center gap-1.5 cursor-pointer">
+            <span>➕</span> Create Team
           </button>
           <button onclick="openBroadcastModal()" class="px-3.5 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold border border-indigo-500/30 transition flex items-center gap-1.5 cursor-pointer">
             <span>📢</span> Announce
@@ -183,14 +126,28 @@
           <button id="endGameBtn" onclick="toggleEndGame()" class="px-3.5 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold border border-indigo-500/30 transition flex items-center gap-1.5 cursor-pointer">
             <span>🏁</span> End Game
           </button>
+          <button id="anticheatBtn" onclick="toggleAnticheat()" class="px-3.5 py-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 text-xs font-semibold border border-zinc-700/60 transition flex items-center gap-1.5 cursor-pointer" title="Toggle tab-switch and fullscreen enforcement for all teams">
+            <span>🛡️</span> Anti-Cheat: OFF
+          </button>
+          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-800/80 border border-zinc-700/60 text-xs font-semibold text-zinc-300 shadow-sm" title="Probability that solving a puzzle awards an unhit ticket number">
+            <span class="text-amber-400">🎯 Hit Rate:</span>
+            <select id="adminHitRateSelect" onchange="handleHitRateChange(this.value)" class="bg-[#0e111a] border border-zinc-700 rounded-lg px-2 py-1 text-xs text-amber-300 font-mono font-bold focus:outline-none focus:border-amber-400 cursor-pointer">
+              <option value="1.0">100% (Instant)</option>
+              <option value="0.85">85% (Fast)</option>
+              <option value="0.7">70% (Standard)</option>
+              <option value="0.5">50% (Balanced)</option>
+              <option value="0.3">30% (Challenging)</option>
+              <option value="custom">Custom...</option>
+            </select>
+          </div>
           <button onclick="confirmResetAll()" class="px-3.5 py-2 rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-300 text-xs font-semibold border border-red-500/30 transition flex items-center gap-1.5 cursor-pointer">
-            <span>⚠️</span> Reset Game
+            <span>⚠️</span> Reset All
           </button>
         </div>
       </div>
 
-      <!-- Key Metrics Overview -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <!-- Key metrics -->
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
         <div class="bg-[#14161f] border border-zinc-800/80 p-4 rounded-xl">
           <div class="text-xs text-zinc-400 font-medium">Total Teams</div>
           <div id="adminTotalTeams" class="text-2xl font-black text-white mt-1">0</div>
@@ -204,96 +161,134 @@
           <div id="adminLeaderName" class="text-lg font-bold text-amber-400 mt-1 truncate">None</div>
         </div>
         <div class="bg-[#14161f] border border-zinc-800/80 p-4 rounded-xl">
-          <div class="text-xs text-zinc-400 font-medium">Full House Claimed</div>
-          <div id="adminWinnersCount" class="text-2xl font-black text-emerald-400 mt-1">0</div>
+          <div class="text-xs text-zinc-400 font-medium">Housie Winners (R1)</div>
+          <div id="adminWinnersCount" class="text-2xl font-black text-cyan-400 mt-1">0</div>
+        </div>
+        <div class="bg-[#14161f] border border-emerald-500/30 bg-emerald-950/20 p-4 rounded-xl">
+          <div class="text-xs text-emerald-400 font-medium flex items-center gap-1"><span>🔥</span> In Round 3</div>
+          <div id="adminRound3Count" class="text-2xl font-black text-emerald-400 mt-1">0</div>
         </div>
       </div>
 
-      <!-- Live Teams Standings Table -->
+      <!-- Teams table -->
       <div class="bg-[#14161f] border border-zinc-800/80 rounded-2xl overflow-hidden shadow-xl">
         <div class="px-5 py-4 border-b border-zinc-800/80 flex items-center justify-between">
           <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-300">Live Team Progress</h3>
           <span class="text-xs text-zinc-400 font-mono">Ranked by Ticket Numbers Hit</span>
         </div>
-
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
             <thead class="bg-[#11131a] text-zinc-400 border-b border-zinc-800/80 uppercase font-semibold text-[11px] tracking-wider">
               <tr>
                 <th class="py-3.5 px-4">Rank</th>
                 <th class="py-3.5 px-4">Team</th>
-                <th class="py-3.5 px-4">Ticket Numbers Hit (15 max)</th>
-                <th class="py-3.5 px-4">Questions Solved</th>
-                <th class="py-3.5 px-4">Questions Skipped</th>
-                <th class="py-3.5 px-4">Numbers Collected</th>
+                <th class="py-3.5 px-4">Level</th>
+                <th class="py-3.5 px-4">Ticket Hit (15 max)</th>
+                <th class="py-3.5 px-4">Solved</th>
+                <th class="py-3.5 px-4">Skipped</th>
+                <th class="py-3.5 px-4">Violations</th>
                 <th class="py-3.5 px-4">Status</th>
                 <th class="py-3.5 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody id="adminTeamsTableBody" class="divide-y divide-zinc-800/60">
-              <!-- Populated via JS -->
-            </tbody>
+            <tbody id="adminTeamsTableBody" class="divide-y divide-zinc-800/60"></tbody>
           </table>
         </div>
-
         <div id="adminNoTeamsMessage" class="py-12 text-center text-zinc-500 text-xs">
-          No teams registered yet. Open the player website to join!
+          No teams registered yet. Use <strong class="text-zinc-400">Create Team</strong> to add teams.
         </div>
       </div>
 
     </section>
   </main>
 
-  <!-- ============================================================= -->
-  <!-- MODAL: TEAM TICKET INSPECTOR                                   -->
-  <!-- ============================================================= -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- MODAL: CREATE TEAM                                     -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <div id="createTeamModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-[#151821] border border-zinc-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2"><span>➕</span> Create New Team</h3>
+        <button onclick="closeCreateTeamModal()" class="text-zinc-400 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+
+      <div id="createTeamError" class="hidden text-xs text-red-400 font-semibold bg-red-500/10 p-2.5 rounded-lg border border-red-500/30"></div>
+      <div id="createTeamSuccess" class="hidden text-xs text-emerald-400 font-semibold bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/30"></div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">Team Display Name</label>
+          <input type="text" id="ctTeamName" maxlength="30" placeholder="e.g. Code Ninjas"
+            class="w-full bg-[#0e1017] border border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">Login Username</label>
+          <input type="text" id="ctUsername" maxlength="30" placeholder="e.g. team01"
+            class="w-full bg-[#0e1017] border border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition font-mono" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">Password</label>
+          <input type="text" id="ctPassword" maxlength="30" placeholder="e.g. brk2024"
+            class="w-full bg-[#0e1017] border border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition font-mono" />
+          <p class="text-[10px] text-zinc-500 mt-1">Visible so you can hand it to the team.</p>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Avatar</label>
+          <div id="ctAvatarPicker" class="grid grid-cols-6 gap-2"></div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Team Color</label>
+          <div id="ctColorPicker" class="flex flex-wrap gap-2"></div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeCreateTeamModal()" class="px-4 py-2 rounded-xl bg-zinc-800 text-xs font-semibold text-zinc-300">Cancel</button>
+        <button onclick="submitCreateTeam()" id="ctSubmitBtn" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-lg shadow-emerald-600/20 transition cursor-pointer">
+          Create Team
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- MODAL: TEAM TICKET INSPECTOR                          -->
+  <!-- ═══════════════════════════════════════════════════════ -->
   <div id="inspectModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-[#151821] border border-zinc-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4">
       <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
         <div>
-          <h3 class="text-lg font-bold text-white flex items-center gap-2">
-            <span>🔍</span> <span id="inspectTeamName">Team Inspector</span>
-          </h3>
-          <p class="text-xs text-zinc-400 mt-0.5">Live view of the team's 3x9 ticket and collected numbers pool</p>
+          <h3 class="text-lg font-bold text-white flex items-center gap-2"><span>🔍</span> <span id="inspectTeamName">Team Inspector</span></h3>
+          <p class="text-xs text-zinc-400 mt-0.5">Live view of the team's 3×9 ticket and collected numbers</p>
         </div>
         <button onclick="closeInspectModal()" class="text-zinc-400 hover:text-white text-xl font-bold">&times;</button>
       </div>
-
-      <!-- Ticket display -->
       <div class="p-3 rounded-xl border border-zinc-700/60 bg-[#171922] ticket-perforated">
-        <div id="inspectTicketGrid" class="grid grid-rows-3 gap-1.5">
-          <!-- Dynamically populated -->
-        </div>
+        <div id="inspectTicketGrid" class="grid grid-rows-3 gap-1.5"></div>
       </div>
-
-      <!-- Numbers drawn list -->
       <div>
         <div class="text-xs font-bold uppercase text-zinc-400 mb-2">Collected Numbers Stream:</div>
-        <div id="inspectNumbersList" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1">
-          <!-- Chips -->
-        </div>
+        <div id="inspectNumbersList" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1"></div>
       </div>
-
       <div class="flex justify-end pt-2">
         <button onclick="closeInspectModal()" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-300">Close</button>
       </div>
     </div>
   </div>
 
-  <!-- ============================================================= -->
-  <!-- MODAL: BROADCAST ANNOUNCEMENT                                 -->
-  <!-- ============================================================= -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- MODAL: BROADCAST                                       -->
+  <!-- ═══════════════════════════════════════════════════════ -->
   <div id="broadcastModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-[#151821] border border-zinc-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
       <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-        <h3 class="text-base font-bold text-white flex items-center gap-2">
-          <span>📢</span> Send Broadcast Announcement
-        </h3>
+        <h3 class="text-base font-bold text-white flex items-center gap-2"><span>📢</span> Send Broadcast Announcement</h3>
         <button onclick="closeBroadcastModal()" class="text-zinc-400 hover:text-white">&times;</button>
       </div>
       <div>
         <label class="block text-xs font-semibold text-zinc-400 mb-1">Message to all active teams</label>
-        <textarea id="broadcastInput" rows="3" placeholder="e.g. 5 minutes remaining! Keep solving!" class="w-full bg-[#0e1017] border border-zinc-700 rounded-xl p-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500"></textarea>
+        <textarea id="broadcastInput" rows="3" placeholder="e.g. 5 minutes remaining! Keep solving!"
+          class="w-full bg-[#0e1017] border border-zinc-700 rounded-xl p-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500"></textarea>
       </div>
       <div class="flex justify-end gap-2">
         <button onclick="closeBroadcastModal()" class="px-4 py-2 rounded-xl bg-zinc-800 text-xs font-semibold text-zinc-300">Cancel</button>
@@ -303,20 +298,26 @@
   </div>
 
   <script>
-    let adminToken = sessionStorage.getItem("admin_token") || "";
-    let eventSource = null;
-    let currentGameEnded = false;
+    let adminToken        = sessionStorage.getItem("admin_token") || "";
+    let eventSource       = null;
+    let currentGameEnded  = false;
+    let anticheatEnabled  = false;  // mirrors server ANTICHEAT_ENABLED
 
+    // Create Team state
+    const AVATARS = ["🚀","⚡","🦁","🐉","🤖","🔥","💎","🎯","🦊","👑","🍕","🎮","🦅","🌊","🎸","🏆"];
+    const COLORS  = ["#6366f1","#8b5cf6","#ec4899","#f59e0b","#10b981","#3b82f6","#ef4444","#14b8a6","#f97316","#06b6d4","#84cc16","#e11d48"];
+    let ctSelectedAvatar = "🚀";
+    let ctSelectedColor  = "#6366f1";
+
+    // ── Admin Login ───────────────────────────────────────────────────────────
     async function handleAdminLogin(e) {
       e.preventDefault();
-      const pass = document.getElementById("adminPasswordInput").value.trim();
+      const pass   = document.getElementById("adminPasswordInput").value.trim();
       const errBox = document.getElementById("loginErrorMsg");
-
       try {
-        const res = await fetch("/api/admin/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ password: pass })
+        const res  = await fetch("/api/admin/login", {
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({password: pass}),
         });
         const data = await res.json();
         if (data.success) {
@@ -327,15 +328,18 @@
         } else {
           errBox.classList.remove("hidden");
         }
-      } catch (err) {
-        alert("Server unreachable. Please check if server.py is running.");
+      } catch(err) {
+        alert("Server unreachable. Check if server.py is running.");
       }
     }
 
     function handleLogout() {
       sessionStorage.removeItem("admin_token");
       adminToken = "";
-      showAdminLogin();
+      document.getElementById("adminLoginSection").classList.remove("hidden");
+      document.getElementById("adminDashboardSection").classList.add("hidden");
+      document.getElementById("adminHeaderActions").classList.add("hidden");
+      if (eventSource) eventSource.close();
     }
 
     function showAdminDashboard() {
@@ -346,24 +350,15 @@
       setupSSE();
     }
 
-    function showAdminLogin() {
-      document.getElementById("adminLoginSection").classList.remove("hidden");
-      document.getElementById("adminDashboardSection").classList.add("hidden");
-      document.getElementById("adminHeaderActions").classList.add("hidden");
-      if (eventSource) eventSource.close();
-    }
-
+    // ── Refresh data ──────────────────────────────────────────────────────────
     async function refreshAdminData() {
       if (!adminToken) return;
       try {
-        const res = await fetch(`/api/admin/teams?passcode=${encodeURIComponent(adminToken)}`);
-        if (res.status === 401) {
-          handleLogout();
-          return;
-        }
+        const res  = await fetch(`/api/admin/teams?passcode=${encodeURIComponent(adminToken)}`);
+        if (res.status === 401) { handleLogout(); return; }
         const data = await res.json();
         renderAdminDashboard(data);
-      } catch (err) {
+      } catch(err) {
         console.error("Failed to load admin data:", err);
       }
     }
@@ -372,42 +367,43 @@
       const teams = data.teams || [];
       document.getElementById("adminTotalTeams").innerText = teams.length;
 
-      const gameEnded = !!data.game_ended;
-      currentGameEnded = gameEnded;
-      const banner = document.getElementById("gameEndedBanner");
-      const endGameBtn = document.getElementById("endGameBtn");
-      if (gameEnded) {
+      currentGameEnded = !!data.game_ended;
+      anticheatEnabled  = !!data.anticheat_enabled;
+      const banner   = document.getElementById("gameEndedBanner");
+      const endBtn   = document.getElementById("endGameBtn");
+      if (currentGameEnded) {
         banner.classList.remove("hidden");
-        endGameBtn.innerHTML = `<span>▶️</span> Resume Game`;
-        endGameBtn.className = "px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition flex items-center gap-1.5 cursor-pointer";
+        endBtn.innerHTML = `<span>▶️</span> Resume Game`;
+        endBtn.className = "px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold border border-emerald-500/30 transition flex items-center gap-1.5 cursor-pointer";
       } else {
         banner.classList.add("hidden");
-        endGameBtn.innerHTML = `<span>🏁</span> End Game`;
-        endGameBtn.className = "px-3.5 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold border border-indigo-500/30 transition flex items-center gap-1.5 cursor-pointer";
+        endBtn.innerHTML = `<span>🏁</span> End Game`;
+        endBtn.className = "px-3.5 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-semibold border border-indigo-500/30 transition flex items-center gap-1.5 cursor-pointer";
+      }
+      updateAnticheatBtn();
+
+      if (data.ticket_hit_chance !== undefined) {
+        updateHitRateSelectorUI(data.ticket_hit_chance);
       }
 
-      let totalSolved = 0;
-      let winners = 0;
-      let leader = teams.length > 0 ? teams[0] : null;
-
+      let totalSolved = 0, winners = 0, round3Count = 0, leader = teams[0] || null;
       teams.forEach(t => {
         totalSolved += t.questions_solved;
         if (t.is_winner) winners++;
+        if (t.current_level >= 3) round3Count++;
       });
-
-      document.getElementById("adminTotalSolved").innerText = totalSolved;
+      document.getElementById("adminTotalSolved").innerText  = totalSolved;
       document.getElementById("adminWinnersCount").innerText = winners;
-      document.getElementById("adminLeaderName").innerText = leader 
-        ? `${leader.team_name} (${leader.numbers_hit_count}/15)` 
+      const r3El = document.getElementById("adminRound3Count");
+      if (r3El) r3El.innerText = round3Count;
+      document.getElementById("adminLeaderName").innerText   = leader
+        ? `${leader.team_name} (${leader.numbers_hit_count}/15)`
         : "None";
 
-      const tableBody = document.getElementById("adminTeamsTableBody");
-      const noTeamsMsg = document.getElementById("adminNoTeamsMessage");
-
+      const tableBody   = document.getElementById("adminTeamsTableBody");
+      const noTeamsMsg  = document.getElementById("adminNoTeamsMessage");
       if (teams.length === 0) {
-        tableBody.innerHTML = "";
-        noTeamsMsg.classList.remove("hidden");
-        return;
+        tableBody.innerHTML = ""; noTeamsMsg.classList.remove("hidden"); return;
       }
       noTeamsMsg.classList.add("hidden");
       tableBody.innerHTML = "";
@@ -416,28 +412,41 @@
         const tr = document.createElement("tr");
         tr.className = "hover:bg-[#161924] transition";
 
+        const levelColor = t.current_level >= 3 ? "text-emerald-400" : (t.current_level === 2 ? "text-cyan-400" : "text-indigo-400");
+        const levelLabel = t.current_level >= 3 ? "🏆 L3" : (t.current_level === 2 ? "🌀 L2" : "⚡ L1");
+        const mazeInfo   = t.maze_elapsed_ms > 0
+          ? `<div class="text-[10px] text-cyan-300/80 font-mono mt-0.5">⏱ ${Math.floor(t.maze_elapsed_ms/1000)}s · R${(t.maze_round||0)+1}${t.maze_won ? ' ✓' : ''}</div>`
+          : '';
+
         tr.innerHTML = `
           <td class="py-3 px-4 font-mono font-bold ${index === 0 ? 'text-amber-400' : 'text-zinc-400'}">
-            ${index === 0 ? '🥇 #1' : index === 1 ? '🥈 #2' : index === 2 ? '🥉 #3' : `#${index + 1}`}
+            ${index === 0 ? '🥇 #1' : index === 1 ? '🥈 #2' : index === 2 ? '🥉 #3' : `#${index+1}`}
           </td>
           <td class="py-3 px-4">
             <div class="flex items-center gap-2">
-              <span class="text-base">${t.avatar || '🚀'}</span>
-              <span class="font-bold text-white">${escapeHtml(t.team_name)}</span>
+              <span class="text-base">${t.avatar||'🚀'}</span>
+              <div>
+                <span class="font-bold text-white">${escapeHtml(t.team_name)}</span>
+                <div class="text-[10px] text-zinc-500 font-mono">@${escapeHtml(t.username)}</div>
+              </div>
               ${t.is_winner ? '<span class="px-2 py-0.5 text-[10px] bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/40 font-black">HOUSIE</span>' : ''}
+              ${t.maze_won ? '<span class="px-2 py-0.5 text-[10px] bg-cyan-500/20 text-cyan-300 rounded-full border border-cyan-500/40 font-black">MAZE ✓</span>' : ''}
+              ${t.current_level >= 3 ? '<span class="px-2 py-0.5 text-[10px] bg-emerald-500/25 text-emerald-300 rounded-full border border-emerald-400/60 font-black tracking-wide shadow-[0_0_10px_rgba(16,185,129,0.3)] animate-pulse">ROUND 3 (FINAL) 🔥</span>' : ''}
             </div>
+          </td>
+          <td class="py-3 px-4">
+            <span class="font-bold text-xs ${levelColor}">${levelLabel}</span>
+            ${mazeInfo}
           </td>
           <td class="py-3 px-4">
             <span class="font-bold font-mono text-emerald-400 text-sm">${t.numbers_hit_count}/15</span>
           </td>
-          <td class="py-3 px-4 font-mono font-semibold text-zinc-200">
-            ${t.questions_solved}
-          </td>
-          <td class="py-3 px-4 font-mono text-zinc-400">
-            ${t.questions_skipped || 0}
-          </td>
-          <td class="py-3 px-4 font-mono text-zinc-400">
-            ${t.numbers_collected_count} drawn
+          <td class="py-3 px-4 font-mono font-semibold text-zinc-200">${t.questions_solved}</td>
+          <td class="py-3 px-4 font-mono text-zinc-400">${t.questions_skipped||0}</td>
+          <td class="py-3 px-4">
+            ${t.tab_switch_count > 0
+              ? `<span class="font-mono text-orange-400 font-bold">${t.tab_switch_count} ⚠️</span>`
+              : `<span class="text-zinc-600 font-mono">0</span>`}
           </td>
           <td class="py-3 px-4">
             ${t.removed
@@ -446,15 +455,17 @@
           </td>
           <td class="py-3 px-4 text-right">
             <div class="flex items-center justify-end gap-1.5">
-              <button onclick="inspectTeam('${escapeHtml(t.team_name)}')" class="px-2.5 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 font-semibold text-[11px] transition">
-                Inspect
-              </button>
+              <button onclick="inspectTeam('${escapeHtml(t.team_name)}')" class="px-2.5 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 font-semibold text-[11px] transition">Inspect</button>
+              ${t.current_level === 1
+                ? `<button onclick="advanceTeamLevel('${escapeHtml(t.team_name)}',2)" class="px-2.5 py-1 rounded bg-cyan-600/15 hover:bg-cyan-600/25 text-cyan-300 border border-cyan-500/30 font-semibold text-[11px] transition" title="Promote team to Level 2">Advance L2</button>`
+                : t.current_level === 2
+                  ? `<button onclick="advanceTeamLevel('${escapeHtml(t.team_name)}',3)" class="px-2.5 py-1 rounded bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border border-emerald-500/30 font-semibold text-[11px] transition" title="Promote team to Level 3">Advance L3</button>
+                     <button onclick="advanceTeamLevel('${escapeHtml(t.team_name)}',1)" class="px-2.5 py-1 rounded bg-zinc-700/30 hover:bg-zinc-700/50 text-zinc-300 border border-zinc-600/30 font-semibold text-[11px] transition" title="Demote team back to Level 1">Demote L1</button>`
+                  : `<button onclick="advanceTeamLevel('${escapeHtml(t.team_name)}',2)" class="px-2.5 py-1 rounded bg-zinc-700/30 hover:bg-zinc-700/50 text-zinc-300 border border-zinc-600/30 font-semibold text-[11px] transition" title="Demote team back to Level 2">Demote L2</button>`}
               ${t.removed
-                ? `<button onclick="toggleRemoveTeam('${escapeHtml(t.team_name)}', false)" class="px-2.5 py-1 rounded bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 font-semibold text-[11px] transition">Reinstate</button>`
-                : `<button onclick="toggleRemoveTeam('${escapeHtml(t.team_name)}', true)" class="px-2.5 py-1 rounded bg-orange-600/10 hover:bg-orange-600/20 text-orange-400 border border-orange-500/30 font-semibold text-[11px] transition">Remove</button>`}
-              <button onclick="resetSingleTeam('${escapeHtml(t.team_name)}')" class="px-2.5 py-1 rounded bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/30 font-semibold text-[11px] transition">
-                Reset
-              </button>
+                ? `<button onclick="toggleRemoveTeam('${escapeHtml(t.team_name)}',false)" class="px-2.5 py-1 rounded bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 font-semibold text-[11px] transition">Reinstate</button>`
+                : `<button onclick="toggleRemoveTeam('${escapeHtml(t.team_name)}',true)" class="px-2.5 py-1 rounded bg-orange-600/10 hover:bg-orange-600/20 text-orange-400 border border-orange-500/30 font-semibold text-[11px] transition">Remove</button>`}
+              <button onclick="resetSingleTeam('${escapeHtml(t.team_name)}')" class="px-2.5 py-1 rounded bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/30 font-semibold text-[11px] transition">Reset</button>
             </div>
           </td>
         `;
@@ -464,36 +475,124 @@
 
     function escapeHtml(str) {
       if (!str) return '';
-      return str.replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-      }[m]));
+      return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     }
 
+    // ── Create Team modal ─────────────────────────────────────────────────────
+    function openCreateTeamModal() {
+      // Reset form
+      ["ctTeamName","ctUsername","ctPassword"].forEach(id => document.getElementById(id).value = "");
+      document.getElementById("createTeamError").classList.add("hidden");
+      document.getElementById("createTeamSuccess").classList.add("hidden");
+      ctSelectedAvatar = "🚀"; ctSelectedColor = "#6366f1";
+      renderCtAvatarPicker();
+      renderCtColorPicker();
+      document.getElementById("ctSubmitBtn").disabled = false;
+      document.getElementById("ctSubmitBtn").innerText = "Create Team";
+      document.getElementById("createTeamModal").classList.remove("hidden");
+    }
+
+    function closeCreateTeamModal() {
+      document.getElementById("createTeamModal").classList.add("hidden");
+    }
+
+    function renderCtAvatarPicker() {
+      const container = document.getElementById("ctAvatarPicker");
+      container.innerHTML = "";
+      AVATARS.forEach(av => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `p-2 rounded-xl text-xl border transition ${ctSelectedAvatar === av ? 'border-indigo-500 bg-indigo-600/20' : 'border-zinc-800 bg-[#0e1017] hover:border-zinc-700'}`;
+        btn.innerText = av;
+        btn.onclick = () => { ctSelectedAvatar = av; renderCtAvatarPicker(); };
+        container.appendChild(btn);
+      });
+    }
+
+    function renderCtColorPicker() {
+      const container = document.getElementById("ctColorPicker");
+      container.innerHTML = "";
+      COLORS.forEach(c => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        const selected = ctSelectedColor === c;
+        btn.className = `w-7 h-7 rounded-full transition border-2 ${selected ? 'border-white scale-110' : 'border-transparent hover:scale-105'}`;
+        btn.style.backgroundColor = c;
+        btn.onclick = () => { ctSelectedColor = c; renderCtColorPicker(); };
+        container.appendChild(btn);
+      });
+    }
+
+    async function submitCreateTeam() {
+      const teamName = document.getElementById("ctTeamName").value.trim();
+      const username = document.getElementById("ctUsername").value.trim();
+      const password = document.getElementById("ctPassword").value.trim();
+      const errDiv   = document.getElementById("createTeamError");
+      const okDiv    = document.getElementById("createTeamSuccess");
+      const btn      = document.getElementById("ctSubmitBtn");
+
+      errDiv.classList.add("hidden"); okDiv.classList.add("hidden");
+
+      if (!teamName || !username || !password) {
+        errDiv.innerText = "All fields are required.";
+        errDiv.classList.remove("hidden"); return;
+      }
+
+      btn.disabled = true; btn.innerText = "Creating...";
+
+      try {
+        const res  = await fetch("/api/admin/create-team", {
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({
+            passcode: adminToken, team_name: teamName,
+            username, password, avatar: ctSelectedAvatar, color: ctSelectedColor,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          okDiv.innerText = `✅ Team "${teamName}" created! Username: ${username}, Password: ${password}`;
+          okDiv.classList.remove("hidden");
+          ["ctTeamName","ctUsername","ctPassword"].forEach(id => document.getElementById(id).value = "");
+          btn.disabled = false; btn.innerText = "Create Another";
+          refreshAdminData();
+        } else {
+          errDiv.innerText = data.error || "Failed to create team.";
+          errDiv.classList.remove("hidden");
+          btn.disabled = false; btn.innerText = "Create Team";
+        }
+      } catch(err) {
+        errDiv.innerText = "Request failed: " + err;
+        errDiv.classList.remove("hidden");
+        btn.disabled = false; btn.innerText = "Create Team";
+      }
+    }
+
+    // ── Inspect team ──────────────────────────────────────────────────────────
     async function inspectTeam(teamName) {
       try {
-        const res = await fetch(`/api/state?team=${encodeURIComponent(teamName)}`);
-        const state = await res.json();
+        // Get team token from teams list (use admin-passcode to fetch state directly)
+        const res   = await fetch(`/api/admin/teams?passcode=${encodeURIComponent(adminToken)}`);
+        const data  = await res.json();
+        const team  = (data.teams || []).find(t => t.team_name === teamName);
+        if (!team) return;
 
-        document.getElementById("inspectTeamName").innerText = `${state.team_name}'s Live Ticket`;
-        const grid = document.getElementById("inspectTicketGrid");
+        document.getElementById("inspectTeamName").innerText = `${team.team_name}'s Live Ticket (Level ${team.current_level})`;
+        const grid   = document.getElementById("inspectTicketGrid");
         grid.innerHTML = "";
-        const hitSet = new Set(state.numbers_hit || []);
+        const hitSet = new Set(team.numbers_hit || []);
 
-        state.ticket.forEach(row => {
+        (team.ticket || []).forEach(row => {
           const rowDiv = document.createElement("div");
           rowDiv.className = "grid grid-cols-9 gap-1";
-          row.forEach(val => {
+          (row || []).forEach(val => {
             const cell = document.createElement("div");
             cell.className = "h-8 flex items-center justify-center rounded text-xs font-mono font-bold select-none";
             if (val === null) {
-              cell.className += " border border-zinc-800 bg-zinc-900 text-zinc-700";
-              cell.innerText = "·";
+              cell.className += " border border-zinc-800 bg-zinc-900 text-zinc-700"; cell.innerText = "·";
             } else if (hitSet.has(val)) {
-              cell.className += " bg-emerald-600 text-white font-black shadow-sm";
-              cell.innerText = val;
+              cell.className += " bg-emerald-600 text-white font-black shadow-sm"; cell.innerText = val;
             } else {
-              cell.className += " border border-zinc-700 bg-zinc-800 text-zinc-200";
-              cell.innerText = val;
+              cell.className += " border border-zinc-700 bg-zinc-800 text-zinc-200"; cell.innerText = val;
             }
             rowDiv.appendChild(cell);
           });
@@ -502,7 +601,7 @@
 
         const list = document.getElementById("inspectNumbersList");
         list.innerHTML = "";
-        (state.numbers_collected || []).forEach(item => {
+        (team.numbers_collected || []).forEach(item => {
           const chip = document.createElement("span");
           chip.className = `px-2 py-0.5 rounded text-[11px] font-mono font-semibold ${item.hit ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-zinc-800 text-zinc-400'}`;
           chip.innerText = `${item.number}${item.hit ? ' ✓' : ''}`;
@@ -510,36 +609,27 @@
         });
 
         document.getElementById("inspectModal").classList.remove("hidden");
-      } catch (err) {
-        console.error(err);
-      }
+      } catch(err) { console.error(err); }
     }
 
-    function closeInspectModal() {
-      document.getElementById("inspectModal").classList.add("hidden");
-    }
+    function closeInspectModal() { document.getElementById("inspectModal").classList.add("hidden"); }
 
+    // ── Admin actions ─────────────────────────────────────────────────────────
     async function toggleEndGame() {
       const ending = !currentGameEnded;
       const msg = ending
-        ? "End the game for ALL teams? They will no longer be able to submit answers, skip, or register."
+        ? "End the game for ALL teams? They won't be able to submit answers."
         : "Resume the game and let teams play again?";
       if (!confirm(msg)) return;
       try {
         const res = await fetch("/api/admin/end-game", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ passcode: adminToken, ended: ending })
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({passcode: adminToken, ended: ending}),
         });
         const d = await res.json();
-        if (d.success) {
-          refreshAdminData();
-        } else {
-          alert(d.error || "Failed to update game status");
-        }
-      } catch (e) {
-        alert("Request failed: " + e);
-      }
+        if (d.success) refreshAdminData();
+        else alert(d.error || "Failed to update game status");
+      } catch(e) { alert("Request failed: "+e); }
     }
 
     async function toggleRemoveTeam(teamName, removed) {
@@ -549,67 +639,154 @@
       if (!confirm(msg)) return;
       try {
         const res = await fetch("/api/admin/remove-team", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ passcode: adminToken, team_name: teamName, removed: removed })
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({passcode: adminToken, team_name: teamName, removed}),
         });
         const d = await res.json();
-        if (d.success) {
-          refreshAdminData();
-        } else {
-          alert(d.error || "Failed to update team status");
-        }
-      } catch (e) {
-        alert("Request failed: " + e);
-      }
+        if (d.success) refreshAdminData();
+        else alert(d.error || "Failed");
+      } catch(e) { alert("Request failed: "+e); }
     }
 
     async function confirmResetAll() {
-      if (!confirm("Are you sure you want to reset ALL team scores and progress? This cannot be undone.")) return;
+      if (!confirm("Reset ALL teams? This deletes all progress and cannot be undone.")) return;
       try {
         const res = await fetch("/api/admin/reset", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ passcode: adminToken, team_name: "" })
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({passcode: adminToken, team_name: ""}),
         });
         const d = await res.json();
-        if (d.success) {
-          alert("All teams reset successfully!");
-          refreshAdminData();
-        } else {
-          alert(d.error || "Failed to reset");
-        }
-      } catch (e) {
-        alert("Reset failed: " + e);
-      }
+        if (d.success) { alert("All teams reset!"); refreshAdminData(); }
+        else alert(d.error || "Failed");
+      } catch(e) { alert("Reset failed: "+e); }
     }
 
     async function resetSingleTeam(teamName) {
-      if (!confirm(`Are you sure you want to reset ${teamName}'s game?`)) return;
+      if (!confirm(`Reset ${teamName}'s progress? This cannot be undone.`)) return;
       try {
         const res = await fetch("/api/admin/reset", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ passcode: adminToken, team_name: teamName })
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({passcode: adminToken, team_name: teamName}),
         });
         const d = await res.json();
-        if (d.success) {
-          alert(`Team ${teamName} reset.`);
-          refreshAdminData();
-        } else {
-          alert(d.error || "Failed");
-        }
-      } catch (e) {
-        alert("Error: " + e);
+        if (d.success) { refreshAdminData(); }
+        else alert(d.error || "Failed");
+      } catch(e) { alert("Error: "+e); }
+    }
+
+    function openBroadcastModal()  { document.getElementById("broadcastModal").classList.remove("hidden"); }
+    function closeBroadcastModal() { document.getElementById("broadcastModal").classList.add("hidden"); }
+
+    // ── Anti-cheat toggle ─────────────────────────────────────────────────────
+    function updateAnticheatBtn() {
+      const btn = document.getElementById("anticheatBtn");
+      if (!btn) return;
+      if (anticheatEnabled) {
+        btn.innerHTML = `<span>🛡️</span> Anti-Cheat: ON`;
+        btn.className = "px-3.5 py-2 rounded-xl bg-orange-600/20 hover:bg-orange-600/30 text-orange-300 text-xs font-semibold border border-orange-500/30 transition flex items-center gap-1.5 cursor-pointer";
+        btn.title = "Anti-cheat ACTIVE — teams are blocked if they leave the game screen. Click to disable.";
+      } else {
+        btn.innerHTML = `<span>🛡️</span> Anti-Cheat: OFF`;
+        btn.className = "px-3.5 py-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 text-xs font-semibold border border-zinc-700/60 transition flex items-center gap-1.5 cursor-pointer";
+        btn.title = "Anti-cheat OFF — teams can freely switch tabs. Click to enable.";
       }
     }
 
-    function openBroadcastModal() {
-      document.getElementById("broadcastModal").classList.remove("hidden");
+    async function toggleAnticheat() {
+      const newVal = !anticheatEnabled;
+      const label  = newVal ? "ENABLE" : "DISABLE";
+      const note   = newVal
+        ? "Teams will be blocked and flagged if they leave the game screen or exit fullscreen."
+        : "Teams will be free to switch tabs. Existing violation counts are preserved.";
+      if (!confirm(`${label} anti-cheat monitoring?\n\n${note}`)) return;
+      try {
+        const res = await fetch("/api/admin/set-anticheat", {
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({passcode: adminToken, enabled: newVal}),
+        });
+        const d = await res.json();
+        if (d.success) {
+          anticheatEnabled = !!d.anticheat_enabled;
+          updateAnticheatBtn();
+        } else alert(d.error || "Failed to update anti-cheat setting.");
+      } catch(e) { alert("Request failed: "+e); }
     }
 
-    function closeBroadcastModal() {
-      document.getElementById("broadcastModal").classList.add("hidden");
+    // ── Ticket Hit Chance probability ─────────────────────────────────────────
+    let currentHitRate = 0.70;
+
+    function updateHitRateSelectorUI(rate) {
+      const sel = document.getElementById("adminHitRateSelect");
+      if (!sel) return;
+      currentHitRate = rate;
+      const match = Array.from(sel.options).find(opt => Math.abs(parseFloat(opt.value) - rate) < 0.01);
+      if (match) {
+        sel.value = match.value;
+      } else {
+        let customOpt = Array.from(sel.options).find(opt => opt.value === "custom");
+        if (customOpt) customOpt.innerText = `Custom (${Math.round(rate * 100)}%)`;
+        sel.value = "custom";
+      }
+    }
+
+    async function handleHitRateChange(val) {
+      let targetRate = parseFloat(val);
+      if (val === "custom") {
+        const entered = prompt("Enter ticket cut probability percentage (1 to 100%):", String(Math.round(currentHitRate * 100)));
+        if (entered === null) {
+          updateHitRateSelectorUI(currentHitRate);
+          return;
+        }
+        const num = parseFloat(entered);
+        if (isNaN(num) || num <= 0 || num > 100) {
+          alert("Please enter a valid percentage between 1 and 100.");
+          updateHitRateSelectorUI(currentHitRate);
+          return;
+        }
+        targetRate = Math.round(num) / 100.0;
+      }
+
+      try {
+        const res = await fetch("/api/admin/set-ticket-hit-chance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ passcode: adminToken, chance: targetRate })
+        });
+        const d = await res.json();
+        if (d.success) {
+          currentHitRate = d.ticket_hit_chance;
+          updateHitRateSelectorUI(currentHitRate);
+          showHitRateToast(currentHitRate);
+        } else {
+          alert(d.error || "Failed to update hit rate.");
+          updateHitRateSelectorUI(currentHitRate);
+        }
+      } catch(err) {
+        console.error(err);
+        alert("Network error updating hit rate.");
+        updateHitRateSelectorUI(currentHitRate);
+      }
+    }
+
+    function showHitRateToast(rate) {
+      const container = document.getElementById("violationToastContainer");
+      if (!container) return;
+      const toast = document.createElement("div");
+      toast.className = "bg-[#101424] border-2 border-amber-400/80 text-amber-200 text-xs font-semibold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 backdrop-blur-md";
+      toast.innerHTML = `
+        <span class="text-xl">🎯</span>
+        <div>
+          <div class="text-[10px] uppercase tracking-wider text-amber-400 font-mono font-bold">Ticket Probability Updated</div>
+          <div class="text-white font-bold text-xs mt-0.5">Set to ${Math.round(rate * 100)}% hit rate</div>
+        </div>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.transition = "opacity 0.5s, transform 0.5s";
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(20px)";
+        setTimeout(() => toast.remove(), 500);
+      }, 4000);
     }
 
     async function sendBroadcast() {
@@ -617,36 +794,74 @@
       if (!msg) return;
       try {
         const res = await fetch("/api/admin/broadcast", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ passcode: adminToken, message: msg })
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({passcode: adminToken, message: msg}),
         });
         const d = await res.json();
         if (d.success) {
           closeBroadcastModal();
           document.getElementById("broadcastInput").value = "";
-          alert("Broadcast announcement sent to all active players!");
-        } else {
-          alert(d.error || "Broadcast failed");
-        }
-      } catch (e) {
-        alert("Broadcast error: " + e);
-      }
+        } else alert(d.error || "Broadcast failed");
+      } catch(e) { alert("Broadcast error: "+e); }
     }
 
+    async function advanceTeamLevel(teamName, targetLevel) {
+      const action = targetLevel === 3 ? "advance to Level 3 (Final Round)" : (targetLevel === 2 ? "advance to Level 2" : "demote back to Level 1");
+      if (!confirm(`Are you sure you want to ${action} for "${teamName}"?`)) return;
+      try {
+        const res = await fetch("/api/admin/set-team-level", {
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({passcode: adminToken, team_name: teamName, level: targetLevel}),
+        });
+        const d = await res.json();
+        if (d.success) {
+          refreshAdminData();
+        } else {
+          alert(d.error || "Failed to update team level.");
+        }
+      } catch(e) { alert("Request failed: " + e); }
+    }
+
+    // ── Violation toasts ──────────────────────────────────────────────────────
     function showViolationToast(teamName) {
       const container = document.getElementById("violationToastContainer");
       const toast = document.createElement("div");
-      toast.className = "bg-[#241417] border border-orange-500/40 text-orange-200 text-xs font-semibold px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 animate-[fadeIn_0.2s_ease-out]";
+      toast.className = "bg-[#241417] border border-orange-500/40 text-orange-200 text-xs font-semibold px-4 py-3 rounded-xl shadow-xl flex items-center gap-2";
       toast.innerHTML = `<span>⚠️</span> <span><strong>${escapeHtml(teamName)}</strong> left the puzzle screen</span>`;
       container.appendChild(toast);
       setTimeout(() => {
-        toast.style.transition = "opacity 0.4s";
-        toast.style.opacity = "0";
+        toast.style.transition = "opacity 0.4s"; toast.style.opacity = "0";
         setTimeout(() => toast.remove(), 400);
       }, 5000);
     }
 
+    // ── Round 3 Unlocked Alert ───────────────────────────────────────────────
+    function showRound3Toast(teamName) {
+      const container = document.getElementById("violationToastContainer");
+      if (!container) return;
+      const toast = document.createElement("div");
+      toast.className = "bg-gradient-to-br from-emerald-950/95 to-[#0b1b13] border-2 border-emerald-400 text-emerald-100 text-xs font-semibold px-4 py-3.5 rounded-xl shadow-2xl flex items-start gap-3 backdrop-blur-md";
+      toast.innerHTML = `
+        <span class="text-2xl mt-0.5">🏆</span>
+        <div>
+          <div class="text-[10px] uppercase tracking-wider text-emerald-400 font-mono font-bold flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            Round 3 Unlocked!
+          </div>
+          <div class="mt-0.5 text-white font-bold text-sm leading-tight">${escapeHtml(teamName)}</div>
+          <div class="text-[11px] text-emerald-300/80 mt-0.5">Finished Round 2 (Maze) &amp; entered Round 3 Final!</div>
+        </div>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.transition = "opacity 0.5s, transform 0.5s";
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(20px)";
+        setTimeout(() => toast.remove(), 500);
+      }, 10000);
+    }
+
+    // ── SSE ───────────────────────────────────────────────────────────────────
     function setupSSE() {
       if (eventSource) eventSource.close();
       try {
@@ -656,24 +871,36 @@
             const event = JSON.parse(e.data);
             if (event.type === "team_violation") {
               showViolationToast(event.data?.team_name || "A team");
-            } else if (event.type === "team_progress" || event.type === "team_joined" || event.type === "game_reset" || event.type === "game_ended" || event.type === "team_removed") {
+            } else if (event.type === "anticheat_changed") {
+              anticheatEnabled = !!event.data?.enabled;
+              updateAnticheatBtn();
+            } else if (event.type === "ticket_hit_chance_changed") {
+              if (event.data?.ticket_hit_chance !== undefined) {
+                updateHitRateSelectorUI(event.data.ticket_hit_chance);
+                showHitRateToast(event.data.ticket_hit_chance);
+              }
+            } else if (event.type === "team_progress" && (event.data?.level === 3 || event.data?.level2_completed)) {
+              showRound3Toast(event.data?.team_name || "A team");
+              refreshAdminData();
+            } else if (event.type === "team_level_changed" && event.data?.level === 3) {
+              showRound3Toast(event.data?.team_name || "A team");
+              refreshAdminData();
+            } else if (["team_progress","team_joined","game_reset","game_ended","game_resumed","team_removed","team_level_changed"].includes(event.type)) {
               refreshAdminData();
             }
-          } catch (err) {}
+          } catch(err) {}
         };
-      } catch (err) {}
+      } catch(err) {}
     }
 
+    // ── Init ──────────────────────────────────────────────────────────────────
     window.addEventListener("DOMContentLoaded", () => {
       if (adminToken) {
         showAdminDashboard();
       } else {
-        showAdminLogin();
+        document.getElementById("adminLoginSection").classList.remove("hidden");
       }
-
-      setInterval(() => {
-        if (adminToken) refreshAdminData();
-      }, 5000);
+      setInterval(() => { if (adminToken) refreshAdminData(); }, 5000);
     });
   </script>
 </body>
