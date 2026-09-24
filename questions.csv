@@ -1,40 +1,39 @@
-ques no.,question,topic name,answer
 1,"What has keys but cannot open locks, has space but no room, and allows you to enter but you can never walk inside?",Riddle,keyboard
 2,"What will be printed by this Python snippet? x = [1, 2, 3, 4, 5]; print(x[::-2])",Coding,"[5, 3, 1]"
 3,"A train 180 meters long is traveling at a uniform speed of 54 km/h. How many seconds will it take to completely cross a stationary electric pole?",Aptitude,12
-4,"Pointing to a photograph of a boy, Suresh says, 'He is the only son of the only son of my mother.' How is Suresh related to that boy?",Reasoning,father
-5,"If you multiply all the numbers on the telephone keypad (0 to 9), what is the final product?",Math,0
+4,"Pointing to a man in a photograph, a woman said, 'His mother is the mother-in-law of my husband's mother.' How is the man related to the woman?",Reasoning,father-in-law
+5,"If you multiply all the numbers on the telephone keypad, what is the final product?",Math,0
 6,"What is the output of the following C expression? int a = 5; printf('%d', a++ + ++a);",Coding,12
 7,"A clock shows 3:30. What is the angle in degrees between the hour hand and the minute hand?",Aptitude,75
 8,"I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?",Riddle,echo
-9,"Find the missing number in the sequence: 2, 6, 12, 20, 30, 42, ?",Reasoning,56
+9,"Find the missing number in the sequence: 4, 9, 20, 43, 90, ?",Reasoning,185
 10,"What will this JavaScript code output to console? console.log(1 + '2' + 3 - 1);",Coding,122
 11,"A can finish a work in 12 days and B can finish the same work in 24 days. If they work together, how many days will they take to complete the work?",Aptitude,8
 12,"A bat and a ball cost $1.10 in total. The bat costs $1.00 more than the ball. How many cents does the ball cost?",Math,5
-13,"If January 1, 2024 was a Monday, what day of the week was January 1, 2025? (2024 is a leap year with 366 days)",Reasoning,wednesday
-14,"What is the value of (16 >> 2) ^ 5 in decimal?",Coding,1
+13,"If January 1, 2024 was a Monday, what day of the week was March 1, 2104? (2024 is a leap year with 366 days)",Reasoning,friday
+14,"What does SMS stand for? ",Aptitude,short message service
 15,"The more of this you take, the more you leave behind. What are they?",Riddle,footsteps
-16,"The price of a shirt is first increased by 20% and then decreased by 20%. What is the net percentage change in the price? (e.g. 4% decrease)",Aptitude,4% decrease
+16,"The price of a shirt is first increased by 20% and then decreased by 20%. What is the net percentage change in the price? (e.g. 10% decrease)",Aptitude,4% decrease
 17,"In Python, what does bool([]) == bool([0]) evaluate to? (True or False)",Coding,False
 18,"Five friends P, Q, R, S, T sit in a line facing North. S is between T and Q. Q is to the immediate left of R. P is to the immediate left of T. Who is sitting in the middle?",Reasoning,S
 19,"What is the remainder when 2^50 is divided by 7?",Math,4
 20,"Forward I am heavy, but backward I am not. What am I?",Riddle,ton
 21,"Two cars start from points A and B towards each other, separated by 300 km. Car A travels at 60 km/h and Car B travels at 40 km/h. After how many hours will they meet?",Aptitude,3
-22,"What is the output of this SQL query logic? SELECT COUNT(*) FROM (SELECT NULL UNION ALL SELECT NULL UNION SELECT NULL);",Coding,1
+22,"A book and a pen together cost ₹150. The book costs ₹100 more than the pen. How much does the pen cost in rupees?",Aptitude,25
 23,"If 'WATER' is coded as 'YCVGT', what is the code for 'FIRE'?",Reasoning,HKTG
 24,"How many trailing zeros are at the end of 50! (50 factorial)?",Math,12
 25,"What building has the most stories in the entire world?",Riddle,library
 26,"What does this Python recursive function return for f(5)? def f(n): return 1 if n <= 1 else n + f(n - 2)",Coding,9
-27,"In a class of 60 students, 40 like Cricket, 30 like Football, and 15 like both. How many students like neither sport?",Aptitude,5
-28,"A person walks 10 meters North, turns right and walks 6 meters, then turns right and walks 10 meters. How many meters is the person from the starting point?",Reasoning,6
-29,"Two standard 6-sided dice are rolled simultaneously. What is the probability of getting a sum of exactly 7? (Write as fraction e.g. 1/6)",Math,1/6
+27,"In a group of 100 professionals, 50 speak English, 40 speak Spanish, 30 speak French, 15 speak both English and Spanish, and 5 speak all three languages. If every professional speaks at least one of these three languages, and no one speaks only French and Spanish, how many professionals speak only French?",Aptitude,25
+28,"A person walks 10 meters North-east, turns left and walks 6 meters, then turns left an walks 10 meters. How many meters is the person from the starting point?",Reasoning,6
+29,"Two standard 6-sided dice are rolled simultaneously. What is the probability of getting a sum of exactly 7? (Write as fraction e.g. x/y)",Math,1/6
 30,"I have branches, but no fruit, trunk or leaves. What am I?",Riddle,bank
 31,"What is the time complexity of searching for an element in a balanced Binary Search Tree with N nodes in Big-O notation?",Coding,O(log n)
 32,"A boat goes 15 km downstream in 1 hour and returns upstream the same 15 km in 3 hours. What is the speed of the stream in km/h?",Aptitude,5
 33,"Statements: All cats are animals. All animals need water. Conclusion: Do all cats need water? (Yes or No)",Reasoning,Yes
-34,"Find the next prime number after 37.",Math,41
+34,"What is the sum of first three prime numbers after 41? ",Math,143
 35,"What can travel around the world while staying in a single corner?",Riddle,stamp
-36,"In Python 3, what does 3 * 'ab' + 'c' evaluate to?",Coding,abababc
+36,"In Python 3, what does 3 * 'ab' + 'c' + 2 * '4' evaluate to?",Coding,abababc44
 37,"Pipe A fills a tank in 6 hours, while Pipe B empties it in 12 hours. If both pipes are opened together, how many hours will it take to fill the tank?",Aptitude,12
 38,"What comes next in the letter series? B, D, G, K, P, ?",Reasoning,V
 39,"In a party of 8 people, everyone shakes hands with everyone else exactly once. How many total handshakes occur?",Math,28
@@ -44,7 +43,7 @@ ques no.,question,topic name,answer
 43,"Doctor is to Hospital as Teacher is to _______?",Reasoning,school
 44,"If x + 1/x = 4, what is the value of x^2 + 1/x^2?",Math,14
 45,"What has a thumb and four fingers, but is not alive?",Riddle,glove
-46,"What is the value of 7 // 2 versus 7 % 2 in Python? (Write as '3, 1')",Coding,"3, 1"
+46,"What is the value of 7 // 2 versus 7 % 2 in Python? (Write as x,y)",Coding,"3,1"
 47,"By selling an article for $300, a merchant makes a 25% profit on cost. What was the original cost price?",Aptitude,240
 48,"In a certain code, 'ROAD' is written as 'URDG'. How is 'SWAN' written in that code?",Reasoning,VZDQ
 49,"The perimeter of a square is 36 cm. What is its area in square cm?",Math,81
@@ -59,3 +58,43 @@ ques no.,question,topic name,answer
 58,"Which one does NOT belong to the group? Iron, Copper, Mercury, Silver, Aluminum",Reasoning,mercury
 59,"What is 25^2 - 24^2?",Math,49
 60,"If you drop a yellow hat in the Red Sea, what does it become?",Riddle,wet
+61,"What has a head and a tail but no body?",Riddle,coin
+62,"What is the output of: print(list(range(10, 0, -2)))",Coding,"[10, 8, 6, 4, 2]"
+63,"A sum of money doubles itself in 8 years at simple interest. In how many years will it become 4 times itself?",Aptitude,24
+64,"Statement: All pens are pencils. All pencils are erasers. Conclusion: All pens are erasers. Is this conclusion valid? (Yes/No)",Reasoning,Yes
+65,"What is the sum of the first 10 prime numbers?",Math,169
+66,"The more you feed it, the more it grows, but if you give it water, it dies. What am I?",Riddle,fire
+67,"What is the time complexity of building a heap (heapify) from n elements in Big-O notation?",Coding,O(n)
+68,"A can do a piece of work in 10 days, B in 15 days. They work together for 2 days, then A leaves. In how many more days will B alone finish the remaining work?",Aptitude,10
+69,"In a row of children, A is 7th from the left and 12th from the right. How many children are there in total?",Reasoning,18
+70,"In how many ways can the letters of the word 'MISSISSIPI' be arranged without repetition?",Math,34650
+71,"What invention lets you see right through a wall?",Riddle,window
+72,"Germany:Berlin :: Egypt: ? ",Reasoning,Cairo
+73,"A sum of $6000 is divided among A, B, and C in the ratio 2:3:5. What is C's share in dollars?",Aptitude,3000
+74,"Pointing to a woman, a man says, 'Her mother is the only daughter of my father's wife.' How is the man related to the woman?",Reasoning,uncle
+75,"What is the compound interest on $10,000 at 10% per annum for 2 years, compounded annually?",Math,2100
+76,"What kind of room has no doors or windows?",Riddle,mushroom
+77,"What does f(6) return? def f(n): return n if n < 2 else f(n-1) + f(n-2)",Coding,8
+78,"The average of 11 numbers is 50. The average of the first 6 numbers is 49 and the average of the last 6 numbers is 52. What is the 6th number?",Aptitude,56
+79,"Statement: Some doctors are fools. No fool is a genius. Conclusion I: No doctor is a genius. Conclusion II: Some doctors are not geniuses. Which conclusion follows?",Reasoning,Conclusion II
+80,"What is the next letter? 'O, T, T, F, F, S, S, E, ?'",Reasoning,N
+81,"What is the only number whose letters are in alphabetical order?",Riddle,forty
+82,"What is the space complexity of merge sort in Big-O notation?",Coding,O(n)
+83,"A train crosses a platform 200 m long in 30 seconds and crosses a pole in 15 seconds. What is the length of the train in meters?",Aptitude,200
+84,"A is the brother of B. B is the sister of C. C is the father of D. How is A related to D?",Reasoning,uncle
+85,"What is the sum of the interior angles of a regular 12-sided polygon (dodecagon), in degrees?",Math,1800
+86,"What can you hold in your left hand but never in your right hand?",Riddle,right elbow
+87,"What does print(type(1/2)) output in Python 3?",Coding,<class 'float'>
+88,"The ages of A and B are in the ratio 3:5. After 9 years, the ratio becomes 3:4. What is B's present age?",Aptitude,15
+89,"If the sum of two numbers is 45 and their difference is 15, what is the product of the two numbers?",Math,450
+90,"Two dice are rolled. What is the probability that the sum is greater than 9? (Write in fraction e.g x/y)",Math,1/36
+91,"What is so fragile that saying its name breaks it?",Riddle,silence
+92,"Which sorting algorithm has a best-case time complexity of O(n) on a nearly sorted array?",Coding,insertion sort
+93,"A shopkeeper marks up an item's price by 40% and then offers a 40% discount on the marked price. What is the overall percentage loss on the original cost price?",Aptitude,16% loss
+94,"Find the odd one out: 3, 5, 11, 14, 17, 21",Reasoning,14
+95,"What is the value of 15C3?",Math,455
+96,"What has one head, one foot, and four legs?",Riddle,bed
+97,"What starts with an E, ends with an E, but usually only contains a single letter?",Riddle,envelope
+98,"A car travels the first half of a journey at 40 km/h and the second half at 60 km/h. What is the average speed for the whole journey in km/h?",Aptitude,48
+99,"If 1st March 2024 was a Friday, what day of the week will 1st September 2027 be?",Reasoning,Wednesday
+100,"What is the value of 1^2+2^2+3^2+...+10^2?",Math,385
