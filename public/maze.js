@@ -1,19 +1,4 @@
-/**
- * BRAIN BREAKER — Stage 02: Fog Maze Game Engine & Renderer
- * Pure Vanilla JavaScript & HTML5 Canvas (No frameworks)
- *
- * Features:
- * - 27x27 maze
- * - Multiple paths / loops
- * - Fog-of-war
- * - 4 colored keys
- * - One correct key
- * - Wrong key -> short feedback -> instant reset to START
- * - Same maze is preserved after wrong key
- * - New key positions after wrong key
- * - No page refresh
- * - Assigned correct key support
- */
+
 
 (function (window) {
   'use strict';
@@ -639,159 +624,183 @@
   // ─────────────────────────────────────────────────────────────────────────────
 
   function placeKeys(
-    maze,
-    assignedColor
+  maze,
+  assignedColor = null,
+  existingCorrectKey = null
+) {
+  const dist =
+    distanceField(
+      maze,
+      maze.start
+    );
+
+  const candidates = [];
+
+  for (
+    let row = 0;
+    row < maze.rows;
+    row += 1
   ) {
-    const dist =
-      distanceField(
-        maze,
-        maze.start
-      );
-
-    const candidates = [];
-
     for (
-      let row = 0;
-      row < maze.rows;
-      row += 1
+      let col = 0;
+      col < maze.cols;
+      col += 1
     ) {
-      for (
-        let col = 0;
-        col < maze.cols;
-        col += 1
-      ) {
-        const distance =
-          dist[
-            index(
-              maze,
-              col,
-              row
-            )
-          ];
-
-        // Don't place keys too close
-        // to the starting position.
-        if (distance > 8) {
-          candidates.push({
+      const distance =
+        dist[
+          index(
+            maze,
             col,
-            row,
-            distance,
-          });
-        }
+            row
+          )
+        ];
+
+      // Don't place keys too close to start.
+      if (distance > 8) {
+        candidates.push({
+          col,
+          row,
+          distance,
+        });
       }
     }
+  }
 
-    const shuffledCandidates =
-      shuffle(candidates);
+  const shuffledCandidates =
+    shuffle(candidates);
 
-    const chosen = [];
+  const chosen = [];
 
-    // First pass:
-    // aggressively spread keys apart.
-    for (
-      const cell of shuffledCandidates
+  // Spread keys apart.
+  for (
+    const cell of shuffledCandidates
+  ) {
+    if (
+      chosen.length >=
+      CONFIG.keyCount
     ) {
-      if (
-        chosen.length >=
-        CONFIG.keyCount
-      ) {
-        break;
-      }
-
-      const farEnough =
-        chosen.every(
-          (other) =>
-            Math.abs(
-              other.col -
-              cell.col
-            ) +
-            Math.abs(
-              other.row -
-              cell.row
-            ) >= 7
-        );
-
-      if (farEnough) {
-        chosen.push(cell);
-      }
+      break;
     }
 
-    // Fallback:
-    // if not enough well-spaced
-    // cells were found.
-    for (
-      const cell of shuffledCandidates
-    ) {
-      if (
-        chosen.length >=
-        CONFIG.keyCount
-      ) {
-        break;
-      }
-
-      const alreadyChosen =
-        chosen.some(
-          (existing) =>
-            existing.col ===
-              cell.col &&
-            existing.row ===
-              cell.row
-        );
-
-      if (!alreadyChosen) {
-        chosen.push(cell);
-      }
-    }
-
-    const colors =
-      shuffle(KEY_COLORS);
-
-    const keys =
-      chosen.map(
-        (cell, i) => ({
-          id: `key-${i}`,
-
-          color:
-            colors[i],
-
-          cell: {
-            col: cell.col,
-            row: cell.row,
-          },
-
-          collected: false,
-        })
+    const farEnough =
+      chosen.every(
+        (other) =>
+          Math.abs(
+            other.col -
+            cell.col
+          ) +
+          Math.abs(
+            other.row -
+            cell.row
+          ) >= 7
       );
 
-    // ─────────────────────────────────────────────
-    // ASSIGNED AUTHENTIC KEY
-    // ─────────────────────────────────────────────
-
-    const normalizedAssigned =
-      assignedColor
-        ? String(
-            assignedColor
-          ).toUpperCase()
-        : null;
-
-    const correctKey =
-      normalizedAssigned &&
-      KEY_COLORS.includes(
-        normalizedAssigned
-      )
-        ? normalizedAssigned
-        : colors[
-            Math.floor(
-              Math.random() *
-              colors.length
-            )
-          ];
-
-    return {
-      keys,
-      correctKey,
-    };
+    if (farEnough) {
+      chosen.push(cell);
+    }
   }
+
+  // Fallback if we couldn't
+  // find enough well-spaced cells.
+  for (
+    const cell of shuffledCandidates
+  ) {
+    if (
+      chosen.length >=
+      CONFIG.keyCount
+    ) {
+      break;
+    }
+
+    const alreadyChosen =
+      chosen.some(
+        (existing) =>
+          existing.col ===
+            cell.col &&
+          existing.row ===
+            cell.row
+      );
+
+    if (!alreadyChosen) {
+      chosen.push(cell);
+    }
+  }
+
+  // ─────────────────────────────────────────
+  // DETERMINE CORRECT COLOR
+  // ─────────────────────────────────────────
+
+  let correctKey;
+
+  if (
+    existingCorrectKey &&
+    KEY_COLORS.includes(
+      existingCorrectKey
+    )
+  ) {
+    // Keep the existing correct color.
+    correctKey =
+      existingCorrectKey;
+  } else if (
+    assignedColor &&
+    KEY_COLORS.includes(
+      String(
+        assignedColor
+      ).toUpperCase()
+    )
+  ) {
+    // Use externally assigned color.
+    correctKey =
+      String(
+        assignedColor
+      ).toUpperCase();
+  } else {
+    // First game only:
+    // choose a random correct color.
+    correctKey =
+      KEY_COLORS[
+        Math.floor(
+          Math.random() *
+          KEY_COLORS.length
+        )
+      ];
+  }
+
+  // ─────────────────────────────────────────
+  // CREATE KEY POSITIONS
+  // ─────────────────────────────────────────
+  //
+  // Colors remain fixed.
+  // Positions are randomized.
+  //
+
+  const colors =
+    shuffle(
+      KEY_COLORS
+    );
+
+  const keys =
+    chosen.map(
+      (cell, i) => ({
+        id: `key-${i}`,
+
+        color:
+          colors[i],
+
+        cell: {
+          col: cell.col,
+          row: cell.row,
+        },
+
+        collected: false,
+      })
+    );
+
+  return {
+    keys,
+    correctKey,
+  };
+}
 
   // ─────────────────────────────────────────────────────────────────────────────
   // GAME ENGINE
