@@ -346,8 +346,8 @@
         </div>
 
         <div class="flex items-center gap-2 sm:gap-3">
-          <button onclick="openMazeRiddleModal()" class="px-3 py-1.5 rounded-xl border border-indigo-500/30 bg-indigo-950/40 hover:bg-indigo-900/50 text-indigo-300 hover:text-white text-xs font-semibold backdrop-blur-md transition flex items-center gap-1.5 cursor-pointer" title="View or solve your team's color riddle">
-            <span>📜</span> <span class="hidden sm:inline">Riddle Clue</span>
+          <button onclick="openMazeInstructionsModal()" class="px-3 py-1.5 rounded-xl border border-indigo-500/30 bg-indigo-950/40 hover:bg-indigo-900/50 text-indigo-300 hover:text-white text-xs font-semibold backdrop-blur-md transition flex items-center gap-1.5 cursor-pointer" title="View mission instructions">
+            <span>ℹ️</span> <span class="hidden sm:inline">Instructions</span>
           </button>
           <button id="mazeFullscreenBtn" onclick="toggleMazeFullscreen()" class="px-3 py-1.5 rounded-xl border border-cyan-500/30 bg-cyan-950/40 hover:bg-cyan-900/50 text-cyan-300 hover:text-white text-xs font-semibold backdrop-blur-md transition flex items-center gap-1.5 cursor-pointer" title="Toggle Fullscreen Mode">
             <span id="mazeFsIcon">⛶</span> <span id="mazeFsText" class="hidden sm:inline">Fullscreen</span>
@@ -370,7 +370,16 @@
           <span>⛶</span> <span>Click for Fullscreen</span>
         </div>
 
-        <!-- Ready Overlay (Mission Briefing & Color Riddle) -->
+        <!-- Persistent in-maze instructions strip -->
+        <div id="mazeInGameHud" class="hidden absolute top-3 left-3 z-20 max-w-[calc(100%-140px)] px-3 py-2 rounded-xl bg-black/75 border border-white/10 text-[10px] font-mono backdrop-blur-sm shadow-lg flex items-center gap-2.5">
+          <span class="flex items-center gap-1.5 text-zinc-300"><strong class="text-white font-bold">WASD</strong>/<strong class="text-white font-bold">ARROWS</strong> to move</span>
+          <span class="text-zinc-600">·</span>
+          <!-- <span class="text-zinc-300">Find your key. Wrong picks reset to start.</span> -->
+          <span class="text-zinc-600">·</span>
+          <button onclick="openMazeInstructionsModal()" class="pointer-events-auto text-cyan-300 hover:text-white font-bold underline decoration-dotted cursor-pointer">ℹ️ Help</button>
+        </div>
+
+        <!-- Ready Overlay (Mission Briefing & Instructions) -->
         <div id="mazeReadyOverlay" class="absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-[#02050b]/85 px-4 py-5 backdrop-blur-md">
           <div class="my-auto w-full max-w-xl rounded-3xl border border-white/10 bg-[#07101a]/95 p-6 shadow-2xl space-y-4">
             <div class="text-center">
@@ -379,33 +388,23 @@
               <p class="mt-1 text-xs text-zinc-400">Navigate the dark corridors and find your team's authentic key.</p>
             </div>
 
-            <!-- Color Riddle Section -->
-            <div class="rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-[#121429]/90 to-[#0c0f1c]/90 p-4 space-y-3 shadow-lg">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <span class="text-lg">📜</span>
-                  <div>
-                    <div id="riddleCardTitle" class="text-xs font-bold uppercase tracking-wider text-indigo-300 font-cipher">The Color Riddle</div>
-                    <div class="text-[10px] text-zinc-400 font-sans">Solve this riddle to identify your authentic key color!</div>
-                  </div>
+            <!-- Mission Briefing Section -->
+            <div class="rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-[#0d1b2a]/90 to-[#0c0f1c]/90 p-4 space-y-3 shadow-lg">
+              <div class="flex items-center gap-2">
+                <span class="text-lg">🎯</span>
+                <div>
+                  <div class="text-xs font-bold uppercase tracking-wider text-cyan-300 font-cipher">Your Mission</div>
+                  <div class="text-[10px] text-zinc-400 font-sans">Nobody will tell you the color — you have to find it out yourself.</div>
                 </div>
-                <span id="riddleStatusBadge" class="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 font-mono text-[10px] font-bold">Unsolved</span>
               </div>
 
               <div class="bg-black/50 border border-white/5 p-3 rounded-xl">
-                <p id="mazeRiddleText" class="text-xs sm:text-sm text-indigo-100/90 leading-relaxed font-riddle font-medium tracking-wide">Loading riddle...</p>
+                <ol class="text-xs sm:text-sm text-zinc-200 leading-relaxed font-sans font-medium list-decimal list-inside space-y-1">
+                  <li>Enter the fog maze and explore its corridors using the controls below.</li>
+                  <li>4 keys are hidden in distant dead ends — only <span class="font-bold text-cyan-300">one color</span> is authentic, and it's up to you to figure out which.</li>
+                  <li>Walk onto the matching key to clear Stage 02.</li>
+                </ol>
               </div>
-
-              <div id="readyRiddleInputArea" class="flex items-center gap-2">
-                <input type="text" id="mazeRiddleAnswerInput" placeholder="Enter key color (RED, BLUE, GREEN, YELLOW)"
-                  class="flex-1 bg-black/40 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-400 font-mono uppercase"
-                  onkeydown="if(event.key==='Enter') checkMazeRiddleAnswer(false)" />
-                <button onclick="checkMazeRiddleAnswer(false)" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition cursor-pointer">
-                  Check
-                </button>
-              </div>
-
-              <div id="readyRiddleFeedback" class="hidden text-xs font-semibold p-2.5 rounded-xl"></div>
             </div>
 
             <!-- Rules Grid -->
@@ -437,52 +436,50 @@
               </div>
             </div>
 
-            <div class="flex flex-col sm:flex-row items-center gap-3 pt-1">
+            <div class="pt-1">
               <button id="startMazeBtn" onclick="startMazeRun()"
-                class="w-full sm:flex-1 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-black text-xs uppercase tracking-wider shadow-lg shadow-cyan-500/25 transition transform active:scale-[0.99] cursor-pointer">
+                class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-black text-xs uppercase tracking-wider shadow-lg shadow-cyan-500/25 transition transform active:scale-[0.99] cursor-pointer">
                 Enter the Maze &rarr;
-              </button>
-              <button onclick="skipMazeRiddleAndStart()"
-                class="w-full sm:w-auto px-4 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 border border-zinc-700 font-semibold text-xs transition cursor-pointer"
-                title="Enter the maze without solving the riddle. You will test keys by brute-force.">
-                Skip Riddle (Brute Force)
               </button>
             </div>
           </div>
         </div>
 
-        <!-- In-Game Riddle Modal -->
-        <div id="mazeRiddleModal" class="hidden absolute inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-          <div class="w-full max-w-lg rounded-3xl border border-indigo-500/40 bg-[#0b0e1b]/95 p-6 shadow-2xl space-y-4 text-left">
+        <!-- In-Game Instructions Modal -->
+        <div id="mazeInstructionsModal" class="hidden absolute inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div class="w-full max-w-lg rounded-3xl border border-cyan-500/40 bg-[#0b0e1b]/95 p-6 shadow-2xl space-y-4 text-left">
             <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
               <div class="flex items-center gap-2">
-                <span class="text-xl">📜</span>
+                <span class="text-xl">🎯</span>
                 <div>
-                  <h3 class="text-sm font-bold text-white uppercase tracking-wider font-cipher" id="modalRiddleTitle">Color Riddle</h3>
-                  <p class="text-[10px] text-zinc-400 font-sans">Solve to identify which key color is authentic</p>
+                  <h3 class="text-sm font-bold text-white uppercase tracking-wider font-cipher">Mission Instructions</h3>
+                  <p class="text-[10px] text-zinc-400 font-sans">Your objective and controls, at a glance</p>
                 </div>
               </div>
-              <button onclick="closeMazeRiddleModal()" class="text-zinc-400 hover:text-white text-xl font-mono cursor-pointer">&times;</button>
+              <button onclick="closeMazeInstructionsModal()" class="text-zinc-400 hover:text-white text-xl font-mono cursor-pointer">&times;</button>
             </div>
 
-            <div class="bg-black/50 border border-white/5 p-4 rounded-2xl">
-              <p id="modalRiddleText" class="text-sm sm:text-base text-indigo-100/90 leading-relaxed font-riddle font-medium tracking-wide"></p>
-            </div>
-
-            <div id="modalRiddleInputArea" class="space-y-2">
+            <div class="bg-black/50 border border-white/5 p-4 rounded-2xl space-y-3">
               <div class="flex items-center gap-2">
-                <input type="text" id="modalRiddleAnswerInput" placeholder="Enter color (RED, BLUE, GREEN, YELLOW)"
-                  class="flex-1 bg-black/40 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-400 font-mono uppercase"
-                  onkeydown="if(event.key==='Enter') checkMazeRiddleAnswer(true)" />
-                <button onclick="checkMazeRiddleAnswer(true)" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition cursor-pointer">
-                  Verify
-                </button>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-cyan-300">Objective</span>
               </div>
-              <div id="modalRiddleFeedback" class="hidden text-xs font-semibold p-2.5 rounded-xl"></div>
+              <ol class="text-sm text-zinc-200 leading-relaxed font-sans font-medium list-decimal list-inside space-y-1">
+                <li>4 keys are hidden in distant dead ends — only one color is authentic, and you're not told which.</li>
+                <li>Walk onto a key to test it. Guess right and Stage 02 is cleared.</li>
+                <li>Guess wrong and you're sent back to <strong class="text-red-300">START</strong>. The maze reshuffles and the keys move — but the correct color never changes.</li>
+              </ol>
+            </div>
+
+            <div class="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-xs">
+              <div>
+                <span class="text-[10px] text-zinc-400 uppercase font-semibold">Controls: </span>
+                <span class="text-white font-mono text-[11px] font-bold">WASD</span> <span class="text-zinc-500">or</span> <span class="text-zinc-300">Arrow Keys</span>
+              </div>
+              <div class="text-right text-[10px] text-amber-300/90 font-mono">Esc exits fullscreen</div>
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-2">
-              <button onclick="closeMazeRiddleModal()" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition cursor-pointer">
+              <button onclick="closeMazeInstructionsModal()" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-black font-bold text-xs transition cursor-pointer">
                 Resume Maze
               </button>
             </div>
@@ -860,158 +857,31 @@
       return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
 
-    const CLIENT_COLOR_RIDDLES = {
-      RED: {
-        color: "RED",
-        title: "The Crimson Cipher",
-        riddle: "I am the spark of a wild flame, the ruby in a king's crown, and the urgent signal where traffic halts. What color key unlocks your path?",
-        accepted: ["red", "red key", "the red key", "crimson", "ruby"]
-      },
-      BLUE: {
-        color: "BLUE",
-        title: "The Azure Cipher",
-        riddle: "I am the expanse of the cloudless sky, the depths of the ocean trench, and royalty's proudest sapphire. What color key unlocks your path?",
-        accepted: ["blue", "blue key", "the blue key", "azure", "sapphire", "cyan"]
-      },
-      GREEN: {
-        color: "GREEN",
-        title: "The Emerald Cipher",
-        riddle: "I am the breath of ancient pine forests, the coat of moss upon stones, and the rarest emerald gem. What color key unlocks your path?",
-        accepted: ["green", "green key", "the green key", "emerald", "jade"]
-      },
-      YELLOW: {
-        color: "YELLOW",
-        title: "The Amber Cipher",
-        riddle: "I am the morning sunrise breaking dark skies, the warmth of midday noon, and the bright crown of a sunflower. What color key unlocks your path?",
-        accepted: ["yellow", "yellow key", "the yellow key", "amber", "gold", "golden"]
-      }
-    };
+    let currentMazeTargetColor = null;
 
-    let currentMazeRiddle = null;
-    let mazeRiddleSolved = false;
-    let mazeBruteForceMode = false;
-
-    function ensureMazeRiddle(stateData) {
-      if (stateData && stateData.maze_riddle && stateData.maze_riddle.riddle) {
-        currentMazeRiddle = stateData.maze_riddle;
-        return currentMazeRiddle;
+    function ensureAssignedColor(stateData) {
+      if (stateData && stateData.maze_assigned_color) {
+        currentMazeTargetColor = String(stateData.maze_assigned_color).toUpperCase();
+        return currentMazeTargetColor;
       }
-      if (currentMazeRiddle && currentMazeRiddle.riddle) {
-        return currentMazeRiddle;
-      }
-      // Derive color deterministically from team name or avatar
+      if (currentMazeTargetColor) return currentMazeTargetColor;
+      // Derive color deterministically from team name so it's stable across reloads.
+      // This is used internally by the engine only — never shown to the player.
       const raw = String((stateData && stateData.team_name) || (currentTeam && currentTeam.team_name) || "team");
       const colors = ["RED", "BLUE", "GREEN", "YELLOW"];
       let sum = 0;
       for (let i = 0; i < raw.length; i++) sum += raw.charCodeAt(i);
-      const chosenColor = (stateData && stateData.maze_assigned_color) || colors[sum % colors.length];
-      currentMazeRiddle = CLIENT_COLOR_RIDDLES[chosenColor];
-      return currentMazeRiddle;
+      currentMazeTargetColor = colors[sum % colors.length];
+      return currentMazeTargetColor;
     }
 
-    function renderMazeRiddleUI(riddle) {
-      if (!riddle) riddle = ensureMazeRiddle();
-      if (!riddle) return;
-
-      const titleEl = document.getElementById("riddleCardTitle");
-      const textEl  = document.getElementById("mazeRiddleText");
-      const mTitle  = document.getElementById("modalRiddleTitle");
-      const mText   = document.getElementById("modalRiddleText");
-
-      const titleText = riddle.title || "The Color Riddle";
-      const riddleQuote = `"${riddle.riddle || ''}"`;
-
-      if (titleEl) titleEl.innerText = titleText;
-      if (textEl)  textEl.innerText  = riddleQuote;
-
-      if (mTitle) mTitle.innerText = titleText;
-      if (mText)  mText.innerText  = riddleQuote;
+    function openMazeInstructionsModal() {
+      const modal = document.getElementById("mazeInstructionsModal");
+      if (modal) modal.classList.remove("hidden");
     }
 
-    async function checkMazeRiddleAnswer(isModal = false) {
-      const inputId = isModal ? "modalRiddleAnswerInput" : "mazeRiddleAnswerInput";
-      const feedId  = isModal ? "modalRiddleFeedback"    : "readyRiddleFeedback";
-      const inputEl = document.getElementById(inputId);
-      const feedEl  = document.getElementById(feedId);
-      if (!inputEl || !feedEl) return;
-
-      const val = inputEl.value.trim().toLowerCase();
-      if (!val) return;
-
-      if (!currentMazeRiddle) ensureMazeRiddle();
-      let correct = false;
-      let targetColor = currentMazeRiddle ? currentMazeRiddle.color : null;
-      if (currentMazeRiddle && currentMazeRiddle.accepted) {
-        const accepted = currentMazeRiddle.accepted.map(a => a.toLowerCase());
-        if (accepted.includes(val) || (targetColor && val === targetColor.toLowerCase())) {
-          correct = true;
-        }
-      }
-
-      // Also support server API check
-      if (!correct && currentToken) {
-        try {
-          const res = await fetch("/api/level2/solve-riddle", {
-            method: "POST", headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({token: currentToken, answer: val}),
-          });
-          const d = await res.json();
-          if (d.correct) {
-            correct = true;
-            targetColor = d.color;
-          }
-        } catch(e) {}
-      }
-
-      if (correct && targetColor) {
-        mazeRiddleSolved = true;
-        mazeBruteForceMode = false;
-        playTone(660, 'sine', 0.2);
-
-        feedEl.className = "text-xs font-bold p-2.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 block";
-        feedEl.innerHTML = `✓ Solved! Your authentic key is <strong class="text-white uppercase font-mono tracking-wider">${targetColor}</strong>. Hunt for the ${targetColor} key in the maze!`;
-
-        const badge = document.getElementById("riddleStatusBadge");
-        if (badge) {
-          badge.className = "px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono text-[10px] font-bold";
-          badge.innerText = `Solved: ${targetColor}`;
-        }
-
-        const startBtn = document.getElementById("startMazeBtn");
-        if (startBtn) {
-          startBtn.innerHTML = `Enter Maze (Target: ${targetColor} Key) &rarr;`;
-        }
-
-        if (mazeEngine) {
-          mazeEngine.setAssignedColor(targetColor);
-          updateMazeHud(mazeEngine.getSnapshot());
-        }
-      } else {
-        playTone(280, 'sine', 0.25);
-        feedEl.className = "text-xs font-bold p-2.5 rounded-xl bg-red-950/80 border border-red-500/40 text-red-300 block";
-        feedEl.innerText = "✗ Not quite! Think carefully about the clue or skip to brute-force.";
-      }
-    }
-
-    function skipMazeRiddleAndStart() {
-      mazeRiddleSolved = false;
-      mazeBruteForceMode = true;
-      startMazeRun();
-    }
-
-    function openMazeRiddleModal() {
-      ensureMazeRiddle();
-      renderMazeRiddleUI(currentMazeRiddle);
-      const modal = document.getElementById("mazeRiddleModal");
-      if (modal) {
-        modal.classList.remove("hidden");
-        const input = document.getElementById("modalRiddleAnswerInput");
-        if (input) input.focus();
-      }
-    }
-
-    function closeMazeRiddleModal() {
-      const modal = document.getElementById("mazeRiddleModal");
+    function closeMazeInstructionsModal() {
+      const modal = document.getElementById("mazeInstructionsModal");
       if (modal) modal.classList.add("hidden");
     }
 
@@ -1023,10 +893,12 @@
         mazeLightCanvas = document.createElement("canvas");
       }
 
-      ensureMazeRiddle(stateData);
-      renderMazeRiddleUI(currentMazeRiddle);
-
-      const assignedColor = (stateData && stateData.maze_assigned_color) || (currentMazeRiddle && currentMazeRiddle.color) || null;
+      // assignedColor is used only internally by the engine to determine the
+      // correct key — it is never surfaced in the UI. Players must discover
+      // it themselves by testing keys in the maze.
+      const assignedColor = ensureAssignedColor(stateData);
+      const hud = document.getElementById("mazeInGameHud");
+      if (hud) hud.classList.remove("hidden");
 
       if (!mazeEngine) {
         const initialElapsed = (stateData && stateData.maze_elapsed_ms) || 0;
@@ -1132,8 +1004,8 @@
       if (readyOverlay && !readyOverlay.classList.contains("hidden")) return;
       const successOverlay = document.getElementById("mazeSuccessOverlay");
       if (successOverlay && !successOverlay.classList.contains("hidden")) return;
-      const riddleModal = document.getElementById("mazeRiddleModal");
-      if (riddleModal && !riddleModal.classList.contains("hidden")) return;
+      const instructionsModal = document.getElementById("mazeInstructionsModal");
+      if (instructionsModal && !instructionsModal.classList.contains("hidden")) return;
 
       if (!isMazeFullscreen) {
         toggleMazeFullscreen(true);
@@ -1153,18 +1025,28 @@
         const lvl2 = document.getElementById("viewLevel2");
         if (!lvl2 || lvl2.classList.contains("hidden")) return;
 
-        // Escape exits fullscreen
-        if (e.key === "Escape" && isMazeFullscreen) {
-          e.preventDefault();
-          toggleMazeFullscreen(false);
-          return;
+        // Escape closes the instructions modal first, then exits fullscreen
+        if (e.key === "Escape") {
+          const modal = document.getElementById("mazeInstructionsModal");
+          if (modal && !modal.classList.contains("hidden")) {
+            e.preventDefault();
+            closeMazeInstructionsModal();
+            return;
+          }
+          if (isMazeFullscreen) {
+            e.preventDefault();
+            toggleMazeFullscreen(false);
+            return;
+          }
         }
 
         if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
         if (!mazeEngine) return;
 
-        // Dev mode cheat: Ctrl + Shift + D
-        if (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+        // Dev mode cheat: backtick (`) — chosen because Ctrl+Shift+D is a
+        // reserved browser shortcut (e.g. "Bookmark all tabs" in Chrome/Edge)
+        // and gets intercepted before this handler runs.
+        if (e.key === '`' || e.code === 'Backquote') {
           e.preventDefault();
           mazeEngine.toggleDebug();
           return;
@@ -1365,26 +1247,11 @@
         msg.innerText = "Authentic key found! Stage 02 complete.";
         if (hint) hint.innerText = "PROCEED TO STAGE 03";
       } else {
-        if (mazeRiddleSolved && snap.correctKey) {
-          const colorStyles = {
-            RED:    { dot: "bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.9)]", text: "text-rose-400" },
-            BLUE:   { dot: "bg-sky-400 shadow-[0_0_12px_rgba(56,189,248,0.9)]", text: "text-sky-300" },
-            GREEN:  { dot: "bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.9)]", text: "text-emerald-300" },
-            YELLOW: { dot: "bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.9)]", text: "text-amber-300" },
-          };
-          const cs = colorStyles[snap.correctKey] || { dot: "bg-cyan-400 shadow-[0_0_12px_rgba(79,216,255,0.9)]", text: "text-cyan-300" };
-          dot.className = `h-2.5 w-2.5 shrink-0 rounded-full ${cs.dot} animate-pulse`;
-          label.innerText = "Target Locked";
-          label.className = `text-[9px] font-bold uppercase tracking-[0.24em] ${cs.text}`;
-          msg.innerHTML = `Find the <strong class="${cs.text} font-bold">${snap.correctKey}</strong> key hidden in the fog.`;
-          if (hint) hint.innerText = `TARGET: ${snap.correctKey} KEY`;
-        } else {
-          dot.className = "h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(79,216,255,0.9)] animate-pulse";
-          label.innerText = "Objective (Brute Force)";
-          label.className = "text-[9px] font-bold uppercase tracking-[0.24em] text-white/50";
-          msg.innerText = "Find the authentic key. Test keys or click 📜 Riddle Clue above!";
-          if (hint) hint.innerText = "4 KEYS · BRUTE FORCE OR SOLVE RIDDLE";
-        }
+        dot.className = "h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(79,216,255,0.9)] animate-pulse";
+        label.innerText = "Objective";
+        label.className = "text-[9px] font-bold uppercase tracking-[0.24em] text-white/50";
+        msg.innerText = "Find your authentic key hidden in the fog. Test one to find out.";
+        if (hint) hint.innerText = "4 KEYS · 1 CORRECT";
       }
     }
 
