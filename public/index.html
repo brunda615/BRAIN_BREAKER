@@ -721,6 +721,14 @@
     }
 
     // ── Login ─────────────────────────────────────────────────────────────────
+    function resetLoginButton() {
+      const btn = document.getElementById("loginSubmitBtn");
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<span>Enter Arena</span><span class="text-base">&rarr;</span>`;
+      }
+    }
+
     async function handleLogin(e) {
       e.preventDefault();
       const username = document.getElementById("loginUsername").value.trim();
@@ -747,17 +755,16 @@
           localStorage.setItem("brain_token",    currentToken);
           localStorage.setItem("brain_teamname", currentTeamName);
           hideLoginError();
+          resetLoginButton();
           if (anticheatEnabled) requestGameFullscreen();
           routeToLevel(currentLevel, data);
         } else {
           showLoginError(data.error || "Invalid credentials. Please try again.");
-          btn.disabled = false;
-          btn.innerHTML = `<span>Enter Arena</span><span class="text-base">&rarr;</span>`;
+          resetLoginButton();
         }
       } catch (err) {
         showLoginError("Cannot connect to server. Ensure server.py is running.");
-        btn.disabled = false;
-        btn.innerHTML = `<span>Enter Arena</span><span class="text-base">&rarr;</span>`;
+        resetLoginButton();
       }
     }
 
@@ -774,6 +781,27 @@
       localStorage.removeItem("brain_teamname");
       currentToken = ""; currentTeamName = ""; gameLocked = false;
       if (document.fullscreenElement) { try { document.exitFullscreen(); } catch(e) {} }
+
+      if (mazeAnimId) {
+        cancelAnimationFrame(mazeAnimId);
+        mazeAnimId = null;
+      }
+      if (mazeSyncTimer) {
+        clearInterval(mazeSyncTimer);
+        mazeSyncTimer = null;
+      }
+      mazeEngine = null;
+
+      ["winnerModal", "focusLostOverlay", "gameEndedOverlay", "removedOverlay"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add("hidden");
+      });
+
+      resetLoginButton();
+      hideLoginError();
+      const pwdInput = document.getElementById("loginPassword");
+      if (pwdInput) pwdInput.value = "";
+
       showView("viewLogin");
       document.getElementById("logoutBtn").classList.add("hidden");
       document.getElementById("levelBadge").classList.add("hidden");
@@ -812,6 +840,9 @@
       });
       const target = document.getElementById(id);
       if (target) target.classList.remove("hidden");
+      if (id === "viewLogin") {
+        resetLoginButton();
+      }
     }
 
     // ── Level 2: Maze Run Engine & Renderer ───────────────────────────────────
