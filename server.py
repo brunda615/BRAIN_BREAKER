@@ -173,12 +173,14 @@ def load_questions_from_csv():
                     topic = row.get("topic name", "General").strip()
                     a_str = row.get("answer", "").strip()
                     answers = [a.strip() for a in a_str.replace("|", ";").split(";") if a.strip()] or [a_str]
+                    hint=row.get("hint", "").strip()
                     if q_txt:
                         loaded.append({
                             "id":       int(q_no) if q_no.isdigit() else idx + 1,
                             "category": topic.upper(),
                             "question": q_txt,
                             "answers":  answers,
+                            "hint":     hint,
                         })
             _q_cache, _q_mtime = loaded, mtime
             print(f"[CSV] Loaded {len(loaded)} questions (mtime: {mtime})")
@@ -394,6 +396,7 @@ def build_state_response(team, state):
             q_data = {
                 "id": rq["id"], "category": rq["category"],
                 "question": rq["question"], "puzzle_number": cursor + 1,
+                "hint": rq.get("hint", ""),
             }
 
     hit  = l1_state.get("numbers_hit") or []
@@ -827,6 +830,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 next_q = {
                     "id": nq["id"], "category": nq["category"],
                     "question": nq["question"], "puzzle_number": new_cursor + 1,
+                    "hint": nq.get("hint", ""),
                 }
 
             self.json({
@@ -840,7 +844,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             })
             return
 
-        # ── Skip puzzle ───────────────────────────────────────────────────────
+                # ── Skip puzzle ───────────────────────────────────────────────────────
         if path == "/api/skip-puzzle":
             if GAME_ENDED:
                 self.json({"error": "Game has ended.", "game_ended": True}, 403); return
@@ -853,19 +857,28 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.json({"error": "You have been removed.", "removed": True}, 403); return
 
             questions   = load_questions_from_csv()
-            new_cursor  = state.get("current_question_cursor", 0) + 1
+            cursor      = state.get("current_question_cursor", 0)
+            q_order     = list(state.get("question_order") or [])
             new_skipped = state.get("questions_skipped", 0) + 1
+
+            if cursor < len(q_order):
+                skipped_idx = q_order[cursor]
+                q_order.append(skipped_idx)
+
+            new_cursor = cursor + 1
             update_state(team["id"], level, {
                 "current_question_cursor": new_cursor,
                 "questions_skipped":       new_skipped,
+                "question_order":          q_order,
             })
-            q_order = state.get("question_order") or []
-            next_q  = None
+
+            next_q = None
             if new_cursor < len(q_order) and q_order[new_cursor] < len(questions):
                 nq = questions[q_order[new_cursor]]
                 next_q = {
                     "id": nq["id"], "category": nq["category"],
                     "question": nq["question"], "puzzle_number": new_cursor + 1,
+                    "hint": nq.get("hint", ""),
                 }
             broadcast("team_progress", {
                 "team_name": team["team_name"],
