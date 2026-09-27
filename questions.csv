@@ -1,38 +1,39 @@
-1,"What has keys but cannot open locks, has space but no room, and allows you to enter but you can never walk inside?",Riddle,keyboard
+ques no.,question,topic name,answer,hint
+1,"What has keys but cannot open locks, has space but no room, and allows you to enter but you can never walk inside?",Riddle,keyboard,Something you are currently usimg
 2,"What will be printed by this Python snippet? x = [1, 2, 3, 4, 5]; print(x[::-2])",Coding,"[5, 3, 1]"
 3,"A train 180 meters long is traveling at a uniform speed of 54 km/h. How many seconds will it take to completely cross a stationary electric pole?",Aptitude,12
 4,"Pointing to a man in a photograph, a woman said, 'His mother is the mother-in-law of my husband's mother.' How is the man related to the woman?",Reasoning,father-in-law
 5,"If you multiply all the numbers on the telephone keypad, what is the final product?",Math,0
 6,"What is the output of the following C expression? int a = 5; printf('%d', a++ + ++a);",Coding,12
 7,"A clock shows 3:30. What is the angle in degrees between the hour hand and the minute hand?",Aptitude,75
-8,"I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?",Riddle,echo
+8,"I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?",Riddle,echo,Repeats back your words when you shout into a deep cave
 9,"Find the missing number in the sequence: 4, 9, 20, 43, 90, ?",Reasoning,185
 10,"What will this JavaScript code output to console? console.log(1 + '2' + 3 - 1);",Coding,122
 11,"A can finish a work in 12 days and B can finish the same work in 24 days. If they work together, how many days will they take to complete the work?",Aptitude,8
 12,"A bat and a ball cost $1.10 in total. The bat costs $1.00 more than the ball. How many cents does the ball cost?",Math,5
-13,"If January 1, 2024 was a Monday, what day of the week was March 1, 2104? (2024 is a leap year with 366 days)",Reasoning,friday
+13,"If January 1, 2024 was a Monday, what day of the week was March 1, 2104?",Reasoning,friday,2024 is a leap year with 366 days
 14,"What does SMS stand for? ",Aptitude,short message service
-15,"The more of this you take, the more you leave behind. What are they?",Riddle,footsteps
+15,"The more of this you take, the more you leave behind. What are they?",Riddle,footsteps,You make them every day when you move around
 16,"The price of a shirt is first increased by 20% and then decreased by 20%. What is the net percentage change in the price? (e.g. 10% decrease)",Aptitude,4% decrease
 17,"In Python, what does bool([]) == bool([0]) evaluate to? (True or False)",Coding,False
 18,"Five friends P, Q, R, S, T sit in a line facing North. S is between T and Q. Q is to the immediate left of R. P is to the immediate left of T. Who is sitting in the middle?",Reasoning,S
 19,"What is the remainder when 2^50 is divided by 7?",Math,4
-20,"Forward I am heavy, but backward I am not. What am I?",Riddle,ton
+20,"Forward I am heavy, but backward I am not. What am I?",Riddle,ton,Shift your focus from real world objects to how letters are spelled
 21,"Two cars start from points A and B towards each other, separated by 300 km. Car A travels at 60 km/h and Car B travels at 40 km/h. After how many hours will they meet?",Aptitude,3
 22,"A book and a pen together cost ₹150. The book costs ₹100 more than the pen. How much does the pen cost in rupees?",Aptitude,25
 23,"If 'WATER' is coded as 'YCVGT', what is the code for 'FIRE'?",Reasoning,HKTG
 24,"How many trailing zeros are at the end of 50! (50 factorial)?",Math,12
-25,"What building has the most stories in the entire world?",Riddle,library
+25,"What building has the most stories in the entire world?",Riddle,library,Shift your thinking from architectural building stories to narrative stories
 26,"What does this Python recursive function return for f(5)? def f(n): return 1 if n <= 1 else n + f(n - 2)",Coding,9
 27,"In a group of 100 professionals, 50 speak English, 40 speak Spanish, 30 speak French, 15 speak both English and Spanish, and 5 speak all three languages. If every professional speaks at least one of these three languages, and no one speaks only French and Spanish, how many professionals speak only French?",Aptitude,25
 28,"A person walks 10 meters North-east, turns left and walks 6 meters, then turns left an walks 10 meters. How many meters is the person from the starting point?",Reasoning,6
 29,"Two standard 6-sided dice are rolled simultaneously. What is the probability of getting a sum of exactly 7? (Write as fraction e.g. x/y)",Math,1/6
-30,"I have branches, but no fruit, trunk or leaves. What am I?",Riddle,bank
+30,"I have branches, but no fruit, trunk or leaves. What am I?",Riddle,bank,A place to handle your money not pick fruits
 31,"What is the time complexity of searching for an element in a balanced Binary Search Tree with N nodes in Big-O notation?",Coding,O(log n)
 32,"A boat goes 15 km downstream in 1 hour and returns upstream the same 15 km in 3 hours. What is the speed of the stream in km/h?",Aptitude,5
 33,"Statements: All cats are animals. All animals need water. Conclusion: Do all cats need water? (Yes or No)",Reasoning,Yes
 34,"What is the sum of first three prime numbers after 41? ",Math,143
-35,"What can travel around the world while staying in a single corner?",Riddle,stamp
+35,"What can travel around the world while staying in a single corner?",Riddle,stamp,It is unique for every country
 36,"In Python 3, what does 3 * 'ab' + 'c' + 2 * '4' evaluate to?",Coding,abababc44
 37,"Pipe A fills a tank in 6 hours, while Pipe B empties it in 12 hours. If both pipes are opened together, how many hours will it take to fill the tank?",Aptitude,12
 38,"What comes next in the letter series? B, D, G, K, P, ?",Reasoning,V
@@ -57,13 +58,13 @@
 57,"If A:B = 2:3 and B:C = 4:5, find the ratio A:C. (Write as x:y)",Aptitude,8:15
 58,"Which one does NOT belong to the group? Iron, Copper, Mercury, Silver, Aluminum",Reasoning,mercury
 59,"What is 25^2 - 24^2?",Math,49
-60,"If you drop a yellow hat in the Red Sea, what does it become?",Riddle,wet
+60,"If you drop a yellow hat in the Red Sea, what does it become?",Riddle,wet,Just use your common sense!
 61,"What has a head and a tail but no body?",Riddle,coin
 62,"What is the output of: print(list(range(10, 0, -2)))",Coding,"[10, 8, 6, 4, 2]"
 63,"A sum of money doubles itself in 8 years at simple interest. In how many years will it become 4 times itself?",Aptitude,24
 64,"Statement: All pens are pencils. All pencils are erasers. Conclusion: All pens are erasers. Is this conclusion valid? (Yes/No)",Reasoning,Yes
 65,"What is the sum of the first 10 prime numbers?",Math,169
-66,"The more you feed it, the more it grows, but if you give it water, it dies. What am I?",Riddle,fire
+66,"The more you feed it, the more it grows, but if you give it water, it dies. What am I?",Riddle,fire,It consumes everything that comes it's way
 67,"What is the time complexity of building a heap (heapify) from n elements in Big-O notation?",Coding,O(n)
 68,"A can do a piece of work in 10 days, B in 15 days. They work together for 2 days, then A leaves. In how many more days will B alone finish the remaining work?",Aptitude,10
 69,"In a row of children, A is 7th from the left and 12th from the right. How many children are there in total?",Reasoning,18
@@ -83,7 +84,7 @@
 83,"A train crosses a platform 200 m long in 30 seconds and crosses a pole in 15 seconds. What is the length of the train in meters?",Aptitude,200
 84,"A is the brother of B. B is the sister of C. C is the father of D. How is A related to D?",Reasoning,uncle
 85,"What is the sum of the interior angles of a regular 12-sided polygon (dodecagon), in degrees?",Math,1800
-86,"What can you hold in your left hand but never in your right hand?",Riddle,right elbow
+86,"What can you hold in your left hand but never in your right hand?",Riddle,right elbow,You use it to support yourself
 87,"What does print(type(1/2)) output in Python 3?",Coding,<class 'float'>
 88,"The ages of A and B are in the ratio 3:5. After 9 years, the ratio becomes 3:4. What is B's present age?",Aptitude,15
 89,"If the sum of two numbers is 45 and their difference is 15, what is the product of the two numbers?",Math,450
@@ -93,7 +94,7 @@
 93,"A shopkeeper marks up an item's price by 40% and then offers a 40% discount on the marked price. What is the overall percentage loss on the original cost price?",Aptitude,16% loss
 94,"Find the odd one out: 3, 5, 11, 14, 17, 21",Reasoning,14
 95,"What is the value of 15C3?",Math,455
-96,"What has one head, one foot, and four legs?",Riddle,bed
+96,"What has one head, one foot, and four legs?",Riddle,bed,You use it every night
 97,"What starts with an E, ends with an E, but usually only contains a single letter?",Riddle,envelope
 98,"A car travels the first half of a journey at 40 km/h and the second half at 60 km/h. What is the average speed for the whole journey in km/h?",Aptitude,48
 99,"If 1st March 2024 was a Friday, what day of the week will 1st September 2027 be?",Reasoning,Wednesday
