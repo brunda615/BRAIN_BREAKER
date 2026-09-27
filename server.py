@@ -173,7 +173,7 @@ def load_questions_from_csv():
                     topic = row.get("topic name", "General").strip()
                     a_str = row.get("answer", "").strip()
                     answers = [a.strip() for a in a_str.replace("|", ";").split(";") if a.strip()] or [a_str]
-                    hint=row.get("hint", "").strip()
+                    hint = (row.get("hint") or "").strip()
                     if q_txt:
                         loaded.append({
                             "id":       int(q_no) if q_no.isdigit() else idx + 1,
