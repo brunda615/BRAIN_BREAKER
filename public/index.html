@@ -293,6 +293,11 @@
             </div>
             <div class="mb-6">
               <div id="puzzleQuestionText" class="text-lg sm:text-xl font-bold text-white leading-snug whitespace-pre-line font-sans">Loading question...</div>
+              <button type="button" id="hintToggleBtn" onclick="toggleHint()"
+                class="hidden mt-3 text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1.5 cursor-pointer">
+                <span>💡</span> <span id="hintToggleText">Show hint</span>
+              </button>
+              <div id="hintBox" class="hidden mt-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 leading-relaxed"></div>
             </div>
             <div id="answerFeedback" class="hidden mb-5 p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all">
               <div class="flex items-center gap-2" id="feedbackMessage"></div>
@@ -1389,9 +1394,17 @@
     }
 
     function renderPuzzleCorner(puzzle, isWinner) {
-      const input     = document.getElementById("puzzleAnswerInput");
-      const submitBtn = document.getElementById("submitAnswerBtn");
-      const skipBtn   = document.getElementById("skipPuzzleBtn");
+      const input      = document.getElementById("puzzleAnswerInput");
+      const submitBtn  = document.getElementById("submitAnswerBtn");
+      const skipBtn    = document.getElementById("skipPuzzleBtn");
+      const hintBtn    = document.getElementById("hintToggleBtn");
+      const hintBox    = document.getElementById("hintBox");
+
+      hintBox.classList.add("hidden");
+      hintBox.innerText = "";
+      document.getElementById("hintToggleText").innerText = "Show hint";
+      hintBtn.classList.add("hidden");
+
       if (isWinner) {
         document.getElementById("puzzleNumberBadge").innerText    = "COMPLETE";
         document.getElementById("puzzleCategoryBadge").innerText  = "VICTORY";
@@ -1417,9 +1430,28 @@
       };
       catBadge.className = catStyles[cat] || "text-xs font-bold uppercase tracking-wide bg-purple-600/20 text-purple-400 border border-purple-500/30 px-2.5 py-0.5 rounded-md";
       document.getElementById("puzzleQuestionText").innerText = puzzle.question;
+
+      if (puzzle.hint) {
+        hintBtn.classList.remove("hidden");
+        hintBtn.dataset.hint = puzzle.hint;
+      }
+
       input.disabled = false; input.value = ""; input.focus();
       submitBtn.disabled = false; skipBtn.disabled = false;
       submitBtn.className = "flex-1 py-3.5 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition transform active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer";
+    }
+    function toggleHint() {
+      const hintBox = document.getElementById("hintBox");
+      const hintBtn = document.getElementById("hintToggleBtn");
+      const label   = document.getElementById("hintToggleText");
+      if (hintBox.classList.contains("hidden")) {
+        hintBox.innerText = hintBtn.dataset.hint || "";
+        hintBox.classList.remove("hidden");
+        label.innerText = "Hide hint";
+      } else {
+        hintBox.classList.add("hidden");
+        label.innerText = "Show hint";
+      }
     }
 
     // ── Submit answer ─────────────────────────────────────────────────────────
