@@ -88,17 +88,21 @@
 
   // Torch-lit stone dungeon palette
   const PALETTE = {
-    void: '#070504',
-    floor: '#231d18',
-    floorLit: '#3e342c',
-    wall: '#6b6157',
-    wallGlow: '#ffb15c',
-    player: '#ffd9a0',
-    start: '#ffe0a3',
-    accent: '#ff8a3d',
-    success: '#3df5a5',
-    wrong: '#ff4d6d'
-  };
+  void: '#061108',
+
+  wallBase: '#123b18',
+  wallDark: '#0a2810',
+  wallLight: '#2d6731',
+
+  start: '#d6c85a',
+
+  fog: '#102916',
+
+  text: '#e8f5e9',
+  muted: '#a8c5aa',
+
+  keyGlow: '#ffffff'
+};
 
   const WALL = { N: 1, E: 2, S: 4, W: 8 };
 
@@ -564,141 +568,141 @@
 // never sent in the clue text.
 //
 
-const COLOR_CLUES = {
-  RED: {
-    1: [
-      'The internet calls this a warning. Dating apps practically made it famous.',
-      'Two card suits would answer this immediately.',
-      'Mars has been carrying this association for centuries.',
-      'A traffic light uses this when the conversation is over.',
-      'If “danger” had a favourite outfit, this would be it.',
-      'The opposite of a green flag, but somehow much better at getting ignored.',
-      'A certain planet, two card suits, and a stop signal share something obvious.',
-      'In Among Us, seeing this colour does not exactly improve your trust issues.'
-    ],
+// const COLOR_CLUES = {
+//   RED: {
+//     1: [
+//       'The internet calls this a warning. Dating apps practically made it famous.',
+//       'Two card suits would answer this immediately.',
+//       'Mars has been carrying this association for centuries.',
+//       'A traffic light uses this when the conversation is over.',
+//       'If “danger” had a favourite outfit, this would be it.',
+//       'The opposite of a green flag, but somehow much better at getting ignored.',
+//       'A certain planet, two card suits, and a stop signal share something obvious.',
+//       'In Among Us, seeing this colour does not exactly improve your trust issues.'
+//     ],
 
-    2: [
-      'A carpet can have it, a flag can have it, and a person can see it when they are furious.',
-      'The group chat would call it a red flag before you finished explaining the story.',
-      'It can mean love, danger, debt, and embarrassment without changing its identity.',
-      'In roulette, half the numbered pockets are associated with it.',
-      'A superhero may wear it. A warning sign may use it. Your bank balance may fear it.',
-      'One colour somehow connects roses, revolutions, rage, and roulette.'
-    ],
+//     2: [
+//       'A carpet can have it, a flag can have it, and a person can see it when they are furious.',
+//       'The group chat would call it a red flag before you finished explaining the story.',
+//       'It can mean love, danger, debt, and embarrassment without changing its identity.',
+//       'In roulette, half the numbered pockets are associated with it.',
+//       'A superhero may wear it. A warning sign may use it. Your bank balance may fear it.',
+//       'One colour somehow connects roses, revolutions, rage, and roulette.'
+//     ],
 
-    3: [
-      '🚩 You know the meme. Now solve the colour without being told the meme.',
-      'It can signal “stop”, “danger”, “passion”, or “you should probably leave.”',
-      'A colour with enough meanings to start a fight, end a relationship, or win a card game.',
-      'Think: Ferrari, Mars, roses, roulette. What do they secretly agree on?',
-      'The answer is hiding in the sentence: “That was a massive warning sign, bro.”'
-    ]
-  },
+//     3: [
+//       '🚩 You know the meme. Now solve the colour without being told the meme.',
+//       'It can signal “stop”, “danger”, “passion”, or “you should probably leave.”',
+//       'A colour with enough meanings to start a fight, end a relationship, or win a card game.',
+//       'Think: Ferrari, Mars, roses, roulette. What do they secretly agree on?',
+//       'The answer is hiding in the sentence: “That was a massive warning sign, bro.”'
+//     ]
+//   },
 
-  BLUE: {
-    1: [
-      'A person can be one without being painted.',
-      'Some playlists are basically this colour in audio form.',
-      'The sky gets accused of it every clear afternoon.',
-      'A police officer might be described using this colour.',
-      'A certain moon in the Solar System has this as its name.',
-      'The opposite of “seeing red” in one very specific emotional sense.'
-    ],
+//   BLUE: {
+//     1: [
+//       'A person can be one without being painted.',
+//       'Some playlists are basically this colour in audio form.',
+//       'The sky gets accused of it every clear afternoon.',
+//       'A police officer might be described using this colour.',
+//       'A certain moon in the Solar System has this as its name.',
+//       'The opposite of “seeing red” in one very specific emotional sense.'
+//     ],
 
-    2: [
-      'A mood, a music genre, and a police uniform can all point to the same answer.',
-      'Someone can have this colour without owning a single piece of clothing.',
-      'If the playlist starts at midnight and every song hurts, you are getting warmer.',
-      'It can describe an inexperienced worker, a sad mood, and a law-enforcement officer.',
-      'A planet looks this way from space, but that is not the only reason you know it.'
-    ],
+//     2: [
+//       'A mood, a music genre, and a police uniform can all point to the same answer.',
+//       'Someone can have this colour without owning a single piece of clothing.',
+//       'If the playlist starts at midnight and every song hurts, you are getting warmer.',
+//       'It can describe an inexperienced worker, a sad mood, and a law-enforcement officer.',
+//       'A planet looks this way from space, but that is not the only reason you know it.'
+//     ],
 
-    3: [
-      '“I am fine” + headphones + rain outside = suspiciously specific clue.',
-      'The answer can describe a mood without describing a facial expression.',
-      'One word connects sadness, uniforms, music, and a planet.',
-      'If the vibe is immaculate but emotionally devastating, think here.',
-      'The colour is also hiding inside an adjective meaning inexperienced.'
-    ]
-  },
+//     3: [
+//       '“I am fine” + headphones + rain outside = suspiciously specific clue.',
+//       'The answer can describe a mood without describing a facial expression.',
+//       'One word connects sadness, uniforms, music, and a planet.',
+//       'If the vibe is immaculate but emotionally devastating, think here.',
+//       'The colour is also hiding inside an adjective meaning inexperienced.'
+//     ]
+//   },
 
-  GREEN: {
-    1: [
-      'Traffic says go. Dating advice says good sign.',
-      'A beginner can be one.',
-      'Fruit sometimes starts here before becoming edible.',
-      'The opposite of a red flag.',
-      'The Hulk would probably approve.',
-      'Money can be associated with it even when nobody is talking about trees.'
-    ],
+//   GREEN: {
+//     1: [
+//       'Traffic says go. Dating advice says good sign.',
+//       'A beginner can be one.',
+//       'Fruit sometimes starts here before becoming edible.',
+//       'The opposite of a red flag.',
+//       'The Hulk would probably approve.',
+//       'Money can be associated with it even when nobody is talking about trees.'
+//     ],
 
-    2: [
-      'A traffic signal, a jealous person, and an inexperienced person can all point to the same word.',
-      'The internet turned this colour into relationship approval.',
-      'It can describe envy without ever mentioning jealousy directly.',
-      'A monster, a beginner, and an environmental movement all share this clue.',
-      'When the group chat says “he actually communicates,” this colour gets involved.'
-    ],
+//     2: [
+//       'A traffic signal, a jealous person, and an inexperienced person can all point to the same word.',
+//       'The internet turned this colour into relationship approval.',
+//       'It can describe envy without ever mentioning jealousy directly.',
+//       'A monster, a beginner, and an environmental movement all share this clue.',
+//       'When the group chat says “he actually communicates,” this colour gets involved.'
+//     ],
 
-    3: [
-      '🚦 + “he respects boundaries” + 🌱 = solve the common denominator.',
-      'The same word can describe a traffic instruction, jealousy, and someone new to the game.',
-      'One colour became the internet’s shorthand for “okay, this person is probably safe.”',
-      'It can mean “go”, “grow”, “beginner”, and “jealous” depending on what follows it.',
-      'A flag, a traffic light, and a fruit before breakfast all know the answer.'
-    ]
-  },
+//     3: [
+//       '🚦 + “he respects boundaries” + 🌱 = solve the common denominator.',
+//       'The same word can describe a traffic instruction, jealousy, and someone new to the game.',
+//       'One colour became the internet’s shorthand for “okay, this person is probably safe.”',
+//       'It can mean “go”, “grow”, “beginner”, and “jealous” depending on what follows it.',
+//       'A flag, a traffic light, and a fruit before breakfast all know the answer.'
+//     ]
+//   },
 
-  YELLOW: {
-    1: [
-      'Not stop. Not go. Basically “bro, wait.”',
-      'A banana usually gives this one away.',
-      'A school bus would know the answer.',
-      'It appears between two more decisive choices on a traffic signal.',
-      'The Sun gets drawn wearing it by approximately every five-year-old ever.',
-      'A warning sign might choose this when red feels too aggressive.'
-    ],
+//   YELLOW: {
+//     1: [
+//       'Not stop. Not go. Basically “bro, wait.”',
+//       'A banana usually gives this one away.',
+//       'A school bus would know the answer.',
+//       'It appears between two more decisive choices on a traffic signal.',
+//       'The Sun gets drawn wearing it by approximately every five-year-old ever.',
+//       'A warning sign might choose this when red feels too aggressive.'
+//     ],
 
-    2: [
-      'A newspaper can practice it. A fruit can be it. A traffic light can flash it.',
-      'It lives somewhere between “absolutely not” and “send it.”',
-      'The colour equivalent of typing “hmmm…” before replying.',
-      'A certain journalism style shares its name with this colour.',
-      'If red says stop and green says go, this one says “your call.”'
-    ],
+//     2: [
+//       'A newspaper can practice it. A fruit can be it. A traffic light can flash it.',
+//       'It lives somewhere between “absolutely not” and “send it.”',
+//       'The colour equivalent of typing “hmmm…” before replying.',
+//       'A certain journalism style shares its name with this colour.',
+//       'If red says stop and green says go, this one says “your call.”'
+//     ],
 
-    3: [
-      'Traffic uses it for hesitation; journalism uses it for sensationalism.',
-      'A banana, a school bus, and a controversial newspaper style walk into a room.',
-      'Neither W nor L. Just pure “let me think about it.”',
-      'The middle child of the traffic signal has an unexpectedly dramatic career in journalism.',
-      'If a colour could leave you on read while technically responding, this would be it.'
-    ]
-  }
-};
+//     3: [
+//       'Traffic uses it for hesitation; journalism uses it for sensationalism.',
+//       'A banana, a school bus, and a controversial newspaper style walk into a room.',
+//       'Neither W nor L. Just pure “let me think about it.”',
+//       'The middle child of the traffic signal has an unexpectedly dramatic career in journalism.',
+//       'If a colour could leave you on read while technically responding, this would be it.'
+//     ]
+//   }
+// };
 
 /**
  * Return one difficult clue for the correct colour.
  *
  * The colour itself is NEVER included in the returned text.
- */
-function getColourClue(correctColor, level) {
-  const normalized = normalizeColor(correctColor);
+//  */
+// function getColourClue(correctColor, level) {
+//   const normalized = normalizeColor(correctColor);
 
-  if (!normalized || !COLOR_CLUES[normalized]) {
-    return 'Something remains hidden.';
-  }
+//   if (!normalized || !COLOR_CLUES[normalized]) {
+//     return 'Something remains hidden.';
+//   }
 
-  const difficulty = Math.min(3, Math.max(1, level));
+//   const difficulty = Math.min(3, Math.max(1, level));
 
-  const clues = COLOR_CLUES[normalized][difficulty];
+//   const clues = COLOR_CLUES[normalized][difficulty];
 
-  if (!clues || clues.length === 0) {
-    return 'Something remains hidden.';
-  }
+//   if (!clues || clues.length === 0) {
+//     return 'Something remains hidden.';
+//   }
 
-  return clues[Math.floor(Math.random() * clues.length)];
-}
+//   return clues[Math.floor(Math.random() * clues.length)];
+// }
   // ==========================================================================
   // GAME ENGINE
   // ==========================================================================
@@ -761,9 +765,9 @@ function getColourClue(correctColor, level) {
         // remaining time (ms) of reversed controls
         controlsReversedMs: 0,
 
-        // wrong-key clue (survives the reshuffle until the next wrong key)
-        clue: null,
-        clueLevel: 0
+        // // wrong-key clue (survives the reshuffle until the next wrong key)
+        // clue: null,
+        // clueLevel: 0
       };
 
       this.revealAroundPlayer();
@@ -1174,10 +1178,10 @@ function getColourClue(correctColor, level) {
       this.state.wrongKey = key.color;
       this.state.wrongKeyCount += 1;
 
-      // Clue is computed BEFORE resetAfterWrongKey() reshuffles the keys.
-      const level = Math.min(3, this.state.wrongKeyCount);
-      this.state.clueLevel = level;
-      this.state.clue = this.buildWrongKeyClue(key, level);
+      // // Clue is computed BEFORE resetAfterWrongKey() reshuffles the keys.
+      // const level = Math.min(3, this.state.wrongKeyCount);
+      // this.state.clueLevel = level;
+      // this.state.clue = this.buildWrongKeyClue(key, level);
 
       this.state.status = 'WRONG_KEY';
       this.state.wrongFeedbackRemainingMs = CONFIG.wrongFeedbackMs;
@@ -1225,15 +1229,15 @@ function getColourClue(correctColor, level) {
 //
 // ==========================================================================
 
-buildWrongKeyClue(wrongKey, level) {
-  const correctColor = this.state.correctKey;
+// buildWrongKeyClue(wrongKey, level) {
+//   const correctColor = this.state.correctKey;
 
-  if (!correctColor) {
-    return 'Something remains hidden.';
-  }
+//   if (!correctColor) {
+//     return 'Something remains hidden.';
+//   }
 
-  return getColourClue(correctColor, level);
-}
+//   return getColourClue(correctColor, level);
+// }
 
     // FOG OF WAR
     revealAroundPlayer() {
@@ -1277,8 +1281,8 @@ buildWrongKeyClue(wrongKey, level) {
         wrongKey: this.state.wrongKey,
         wrongKeyCount: this.state.wrongKeyCount,
 
-        clue: this.state.clue,
-        clueLevel: this.state.clueLevel,
+        // clue: this.state.clue,
+        // clueLevel: this.state.clueLevel,
 
         controlsReversed: this.state.controlsReversedMs > 0,
         controlsReversedMs: isFinite(this.state.controlsReversedMs) ? this.state.controlsReversedMs : null,
@@ -2285,241 +2289,123 @@ buildWrongKeyClue(wrongKey, level) {
 
   // WRONG-KEY RETURN BANNER
  function drawDisorientBanner(ctx, state, width) {
-    const remaining = state.controlsReversedMs;
+  const remaining = state.controlsReversedMs;
 
-    if (!remaining || remaining <= 0) return;
+  if (!remaining || remaining <= 0) return;
 
-    const total = CONFIG.disorient.durationMs;
+  const total = CONFIG.disorient.durationMs;
 
-    const fade = isFinite(remaining)
-        ? Math.min(
-            1,
-            (total - remaining) / 150 + 0.2,
-            remaining / 400
-        )
-        : 1;
+  const fade = isFinite(remaining)
+    ? Math.min(
+        1,
+        (total - remaining) / 150 + 0.2,
+        remaining / 400
+      )
+    : 1;
 
-    // --------------------------------
-    // BANNER SIZE
-    // --------------------------------
+  const w = Math.min(300, width - 24);
+  const h = 135;
 
-    const w = Math.min(430, width - 24);
-    const h = state.clue ? 220 : 175;
+  const x = Math.max(12, width - w - 14);
+  const y = 14;
 
-    const x = Math.max(12, width - w - 14);
-    const y = 14;
+  const centerX = x + w / 2;
 
-    const centerX = x + w / 2;
+  ctx.save();
 
-    ctx.save();
+  ctx.globalAlpha = Math.max(0, fade);
 
-    ctx.globalAlpha = Math.max(0, fade);
+  // Background
+  ctx.shadowColor = 'rgba(0,0,0,0.55)';
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 5;
 
-    // --------------------------------
-    // SHADOW
-    // --------------------------------
+  ctx.fillStyle = 'rgba(8,4,12,0.95)';
 
-    ctx.shadowColor = 'rgba(0,0,0,0.55)';
-    ctx.shadowBlur = 18;
-    ctx.shadowOffsetY = 6;
-
-    // --------------------------------
-    // BACKGROUND
-    // --------------------------------
-
-    ctx.fillStyle = 'rgba(8, 4, 12, 0.96)';
-
-    if (ctx.roundRect) {
-        ctx.beginPath();
-        ctx.roundRect(x, y, w, h, 12);
-        ctx.fill();
-    } else {
-        ctx.fillRect(x, y, w, h);
-    }
-
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-
-    // --------------------------------
-    // BORDER
-    // --------------------------------
-
-    ctx.strokeStyle = 'rgba(255, 77, 109, 0.9)';
-    ctx.lineWidth = 1.8;
-
-    if (ctx.roundRect) {
-        ctx.beginPath();
-        ctx.roundRect(x, y, w, h, 12);
-        ctx.stroke();
-    } else {
-        ctx.strokeRect(x, y, w, h);
-    }
-
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    // --------------------------------
-    // WRONG KEY
-    // --------------------------------
-
-    ctx.font = '800 20px Arial, sans-serif';
-    ctx.fillStyle = '#ff4d6d';
-
-    ctx.fillText(
-        '❌ WRONG KEY',
-        centerX,
-        y + 27
-    );
-
-    // --------------------------------
-    // RETURN INSTRUCTION
-    // --------------------------------
-
-    ctx.font = '700 11px Arial, sans-serif';
-    ctx.fillStyle = '#d7e4ff';
-
-    ctx.fillText(
-        'RETURN TO START — THEN TRY AGAIN',
-        centerX,
-        y + 49
-    );
-
-    // --------------------------------
-    // SEPARATOR
-    // --------------------------------
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    ctx.lineWidth = 1;
-
+  if (ctx.roundRect) {
     ctx.beginPath();
-    ctx.moveTo(x + 24, y + 64);
-    ctx.lineTo(x + w - 24, y + 64);
-    ctx.stroke();
+    ctx.roundRect(x, y, w, h, 12);
+    ctx.fill();
+  } else {
+    ctx.fillRect(x, y, w, h);
+  }
 
-    // --------------------------------
-    // KEY HINT
-    // --------------------------------
+  // Border
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
 
-    let currentY = y + 82;
+  ctx.strokeStyle = '#ff4d6d';
+  ctx.lineWidth = 1.8;
 
-    if (state.clue) {
-
-        ctx.font = '800 13px Arial, sans-serif';
-        ctx.fillStyle = '#ffd166';
-
-        ctx.fillText(
-            '🔎 YOUR KEY HINT',
-            centerX,
-            currentY
-        );
-
-        currentY += 18;
-
-        ctx.font = '600 11px Arial, sans-serif';
-        ctx.fillStyle = '#cfd8ea';
-
-        ctx.fillText(
-            'Solve this to identify your key colour.',
-            centerX,
-            currentY
-        );
-
-        currentY += 22;
-
-        // --------------------------------
-        // CLUE TEXT
-        // --------------------------------
-
-        ctx.font = 'italic 14px Arial, sans-serif';
-        ctx.fillStyle = '#ffffff';
-
-        const maxTextWidth = w - 50;
-        const words = String(state.clue).split(/\s+/);
-
-        const lines = [];
-        let currentLine = '';
-
-        for (const word of words) {
-            const testLine = currentLine
-                ? `${currentLine} ${word}`
-                : word;
-
-            if (
-                ctx.measureText(testLine).width <= maxTextWidth
-            ) {
-                currentLine = testLine;
-            } else {
-                if (currentLine) {
-                    lines.push(currentLine);
-                }
-
-                currentLine = word;
-            }
-        }
-
-        if (currentLine) {
-            lines.push(currentLine);
-        }
-
-        // Limit to 3 lines so the banner never overflows.
-        const visibleLines = lines.slice(0, 3);
-
-        for (const line of visibleLines) {
-            ctx.fillText(
-                `"${line}"`,
-                centerX,
-                currentY
-            );
-
-            currentY += 19;
-        }
-    }
-
-    // --------------------------------
-    // CONTROLS SECTION
-    // --------------------------------
-
-    const controlsSeparatorY = y + h - 66;
-
-    // Separator above controls
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-    ctx.lineWidth = 1;
-
+  if (ctx.roundRect) {
     ctx.beginPath();
-    ctx.moveTo(x + 24, controlsSeparatorY);
-    ctx.lineTo(x + w - 24, controlsSeparatorY);
+    ctx.roundRect(x, y, w, h, 12);
     ctx.stroke();
+  } else {
+    ctx.strokeRect(x, y, w, h);
+  }
 
-    // Controls title
-    ctx.font = '800 10px Arial, sans-serif';
-    ctx.fillStyle = '#ffd166';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
 
-    ctx.fillText(
-        '⚠ CONTROLS DISORIENTED',
-        centerX,
-        controlsSeparatorY + 17
-    );
+  // Title
+  ctx.font = '800 19px Arial, sans-serif';
+  ctx.fillStyle = '#ff4d6d';
 
-    // Control mappings
-    ctx.font = '700 10px Arial, sans-serif';
-    ctx.fillStyle = '#d7e4ff';
+  ctx.fillText(
+    '❌ WRONG KEY',
+    centerX,
+    y + 27
+  );
 
-    ctx.fillText(
-        'W → DOWN     S → UP',
-        centerX,
-        controlsSeparatorY + 36
-    );
+  // Instruction
+  ctx.font = '700 11px Arial, sans-serif';
+  ctx.fillStyle = '#d7e4ff';
 
-    ctx.fillText(
-        'D → LEFT     A → RIGHT',
-        centerX,
-        controlsSeparatorY + 51
-    );
+  ctx.fillText(
+    'RETURN TO START — THEN TRY AGAIN',
+    centerX,
+    y + 49
+  );
 
-    ctx.restore();
+  // Separator
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1;
+
+  ctx.beginPath();
+  ctx.moveTo(x + 22, y + 66);
+  ctx.lineTo(x + w - 22, y + 66);
+  ctx.stroke();
+
+  // Controls warning
+  ctx.font = '800 10px Arial, sans-serif';
+  ctx.fillStyle = '#ffd166';
+
+  ctx.fillText(
+    '⚠ CONTROLS DISORIENTED',
+    centerX,
+    y + 86
+  );
+
+  // Controls
+  ctx.font = '700 10px Arial, sans-serif';
+  ctx.fillStyle = '#d7e4ff';
+
+  ctx.fillText(
+    'W → DOWN     S → UP',
+    centerX,
+    y + 105
+  );
+
+  ctx.fillText(
+    'D → LEFT     A → RIGHT',
+    centerX,
+    y + 121
+  );
+
+  ctx.restore();
 }
-
   // DEBUG OVERLAY
   function drawDebugOverlay(ctx, state, width) {
     if (!state.debug) return;
