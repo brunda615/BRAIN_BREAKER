@@ -589,20 +589,24 @@
           </a>
         </div>
 
-        <!-- Clone / Terminal Box -->
-        <div class="space-y-2">
-          <div class="flex items-center justify-between text-[11px] text-zinc-400 font-mono">
-            <span class="uppercase tracking-wider">Repository URL</span>
-            <button onclick="copyRepoUrl()" id="copyRepoBtn" class="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 font-bold transition cursor-pointer">
-              <span>📋 Copy Clone Command</span>
+        <!-- Clue / Instructions Box -->
+        <div class="rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-[#121526] via-[#0d101d] to-[#070913] p-4 sm:p-5 space-y-3 shadow-inner">
+          <div class="flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2 text-indigo-300 font-bold uppercase tracking-wider">
+              <span class="text-base">🔍</span>
+              <span>Next Objective</span>
+            </div>
+            <button onclick="copyRepoUrl()" id="copyRepoBtn" class="flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-mono font-medium transition cursor-pointer">
+              <span>📋 Copy Link</span>
             </button>
           </div>
-          <div class="bg-[#05070d] border border-zinc-800 rounded-2xl p-3.5 flex items-center justify-between gap-3 font-mono text-xs sm:text-sm text-zinc-300 overflow-x-auto select-all">
-            <span class="text-zinc-500 select-none">$</span>
-            <span class="flex-1 text-emerald-400 font-mono" id="repoCloneCmd">git clone https://github.com/AkshatOP/gradient_l3.git</span>
-            <button onclick="copyRepoUrl()" class="px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-sans transition shrink-0 cursor-pointer">
-              Copy
-            </button>
+          <div class="bg-black/40 border border-white/5 p-3.5 rounded-xl space-y-2">
+            <p class="text-sm sm:text-base text-zinc-100 font-medium leading-relaxed font-sans">
+              Go to that repository and <span class="text-cyan-300 font-bold">you'll find a clue there</span>.
+            </p>
+            <div class="text-xs text-zinc-400 font-mono truncate select-all">
+              https://github.com/AkshatOP/gradient_l3
+            </div>
           </div>
         </div>
 
@@ -1153,20 +1157,20 @@
     }
 
     function copyRepoUrl() {
-      const cmd = "git clone https://github.com/AkshatOP/gradient_l3.git";
+      const url = "https://github.com/AkshatOP/gradient_l3";
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(cmd).then(showCopiedNotice).catch(() => fallbackCopy(cmd));
+        navigator.clipboard.writeText(url).then(showCopiedNotice).catch(() => fallbackCopy(url));
       } else {
-        fallbackCopy(cmd);
+        fallbackCopy(url);
       }
     }
 
     function showCopiedNotice() {
       const btn = document.getElementById("copyRepoBtn");
       if (btn) {
-        btn.innerHTML = '<span class="text-emerald-400">✓ Copied!</span>';
+        btn.innerHTML = '<span class="text-emerald-400 font-bold">✓ Copied!</span>';
         setTimeout(() => {
-          btn.innerHTML = '<span>📋 Copy Clone Command</span>';
+          btn.innerHTML = '<span>📋 Copy Link</span>';
         }, 2000);
       }
     }
