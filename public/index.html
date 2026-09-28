@@ -158,19 +158,27 @@
       pointer-events: none;
     }
     .cipher-input {
-      background: rgba(0,0,0,.6) !important;
-      border: 1px solid rgba(34,211,238,.25) !important;
-      color: #22d3ee !important;
-      font-family: 'JetBrains Mono', monospace !important;
-      letter-spacing: 0.1em;
+      background: rgba(0,0,0,.5) !important;
+      border: 1px solid rgba(34,211,238,.22) !important;
+      color: #e2e8f0 !important;
+      font-family: 'Inter', sans-serif !important;
+      font-size: 0.875rem !important;
+      letter-spacing: 0.04em;
       caret-color: #22d3ee;
     }
     .cipher-input:focus {
-      border-color: rgba(34,211,238,.6) !important;
-      box-shadow: 0 0 0 3px rgba(34,211,238,.12) !important;
+      border-color: rgba(34,211,238,.55) !important;
+      box-shadow: 0 0 0 3px rgba(34,211,238,.10) !important;
       outline: none;
     }
-    .cipher-input::placeholder { color: rgba(34,211,238,.3) !important; letter-spacing: 0.05em; }
+    .cipher-input::placeholder { color: rgba(148,163,184,.4) !important; }
+    @keyframes fragment-pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(34,211,238,.0), inset 0 0 20px rgba(0,0,0,.6); }
+      50%     { box-shadow: 0 0 24px 2px rgba(34,211,238,.12), inset 0 0 20px rgba(0,0,0,.6); }
+    }
+    .cipher-fragment {
+      animation: fragment-pulse 3.5s ease-in-out infinite;
+    }
 
     /* Immersive full-screen maze mode */
     #viewLevel2.maze-fullscreen {
@@ -568,27 +576,8 @@
           </div>
         </div>
 
-        <!-- Success Overlay -->
-        <div id="mazeSuccessOverlay" class="hidden absolute inset-0 z-30 flex items-center justify-center bg-[#02050b]/85 backdrop-blur-md p-4">
-          <div class="w-full max-w-md rounded-3xl border border-emerald-400/30 bg-[#07130f]/95 p-8 text-center shadow-2xl space-y-4">
-            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/10 text-3xl text-emerald-300 shadow-[0_0_40px_rgba(52,211,153,0.3)] animate-bounce">
-              ✓
-            </div>
-            <div class="text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-300">Key Verified</div>
-            <h2 class="text-3xl font-black text-white">Stage 02 Complete!</h2>
-            <p class="text-xs text-zinc-300">You discovered the authentic key and conquered the Fog Maze.</p>
-            <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <div class="text-[10px] uppercase tracking-wider text-zinc-400">Total Stage Time</div>
-              <div id="mazeFinalTime" class="mt-1 font-mono text-4xl font-black text-emerald-300">00:00</div>
-              <div id="mazeFinalRounds" class="mt-1 text-xs text-zinc-400 font-mono">Completed in 1 attempt</div>
-            </div>
-            <button onclick="proceedToLevel3()"
-              class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-black text-sm uppercase tracking-wider shadow-lg shadow-emerald-500/25 transition cursor-pointer">
-              Proceed to Stage 03 &rarr;
-            </button>
-          </div>
-        </div>
-      </div>
+      </div><!-- /mazeCanvasFrame -->
+
 
       <!-- Objective Bar -->
       <div class="pt-3">
@@ -608,172 +597,181 @@
     </section>
 
     <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- ═══════════════════════════════════════════════════════ -->
     <!-- VIEW 4: LEVEL 3 (STAGE 03: GIT SECRET & MORSE CIPHER) -->
     <!-- ═══════════════════════════════════════════════════════ -->
-    <section id="viewLevel3" class="hidden max-w-2xl mx-auto my-8 space-y-6">
-      <!-- Banner Card -->
-      <div class="bg-gradient-to-b from-[#1a1c2a] to-[#12131b] border border-purple-500/30 rounded-3xl p-6 sm:p-7 shadow-2xl relative overflow-hidden">
-        <div class="absolute -top-10 -right-10 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute -bottom-10 -left-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <section id="viewLevel3" class="hidden max-w-2xl mx-auto my-8">
+      <!-- Single Unified Stage 03 Card -->
+      <div id="cipherGateCard" class="bg-gradient-to-b from-[#151726] via-[#0f111d] to-[#0a0c14] border border-purple-500/25 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden space-y-6">
         
-        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-          <div class="text-5xl p-3 bg-purple-600/15 rounded-2xl border border-purple-500/30 shrink-0">🎯</div>
-          <div class="space-y-1">
-            <div class="text-xs font-bold uppercase tracking-[0.25em] text-emerald-400 flex items-center justify-center sm:justify-start gap-1.5">
-              <span>✓</span> ROUND 2 COMPLETED · FINAL ROUND
+        <!-- Ambient background glow accents -->
+        <div class="absolute -top-16 -right-16 w-56 h-56 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute top-1/2 -left-16 w-56 h-56 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+        <!-- 1. Stage 03 Header & Stats -->
+        <div class="relative z-10 space-y-4">
+          <div class="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 text-center sm:text-left">
+            <div class="flex items-center sm:items-start gap-4">
+              <div class="text-4xl p-3 bg-purple-600/15 rounded-2xl border border-purple-500/30 shrink-0">🎯</div>
+              <div class="space-y-1">
+                <div class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400 flex items-center justify-center sm:justify-start gap-1.5 font-mono">
+                  <span>✓</span> ROUND 2 COMPLETED · FINAL ROUND
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-black text-white font-display tracking-tight">Stage 03: The Final Challenge</h2>
+                <p class="text-xs sm:text-sm text-zinc-400 font-sans">Everything you need lies within.</p>
+              </div>
             </div>
-            <h2 class="text-2xl sm:text-3xl font-black text-white font-display tracking-tight">Stage 03: The Final Challenge</h2>
-            <p class="text-xs sm:text-sm text-zinc-300 font-riddle">Everything you need lies within.</p>
+            <span class="px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold font-mono text-[11px] shrink-0">FINAL STAGE</span>
+          </div>
+
+          <!-- Stats Strip -->
+          <div class="py-2 px-3.5 rounded-xl bg-black/40 border border-white/5 text-xs text-zinc-300 flex flex-wrap items-center justify-between gap-2 font-mono">
+            <div id="lvl3Stats" class="text-xs flex flex-wrap gap-4"></div>
           </div>
         </div>
 
-        <div class="mt-5 py-2.5 px-4 rounded-xl bg-zinc-900/60 border border-zinc-800 text-xs text-zinc-300 flex flex-wrap items-center justify-between gap-2 font-mono">
-          <div id="lvl3Stats" class="text-xs flex flex-wrap gap-4"></div>
-          <span class="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold font-mono text-[11px]">FINAL STAGE</span>
+        <!-- Divider -->
+        <div class="h-px w-full bg-gradient-to-r from-transparent via-zinc-700/60 to-transparent relative z-10"></div>
+
+        <!-- 2. Narrative Unlock Instruction (Prominent, Bold, Increased Font Size) -->
+        <div class="relative z-10 space-y-2">
+          <h3 class="text-lg sm:text-xl font-bold text-white font-sans tracking-tight leading-snug">
+            The <span id="cipherKeyUnlockPhrase" class="text-cyan-300">authentic key</span> unlocked something — a fragment of code, intercepted mid-transmission.
+          </h3>
+          <p class="text-sm sm:text-base text-zinc-300 font-sans leading-relaxed">
+            We don't know what it means yet. Figure out what it says, and you'll know where to go next.
+          </p>
         </div>
-      </div>
 
-      <!-- ── Cipher Gate: Emergency Terminal Intercept ─────── -->
-      <div id="cipherGateCard" class="cipher-terminal p-6 sm:p-7">
-        <div class="cipher-content space-y-5">
-
-          <!-- Terminal header bar -->
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="flex gap-1.5">
-                <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
-                <span class="w-3 h-3 rounded-full bg-amber-400/80"></span>
-                <span class="w-3 h-3 rounded-full bg-emerald-400/80"></span>
+        <!-- 3. Intercepted Cipher Fragment & Input Area -->
+        <div class="relative z-10 space-y-4">
+          <!-- Cipher Box -->
+          <div class="rounded-2xl border border-cyan-500/25 bg-[#050811] p-5 sm:p-6 space-y-4 shadow-inner">
+            <!-- Header bar with signal status -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,.8)]"></span>
+                <span class="text-[10px] sm:text-[11px] font-mono font-semibold text-zinc-400 tracking-[0.15em] uppercase">SIGNAL · INTERCEPTED</span>
               </div>
-              <span class="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-cyan-400/70">SECURE_SHELL — BRAIN_BREAKER_v3.7</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span id="cipherStatusDot" class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,.8)] animate-pulse"></span>
-              <span id="cipherStatusText" class="text-[10px] font-mono text-amber-300/80 uppercase tracking-widest">Intercepting…</span>
-            </div>
-          </div>
-
-          <!-- Incoming transmission block -->
-          <div class="rounded-xl border border-cyan-500/15 bg-black/60 p-4 sm:p-5 space-y-3 font-mono text-xs">
-            <div class="text-red-400/80 text-[10px] uppercase tracking-[0.35em] flex items-center gap-2">
-              <svg class="w-3 h-3 animate-pulse" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm0 2a8 8 0 110 16A8 8 0 0112 4zm1 4h-2v5h2V8zm0 6h-2v2h2v-2z"/></svg>
-              SYSTEM BREACH DETECTED · INCOMING SATELLITE FREQUENCY
-            </div>
-            <div class="text-zinc-500 text-[10px] tracking-widest">——————————————————————————————————</div>
-            <div>
-              <div class="text-zinc-500 text-[10px] mb-1.5 uppercase tracking-wider">// Log timestamp: <span id="cipherTimestamp" class="text-zinc-400">--:--:--</span></div>
-              <div class="text-zinc-400 text-[10px] mb-1">&gt; Intercepted frequency lock: <span class="text-cyan-300">7.83 Hz · ELF-Band</span></div>
-              <div class="text-zinc-400 text-[10px] mb-3">&gt; Encoding detected: <span class="text-amber-300 font-bold">REVERSED BASE-64</span></div>
-              <div class="text-[10px] text-zinc-500 mb-1.5 uppercase tracking-wider">// Encrypted payload:</div>
-              <div class="bg-zinc-950/80 border border-zinc-800/60 rounded-lg p-3 select-all break-all">
-                <span id="cipherPayload" class="text-cyan-300 font-bold tracking-wide leading-relaxed"></span><span class="cipher-cursor"></span>
+              <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 text-[10px] sm:text-[11px] font-mono text-zinc-500">
+                  <span>freq · <span id="cipherTimestamp" class="text-zinc-400">--:--</span></span>
+                  <span class="text-zinc-700">|</span>
+                  <span class="text-zinc-400 font-semibold tracking-wider">RAW · ENCODED</span>
+                </div>
+                <div class="flex items-center gap-1.5 pl-2 border-l border-zinc-800">
+                  <span id="cipherStatusDot" class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,.7)] animate-pulse"></span>
+                  <span id="cipherStatusText" class="text-[10px] font-sans text-amber-300/80 tracking-wide">receiving…</span>
+                </div>
               </div>
             </div>
-            <div class="text-zinc-500 text-[10px] tracking-widest">——————————————————————————————————</div>
-            <div class="text-zinc-400 text-[10px] space-y-1">
-              <div>&gt; <span class="text-amber-300">HINT</span>: Reverse the string above, then Base64 decode it.</div>
-              <div>&gt; Use any online tool: <span class="text-cyan-400/80">base64decode.org</span></div>
-              <div>&gt; Enter the decoded word below to unlock Stage 03.</div>
+
+            <!-- Payload display -->
+            <div class="py-1">
+              <div class="text-[11px] font-sans text-zinc-500 mb-2 uppercase tracking-[0.25em] text-center font-medium">PAYLOAD</div>
+              <div class="bg-black/80 border border-cyan-500/20 rounded-xl px-4 py-4 text-center select-all break-all">
+                <span id="cipherPayload" class="text-cyan-300 font-mono font-bold text-lg sm:text-2xl tracking-[0.2em]"></span><span class="cipher-cursor"></span>
+              </div>
             </div>
+
+            <!-- Description -->
+            <p class="text-xs text-zinc-400 font-sans text-center leading-relaxed">
+              Something was encoded before transmission. Decode it to proceed.
+            </p>
           </div>
 
-          <!-- Decode input area -->
+          <!-- Input Area -->
           <div id="cipherInputArea" class="space-y-3">
-            <div class="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">&gt;_  ENTER DECODED PASSPHRASE</div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 sm:gap-3">
               <input
                 type="text"
                 id="cipherAnswerInput"
-                placeholder="Type decoded word…"
+                placeholder="Enter the decoded word"
                 autocomplete="off" autocorrect="off" spellcheck="false"
-                class="cipher-input flex-1 px-4 py-3 rounded-xl text-sm uppercase"
+                class="cipher-input flex-1 px-4 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base"
                 onkeydown="if(event.key==='Enter') verifyCipherAnswer()"
               />
               <button
                 onclick="verifyCipherAnswer()"
                 id="cipherVerifyBtn"
-                class="px-5 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-black font-black text-xs uppercase tracking-wider transition shadow-lg shadow-cyan-600/30 cursor-pointer shrink-0">
-                Decode
+                class="px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm sm:text-base transition shadow-lg shadow-cyan-950/60 cursor-pointer shrink-0 font-sans flex items-center gap-2">
+                <span>Unlock</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
               </button>
             </div>
-            <div id="cipherFeedback" class="hidden text-xs font-mono p-3 rounded-xl"></div>
+            <div id="cipherFeedback" class="hidden text-xs font-sans p-3 rounded-xl"></div>
           </div>
 
-          <!-- Success state (hidden until solved) -->
-          <div id="cipherSuccessArea" class="hidden rounded-xl border border-emerald-400/30 bg-emerald-950/40 p-4 flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-emerald-400/15 border border-emerald-400/40 flex items-center justify-center text-emerald-300 text-lg shrink-0">✓</div>
+          <!-- Success Area -->
+          <div id="cipherSuccessArea" class="hidden rounded-xl border border-emerald-500/25 bg-emerald-950/30 px-4 py-3.5 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-emerald-400/15 border border-emerald-400/30 flex items-center justify-center text-emerald-300 text-base shrink-0">✓</div>
             <div>
-              <div class="text-xs font-bold text-emerald-300 uppercase tracking-wider">Transmission Decrypted</div>
-              <div class="text-[11px] text-zinc-300 mt-0.5">Access granted. Stage 03 repository is now unlocked below.</div>
+              <div class="text-xs sm:text-sm font-semibold text-emerald-300 font-sans">Signal decoded — access granted</div>
+              <div class="text-[11px] sm:text-xs text-zinc-400 mt-0.5 font-sans">Stage 03 is now unlocked.</div>
             </div>
           </div>
-
         </div>
-      </div>
-      <!-- ── /Cipher Gate ──────────────────────────────────── -->
 
-      <!-- Presentable GitHub Repository Card -->
-      <div id="repoGateSection" class="hidden bg-[#0e111a] border border-zinc-700/60 hover:border-purple-500/50 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 transition-all relative overflow-hidden group">
-        <div class="absolute top-0 right-0 w-40 h-40 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none"></div>
-
-        <!-- Repo Header -->
-        <div class="flex items-start justify-between gap-4">
-          <div class="flex items-center gap-3.5">
-            <!-- GitHub SVG Icon -->
-            <div class="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-700/80 flex items-center justify-center text-white shrink-0 shadow-inner group-hover:border-zinc-500 transition">
-              <svg class="w-7 h-7 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-                <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
-              </svg>
-            </div>
-            <div>
-              <div class="flex items-center gap-2 flex-wrap">
-                <a href="https://github.com/AkshatOP/gradient_l3" target="_blank" rel="noopener noreferrer"
-                  class="text-lg sm:text-xl font-black text-white hover:text-indigo-400 transition underline-offset-4 hover:underline font-display tracking-tight">
-                  AkshatOP / gradient_l3
-                </a>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold border border-zinc-700 bg-zinc-800 text-zinc-400">
-                  Public
-                </span>
+        <!-- 4. Unlocked GitHub Repository Card (Revealed seamlessly inside the same card) -->
+        <div id="repoGateSection" class="hidden relative z-10 pt-6 border-t border-zinc-800/80 space-y-5">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+              <div class="w-11 h-11 rounded-xl bg-zinc-900 border border-zinc-700/80 flex items-center justify-center text-white shrink-0 shadow-inner">
+                <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
+                </svg>
               </div>
-              <p class="text-xs text-zinc-400 mt-1 font-sans">Official GitHub Repository</p>
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <a href="https://github.com/AkshatOP/gradient_l3" target="_blank" rel="noopener noreferrer"
+                    class="text-base sm:text-lg font-bold text-white hover:text-indigo-400 transition underline-offset-4 hover:underline font-display tracking-tight">
+                    AkshatOP / gradient_l3
+                  </a>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold border border-zinc-700 bg-zinc-800 text-zinc-400">
+                    Public
+                  </span>
+                </div>
+                <p class="text-xs text-zinc-400 mt-0.5 font-sans">Official GitHub Repository</p>
+              </div>
+            </div>
+            <a href="https://github.com/AkshatOP/gradient_l3" target="_blank" rel="noopener noreferrer"
+              class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-xs font-semibold text-white transition cursor-pointer font-sans">
+              <span>View on GitHub</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+            </a>
+          </div>
+
+          <!-- Clue / Objective Section -->
+          <div class="rounded-2xl border border-indigo-500/25 bg-[#0b0e1a] p-4 sm:p-5 space-y-3">
+            <div class="flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2 text-indigo-300 font-bold uppercase tracking-wider text-[11px] font-mono">
+                <span class="text-sm">🔍</span>
+                <span>Next Objective</span>
+              </div>
+              <button onclick="copyRepoUrl()" id="copyRepoBtn" class="flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-mono font-medium transition cursor-pointer">
+                <span>📋 Copy Link</span>
+              </button>
+            </div>
+            <div class="bg-black/50 border border-white/5 p-3.5 rounded-xl space-y-2">
+              <p class="text-sm sm:text-base text-zinc-100 font-medium leading-relaxed font-sans">
+                Go to that repository and <span class="text-cyan-300 font-bold">you'll find a clue there</span>.
+              </p>
+              <div class="text-xs text-zinc-400 font-mono truncate select-all bg-black/40 px-3 py-2 rounded-lg border border-white/5">
+                https://github.com/AkshatOP/gradient_l3
+              </div>
             </div>
           </div>
-          <a href="https://github.com/AkshatOP/gradient_l3" target="_blank" rel="noopener noreferrer"
-            class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-xs font-semibold text-white transition cursor-pointer font-sans">
-            <span>View on GitHub</span>
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-          </a>
+
+          <!-- Action Button -->
+          <div class="pt-1">
+            <a href="https://github.com/AkshatOP/gradient_l3" target="_blank" rel="noopener noreferrer"
+              class="w-full py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 transition transform active:scale-[0.99] cursor-pointer font-sans">
+              <span>Open Repository</span>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </a>
+          </div>
         </div>
 
-        <!-- Clue / Instructions Box -->
-        <div class="rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-[#121526] via-[#0d101d] to-[#070913] p-4 sm:p-5 space-y-3 shadow-inner">
-          <div class="flex items-center justify-between text-xs">
-            <div class="flex items-center gap-2 text-indigo-300 font-bold uppercase tracking-wider">
-              <span class="text-base">🔍</span>
-              <span>Next Objective</span>
-            </div>
-            <button onclick="copyRepoUrl()" id="copyRepoBtn" class="flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-mono font-medium transition cursor-pointer">
-              <span>📋 Copy Link</span>
-            </button>
-          </div>
-          <div class="bg-black/40 border border-white/5 p-3.5 rounded-xl space-y-2">
-            <p class="text-sm sm:text-base text-zinc-100 font-medium leading-relaxed font-sans">
-              Go to that repository and <span class="text-cyan-300 font-bold">you'll find a clue there</span>.
-            </p>
-            <div class="text-xs text-zinc-400 font-mono truncate select-all">
-              https://github.com/AkshatOP/gradient_l3
-            </div>
-          </div>
-        </div>
-
-        <!-- Action Button -->
-        <div class="pt-2">
-          <a href="https://github.com/AkshatOP/gradient_l3" target="_blank" rel="noopener noreferrer"
-            class="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-teal-500 hover:from-purple-500 hover:to-teal-400 text-white font-black text-sm uppercase tracking-wider shadow-xl shadow-purple-600/25 flex items-center justify-center gap-2 transition transform active:scale-[0.99] cursor-pointer font-display">
-            <span>Open Repository</span>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-          </a>
-        </div>
       </div>
     </section>
 
@@ -799,6 +797,32 @@
   </div>
 
   <!-- FOCUS LOST OVERLAY -->
+  <!-- Stage 02 Success Overlay (fixed, covers full screen) -->
+  <div id="mazeSuccessOverlay" class="hidden fixed inset-0 z-[55] flex items-center justify-center bg-[#02050b]/90 backdrop-blur-md p-4">
+    <div class="w-full max-w-md rounded-3xl border border-emerald-400/30 bg-[#07130f]/95 p-8 text-center shadow-2xl space-y-4">
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/10 text-3xl text-emerald-300 shadow-[0_0_40px_rgba(52,211,153,0.3)] animate-bounce">
+        ✓
+      </div>
+      <div class="text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-300">Key Verified</div>
+      <h2 class="text-3xl font-black text-white">Stage 02 Complete!</h2>
+      <p id="mazeFinalKeyDesc" class="text-xs text-zinc-300">You discovered the authentic key and conquered the Fog Maze.</p>
+      <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-2">
+        <div>
+          <div class="text-[10px] uppercase tracking-wider text-zinc-400">Total Stage Time</div>
+          <div id="mazeFinalTime" class="mt-1 font-mono text-4xl font-black text-emerald-300">00:00</div>
+        </div>
+        <div class="pt-2 border-t border-white/5 flex items-center justify-between text-xs font-mono text-zinc-400">
+          <span id="mazeFinalRounds">Completed in 1 attempt</span>
+          <span id="mazeFinalKeyPill" class="text-zinc-300 font-semibold uppercase"></span>
+        </div>
+      </div>
+      <button onclick="proceedToLevel3()"
+        class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-black text-sm uppercase tracking-wider shadow-lg shadow-emerald-500/25 transition cursor-pointer">
+        Proceed to Stage 03 &rarr;
+      </button>
+    </div>
+  </div>
+
   <div id="focusLostOverlay" class="hidden fixed inset-0 z-[60] bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
     <div class="bg-gradient-to-b from-[#241417] to-[#12131b] border-2 border-red-500/50 rounded-3xl max-w-md w-full p-8 shadow-2xl text-center space-y-4">
       <div class="text-5xl">⚠️</div>
@@ -1279,8 +1303,20 @@
       playTone(659.25, 'sine', 0.2);
       setTimeout(() => playTone(880, 'sine', 0.3), 150);
 
+      const color = currentMazeTargetColor || ensureAssignedColor() || "BLUE";
+
       document.getElementById("mazeFinalTime").innerText = formatMazeTime(elapsedMs);
       document.getElementById("mazeFinalRounds").innerText = `Completed in ${round + 1} attempt${round > 0 ? 's' : ''}`;
+      
+      const keyDesc = document.getElementById("mazeFinalKeyDesc");
+      if (keyDesc) {
+        keyDesc.innerHTML = `The <strong class="text-zinc-200 font-semibold">${color.toLowerCase()}</strong> key unlocked the passage forward, conquering the Fog Maze.`;
+      }
+      const keyPill = document.getElementById("mazeFinalKeyPill");
+      if (keyPill) {
+        keyPill.innerText = `Key: ${color}`;
+      }
+
       document.getElementById("mazeSuccessOverlay").classList.remove("hidden");
 
       try {
@@ -1300,27 +1336,48 @@
     }
 
     // ── Cipher Gate ───────────────────────────────────────────────────────────
-    // Answer word: GRADIENT
-    // Encode: btoa("GRADIENT") = "R1JBRENJRU5U"
-    // Reverse: "VE5FQ0FEQDKR1J" → teams reverse this to get "R1JBRENURU5U"
-    // Wait — let's compute correctly in JS at runtime and store
-    const CIPHER_ANSWER_WORD = "GRADIENT";
-    const CIPHER_ENCODED = btoa(CIPHER_ANSWER_WORD);              // "R1JBRENURU5U"
-    const CIPHER_PAYLOAD  = CIPHER_ENCODED.split("").reverse().join(""); // reversed
+    // Answer word: OVERRIDE
+    // Polyalphabetic Vigenère cipher keyed to the team's authentic maze key color:
+    // - BLUE   + PGYVSTXI -> OVERRIDE
+    // - GREEN  + UMIVEOUI -> OVERRIDE
+    // - RED    + FZHIVLUI -> OVERRIDE
+    // - YELLOW + MZPCFEBI -> OVERRIDE
+    const CIPHER_ANSWER_WORD = "OVERRIDE";
+    const VIGENERE_MAP = {
+      "BLUE":   "PGYVSTXI",
+      "GREEN":  "UMIVEOUI",
+      "RED":    "FZHIVLUI",
+      "YELLOW": "MZPCFEBI"
+    };
 
+    function getCipherPayloadForColor(color) {
+      const c = String(color || "BLUE").toUpperCase();
+      return VIGENERE_MAP[c] || "PGYVSTXI";
+    }
+
+    let currentCipherPayload = "PGYVSTXI";
     let cipherSolved = false;
 
-    function initCipherGate() {
+    function initCipherGate(assignedColor) {
+      const color = String(assignedColor || currentMazeTargetColor || ensureAssignedColor() || "BLUE").toUpperCase();
+      currentCipherPayload = getCipherPayloadForColor(color);
+
       // Show correct timestamp
       const now = new Date();
-      const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+      const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
       const tsEl = document.getElementById("cipherTimestamp");
       if (tsEl) tsEl.innerText = ts;
 
-      // If already solved (e.g. page reload), skip animation
+      // Subtly mention which key unlocked the transmission path
+      const phraseEl = document.getElementById("cipherKeyUnlockPhrase");
+      if (phraseEl) {
+        phraseEl.innerText = `${color.toLowerCase()} key`;
+      }
+
+      // If already solved, skip animation
       if (cipherSolved) {
         const payloadEl = document.getElementById("cipherPayload");
-        if (payloadEl) payloadEl.innerText = CIPHER_PAYLOAD;
+        if (payloadEl) payloadEl.innerText = currentCipherPayload;
         return;
       }
 
@@ -1329,18 +1386,19 @@
       if (!payloadEl) return;
       payloadEl.innerText = "";
       let i = 0;
-      const totalDelay = 1200;
-      const charDelay = Math.min(60, totalDelay / CIPHER_PAYLOAD.length);
-      const typeInterval = setInterval(() => {
-        payloadEl.innerText += CIPHER_PAYLOAD[i++];
-        if (i >= CIPHER_PAYLOAD.length) {
-          clearInterval(typeInterval);
-          // Update status to "Awaiting decode"
+      const totalDelay = 1000;
+      const charDelay = Math.min(60, Math.floor(totalDelay / currentCipherPayload.length));
+      if (window.cipherTypeInterval) clearInterval(window.cipherTypeInterval);
+      window.cipherTypeInterval = setInterval(() => {
+        if (i < currentCipherPayload.length) {
+          payloadEl.innerText += currentCipherPayload[i++];
+          playTone(800 + i * 40, 'triangle', 0.04);
+        } else {
+          clearInterval(window.cipherTypeInterval);
           const dot  = document.getElementById("cipherStatusDot");
           const text = document.getElementById("cipherStatusText");
           if (dot)  { dot.className  = "w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,.8)] animate-pulse"; }
-          if (text) { text.innerText = "Awaiting Decode"; text.className = "text-[10px] font-mono text-cyan-300/80 uppercase tracking-widest"; }
-          // Focus input
+          if (text) { text.innerText = "ready"; text.className = "text-[10px] font-sans text-cyan-300/70 tracking-wide"; }
           const inp = document.getElementById("cipherAnswerInput");
           if (inp) setTimeout(() => inp.focus(), 200);
         }
@@ -1373,7 +1431,7 @@
         const dot  = document.getElementById("cipherStatusDot");
         const txt  = document.getElementById("cipherStatusText");
         if (dot) { dot.className  = "w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,.9)]"; dot.style.animation = 'none'; }
-        if (txt) { txt.innerText = "Decrypted ✓"; txt.className = "text-[10px] font-mono text-emerald-300 uppercase tracking-widest font-bold"; }
+        if (txt) { txt.innerText = "decoded"; txt.className = "text-[10px] font-sans text-emerald-300 tracking-wide font-semibold"; }
 
         // Hide input, show success area
         document.getElementById("cipherInputArea").classList.add("hidden");
@@ -1401,8 +1459,8 @@
       } else {
         // ❌ Wrong
         playTone(280, 'sawtooth', 0.15);
-        feed.className = "text-xs font-mono p-3 rounded-xl bg-red-950/60 border border-red-500/30 text-red-300";
-        feed.innerHTML = `&gt; <span class="text-red-400 font-bold">ACCESS DENIED</span> — "${val}" is incorrect. Check your decoding steps.`;
+        feed.className = "text-xs font-sans p-3 rounded-xl bg-red-950/50 border border-red-500/20 text-red-300";
+        feed.innerHTML = `Incorrect — try again.`;
         feed.classList.remove("hidden");
         inp.value = "";
         inp.focus();
@@ -1425,6 +1483,7 @@
     }
 
     function renderLevel3(stateData) {
+      const color = ensureAssignedColor(stateData) || "BLUE";
       const statsEl = document.getElementById("lvl3Stats");
       if (statsEl && stateData) {
         const timeStr = formatMazeTime(stateData.maze_elapsed_ms || 0);
@@ -1432,9 +1491,15 @@
         statsEl.innerHTML = `
           <div>Level 1 Questions: <strong class="text-white">${stateData.questions_solved || 15}</strong></div>
           <div>Level 2 Time: <strong class="text-emerald-300 font-mono">${timeStr}</strong></div>
+          <div>Level 2 Key: <strong class="text-zinc-200 font-mono uppercase">${color}</strong></div>
           <div>Level 2 Attempts: <strong class="text-white font-mono">${attempts}</strong></div>
         `;
       }
+
+      const phraseEl = document.getElementById("cipherKeyUnlockPhrase");
+      if (phraseEl) phraseEl.innerText = `${color.toLowerCase()} key`;
+
+      currentCipherPayload = getCipherPayloadForColor(color);
 
       // Re-check cipher state — if already solved earlier this session keep repo visible
       if (cipherSolved) {
@@ -1447,11 +1512,11 @@
         if (repo)        { repo.classList.remove("hidden"); }
         if (inputArea)   { inputArea.classList.add("hidden"); }
         if (successArea) { successArea.classList.remove("hidden"); }
-        if (payloadEl)   { payloadEl.innerText = CIPHER_PAYLOAD; }
+        if (payloadEl)   { payloadEl.innerText = currentCipherPayload; }
         if (dot) { dot.className = "w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,.9)]"; dot.style.animation = 'none'; }
-        if (txt) { txt.innerText = "Decrypted ✓"; txt.className = "text-[10px] font-mono text-emerald-300 uppercase tracking-widest font-bold"; }
+        if (txt) { txt.innerText = "decoded"; txt.className = "text-[10px] font-sans text-emerald-300 tracking-wide font-semibold"; }
       } else {
-        initCipherGate();
+        initCipherGate(color);
       }
     }
 
@@ -1554,6 +1619,14 @@
         label.className = "text-[9px] font-bold uppercase tracking-[0.24em] text-emerald-300";
         msg.innerText = "Authentic key found! Stage 02 complete.";
         if (hint) hint.innerText = "PROCEED TO STAGE 03";
+
+        // Safety fallback: if onSuccess callback was missed (e.g. reconnect/reload),
+        // show the success overlay manually.
+        const overlay = document.getElementById("mazeSuccessOverlay");
+        if (overlay && overlay.classList.contains("hidden")) {
+          handleMazeSuccess(snap.elapsedMs, snap.round);
+        }
+
       } else {
         dot.className = "h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(79,216,255,0.9)] animate-pulse";
         label.innerText = "Objective";

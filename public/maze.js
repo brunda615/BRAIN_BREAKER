@@ -1246,7 +1246,8 @@
       ) {
         selected.push({
           col: candidate.col,
-          row: candidate.row
+          row: candidate.row,
+          distance: candidate.distance
         });
       }
     }
@@ -1284,7 +1285,8 @@
 
         selected.push({
           col: candidate.col,
-          row: candidate.row
+          row: candidate.row,
+          distance: candidate.distance
         });
       }
     }
@@ -1334,6 +1336,14 @@
         previousCells
       );
 
+    // Sort cells strictly by actual path distance from START descending.
+    // Index 0 is guaranteed to be the farthest, deepest dead-end in the maze.
+    cells.sort(
+      (a, b) =>
+        (b.distance || 0) -
+        (a.distance || 0)
+    );
+
     // Three guaranteed wrong colors.
     const wrongColors =
       shuffle(
@@ -1344,12 +1354,8 @@
         )
       );
 
-    // Random physical position for correct key.
-    const correctIndex =
-      Math.floor(
-        Math.random() *
-        CONFIG.keyCount
-      );
+    // Place the authentic key at the farthest possible distance from START
+    const correctIndex = 0;
 
     const colors = [];
 
