@@ -70,8 +70,8 @@
       durationMs: 3000    // only used when untilStart is false
     },
 
-    // DEBUG
-    debugShortcut: true
+    // DEBUG (Ctrl + Shift + D reveals the maze and the correct key; organizer-only, local development)
+    debugShortcut: window.location.hostname === 'localhost'
   };
 
   const KEY_COLORS = ['RED', 'BLUE', 'GREEN', 'YELLOW'];

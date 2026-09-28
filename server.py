@@ -14,7 +14,7 @@ import urllib.parse
 import urllib.request
 import http.server
 import socketserver
-from datetime import datetime
+from datetime import datetime, timezone
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ENVIRONMENT & CONFIGURATION (.env)
@@ -60,6 +60,33 @@ ANTICHEAT_ENABLED = False  # Admin can toggle tab-switch/fullscreen enforcement
 
 # Ticket cut probability (0.0 to 1.0): chance that a correct answer awards an unhit ticket number.
 TICKET_HIT_CHANCE = float(os.environ.get("TICKET_HIT_CHANCE", "0.70"))
+
+# Stage 3 final answer. Checked only on the server so it never reaches the browser.
+FINAL_ANSWER = os.environ.get("FINAL_ANSWER", "GRADIENT2026WINNER")
+
+def _norm_final(s):
+    """Compare final answers ignoring case and whitespace."""
+    return re.sub(r"\s+", "", str(s or "")).upper()
+
+def _utc_now_iso():
+    return datetime.now(timezone.utc).isoformat(timespec="milliseconds")
+
+def _parse_ts(value):
+    """Parse a Supabase / ISO timestamp into an aware UTC datetime (None if unusable)."""
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        return None
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+def duration_ms(start, end):
+    """Milliseconds between two timestamps, or None if either is missing."""
+    a, b = _parse_ts(start), _parse_ts(end)
+    if not a or not b:
+        return None
+    return max(0, int((b - a).total_seconds() * 1000))
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SUPABASE REST HELPERS
@@ -287,6 +314,27 @@ def get_team_by_token(token):
     if not token: return None
     return sb_one("teams", {"session_token": f"eq.{token}"})
 
+_first_login_warned = False
+
+def record_first_login(team):
+    """Stamp teams.first_login_at the first time a team logs in. Never overwrites it."""
+    global _first_login_warned
+    if "first_login_at" not in team:
+        if not _first_login_warned:
+            print("[WARN] teams.first_login_at column is missing, so game durations can't be tracked. "
+                  "Run in the Supabase SQL editor: "
+                  "ALTER TABLE teams ADD COLUMN IF NOT EXISTS first_login_at TIMESTAMPTZ;", flush=True)
+            _first_login_warned = True
+        return
+    if team.get("first_login_at"):
+        return
+    # The is.null filter keeps the earliest time if two devices log in at once.
+    sb_patch("teams", {"id": f"eq.{team['id']}", "first_login_at": "is.null"},
+             {"first_login_at": _utc_now_iso()})
+    fresh = sb_one("teams", {"id": f"eq.{team['id']}"}, select="first_login_at") or {}
+    team["first_login_at"] = fresh.get("first_login_at")
+    print(f"[LOGIN] Team '{team['team_name']}' started at {team['first_login_at']}", flush=True)
+
 def get_or_create_state(team_id, level=1):
     """Fetch existing team state, or create a fresh one for the given level."""
     state = sb_one("team_state", {
@@ -436,6 +484,9 @@ def build_state_response(team, state):
             "accepted": riddle_info["accepted"],
             "color":    riddle_info["color"],
         },
+        "final_won_at":            state.get("won_at") if lvl == 3 and state.get("is_winner") else None,
+        "first_login_at":          team.get("first_login_at"),
+        "final_duration_ms":       duration_ms(team.get("first_login_at"), state.get("won_at")) if lvl == 3 and state.get("is_winner") else None,
         "game_ended":              GAME_ENDED,
         "anticheat_enabled":       ANTICHEAT_ENABLED,
         "removed":                 state.get("removed", False),
@@ -564,6 +615,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if not team:
                 self.json({"error": "Invalid or expired session. Please log in again."}, 401)
                 return
+            # Covers teams whose saved session skips /api/login (and teams reset mid-session).
+            record_first_login(team)
             level = team.get("current_level", 1)
             state = get_or_create_state(team["id"], level)
             self.json(build_state_response(team, state))
@@ -621,6 +674,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     "maze_elapsed_ms":         l2_elapsed,
                     "maze_round":              l2_round,
                     "maze_won":                l2_won,
+                    "final_won_at":            l3_state.get("won_at") if l3_state.get("is_winner") else None,
+                    "first_login_at":          t.get("first_login_at"),
+                    "final_duration_ms":       duration_ms(t.get("first_login_at"), l3_state.get("won_at")) if l3_state.get("is_winner") else None,
                     "tab_switch_count":        total_tab_switches,
                     "removed":                 curr_state.get("removed", False),
                     "created_at":              t.get("created_at"),
@@ -672,6 +728,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 "last_active":   datetime.now().isoformat(),
             })
             team["session_token"] = token
+            record_first_login(team)
             level = team.get("current_level", 1)
             state = get_or_create_state(team["id"], level)
             resp  = build_state_response(team, state)
@@ -896,8 +953,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             state     = get_or_create_state(team["id"], level)
             new_count = state.get("tab_switch_count", 0) + 1
             update_state(team["id"], level, {"tab_switch_count": new_count})
+            reason = "devtools" if body.get("reason") == "devtools" else "tab"
             broadcast("team_violation", {
                 "team_name": team["team_name"], "tab_switch_count": new_count,
+                "reason": reason,
             })
             self.json({"success": True, "tab_switch_count": new_count})
             return
@@ -988,22 +1047,62 @@ class Handler(http.server.BaseHTTPRequestHandler):
             })
             return
 
+        # ── Level 3: submit final answer ──────────────────────────────────────
+        if path == "/api/level3/submit":
+            if GAME_ENDED:
+                self.json({"error": "Game has ended.", "game_ended": True}, 403); return
+            team = get_team_by_token(token)
+            if not team:
+                self.json({"error": "Invalid session. Please log in again."}, 401); return
+            if team.get("current_level", 1) < 3:
+                self.json({"error": "Team has not reached Stage 3.", "correct": False}, 400); return
+            state = get_or_create_state(team["id"], 3)
+            if state.get("removed"):
+                self.json({"error": "You have been removed.", "removed": True}, 403); return
+
+            started = team.get("first_login_at")
+
+            # First correct submission wins the timestamp; later ones return the same time.
+            if state.get("is_winner") and state.get("won_at"):
+                self.json({"success": True, "correct": True, "already": True,
+                           "won_at": state["won_at"], "first_login_at": started,
+                           "duration_ms": duration_ms(started, state["won_at"])}); return
+
+            if _norm_final(body.get("answer")) != _norm_final(FINAL_ANSWER):
+                self.json({"success": True, "correct": False}); return
+
+            won_at = _utc_now_iso()
+            took = duration_ms(started, won_at)
+            update_state(team["id"], 3, {"is_winner": True, "won_at": won_at})
+            print(f"[FINAL] Team '{team['team_name']}' submitted the final answer at {won_at} "
+                  f"({'%.1f min in the game' % (took / 60000) if took is not None else 'start time unknown'})", flush=True)
+            broadcast("team_progress", {"team_name": team["team_name"], "final_completed": True,
+                                        "won_at": won_at, "duration_ms": took})
+            self.json({"success": True, "correct": True, "won_at": won_at,
+                       "first_login_at": started, "duration_ms": took})
+            return
+
         # ── Admin: reset ──────────────────────────────────────────────────────
         if path == "/api/admin/reset":
             pc = body.get("passcode", "").strip()
             if pc != ADMIN_PASSWORD:
                 self.json({"error": "Unauthorized"}, 401); return
             target = body.get("team_name", "").strip()
+            # The start clock is cleared in its own PATCH so a missing column can't block the reset.
             if target:
                 t = sb_one("teams", {"team_name": f"eq.{target}"})
                 if t:
                     sb_del("team_state", {"team_id": f"eq.{t['id']}"})
                     sb_patch("teams", {"id": f"eq.{t['id']}"}, {"current_level": 1})
+                    if "first_login_at" in t:
+                        sb_patch("teams", {"id": f"eq.{t['id']}"}, {"first_login_at": None})
             else:
-                all_teams = sb_get("teams", select="id")
+                all_teams = sb_get("teams", select="*")
                 for t in all_teams:
                     sb_del("team_state",  {"team_id": f"eq.{t['id']}"})
                     sb_patch("teams", {"id": f"eq.{t['id']}"}, {"current_level": 1})
+                    if "first_login_at" in t:
+                        sb_patch("teams", {"id": f"eq.{t['id']}"}, {"first_login_at": None})
             broadcast("game_reset", {"target_team": target or "all"})
             self.json({"success": True, "message": "Reset completed successfully."})
             return

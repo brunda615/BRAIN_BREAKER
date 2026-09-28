@@ -18,6 +18,7 @@ CREATE TABLE teams (
     avatar        TEXT NOT NULL DEFAULT '🚀',
     current_level INTEGER NOT NULL DEFAULT 1,
     session_token TEXT UNIQUE,
+    first_login_at TIMESTAMPTZ,            -- set once, on the team's first login (game clock start)
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     last_active   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

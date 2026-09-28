@@ -3,862 +3,729 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Brain Breaker — Tambola Puzzle Arena</title>
-  <meta name="description" content="Solve puzzles, earn numbers, hit Full House! Multi-level team puzzle game." />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Brain Breaker</title>
+  <meta name="description" content="A three-round team puzzle game. Solve puzzles to draw numbers and fill your Tambola ticket first." />
+  <meta name="robots" content="noindex" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23ff5a3c'/%3E%3Ccircle cx='32' cy='32' r='17' fill='%23f4ecd8'/%3E%3Ctext x='32' y='40' text-anchor='middle' font-family='Arial Black,Arial' font-weight='900' font-size='22' fill='%2316130f'%3EB%3C/text%3E%3C/svg%3E" />
+
+  <script src="/guard.js"></script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Courier+Prime:wght@700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;500;700&family=Atkinson+Hyperlegible+Next:wght@400;500;700;800&family=Dela+Gothic+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/bold/style.css">
+  <link rel="stylesheet" href="/theme.css">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <script src="/maze.js"></script>
-
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans:    ['Inter', 'sans-serif'],
-            mono:    ['JetBrains Mono', 'monospace'],
-            ticket:  ['Courier Prime', 'monospace'],
-            stamp:   ['Special Elite', 'cursive'],
-            riddle:  ['Space Grotesk', 'sans-serif'],
-            cipher:  ['Cinzel', 'serif'],
-            display: ['Outfit', 'sans-serif']
-          },
-          colors: {
-            dark: {
-              900: '#0d0f12', 850: '#12141a', 800: '#171922',
-              750: '#1e212d', 700: '#262a38', 600: '#353a4c'
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <script src="/fx.js" defer></script>
 
   <style>
-    .tambola-paper { background-color: #171922; position: relative; }
-    .ticket-perforated { position: relative; }
-    .ticket-perforated::before, .ticket-perforated::after {
-      content: ''; position: absolute; width: 22px; height: 22px;
-      background-color: #0d0f12; border-radius: 50%; top: 50%;
-      transform: translateY(-50%); z-index: 10;
+    /* ── Header round tracker ─────────────────────────────────────── */
+    .rounds ol { display: flex; gap: .3rem; margin: 0; padding: 0; list-style: none; counter-reset: round; }
+    .rounds li {
+      display: flex; align-items: center; gap: .5rem;
+      padding: .35rem .9rem .35rem .45rem; border-radius: 999px;
+      color: var(--cream-3); font-weight: 700; font-size: 1rem; line-height: 1;
     }
-    .ticket-perforated::before { left: -11px; }
-    .ticket-perforated::after  { right: -11px; }
-    @keyframes stamp-pop {
-      0%   { transform: scale(2.2); opacity: 0; filter: blur(4px); }
-      50%  { transform: scale(0.9); opacity: 0.9; }
-      100% { transform: scale(1);   opacity: 1;   filter: blur(0); }
+    .rounds li::before {
+      content: "";
+      display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+      box-shadow: inset 0 0 0 2px var(--line-2);
+      font-size: .8rem;
     }
-    .animate-stamp { animation: stamp-pop 0.35s cubic-bezier(0.175,0.885,0.32,1.275) forwards; }
-    .dabber-mark {
-      background: radial-gradient(circle, rgba(16,185,129,.95) 0%, rgba(5,150,105,.85) 75%, rgba(4,120,87,.6) 100%);
-      box-shadow: 0 0 15px rgba(16,185,129,.55), inset 0 0 6px rgba(255,255,255,.3);
-      border: 2px solid #34d399;
-    }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track  { background: #12141a; }
-    ::-webkit-scrollbar-thumb  { background: #2a2f3f; border-radius: 3px; }
-    body {
-      isolation: isolate;
-      background-image:
-        radial-gradient(ellipse at 12% 8%,  rgba(99,102,241,.14),  transparent 36%),
-        radial-gradient(ellipse at 88% 24%, rgba(217,70,239,.10),  transparent 34%),
-        radial-gradient(ellipse at 48% 100%,rgba(14,165,233,.09),  transparent 42%);
-      background-size: 140% 140%;
-      animation: arena-ambient 22s ease-in-out infinite alternate;
-    }
-    body::before {
-      content: ""; position: fixed; inset: -18%; z-index: -1;
-      pointer-events: none; opacity: .45;
-      background:
-        radial-gradient(circle at 18% 34%, rgba(129,140,248,.13) 0 2px, transparent 3px),
-        radial-gradient(circle at 76% 66%, rgba(232,121,249,.12) 0 3px, transparent 4px),
-        radial-gradient(circle at 58% 14%, rgba(56,189,248,.10)  0 2px, transparent 3px);
-      background-size: 230px 230px, 310px 310px, 270px 270px;
-      animation: particle-drift 35s linear infinite;
-    }
-    main > section, main > div { animation: arena-enter .65s cubic-bezier(.2,.75,.25,1) both; }
-    button { transition: transform .18s ease, filter .18s ease, box-shadow .18s ease; }
-    button:not(:disabled):hover  { transform: translateY(-2px); filter: brightness(1.08); }
-    button:not(:disabled):active { transform: translateY(0) scale(.98); }
-    input, select, textarea { transition: border-color .2s ease, box-shadow .2s ease; }
-    input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 3px rgba(99,102,241,.18); }
-    .animate-stamp { animation: stamp-pop .42s cubic-bezier(.175,.885,.32,1.275) both, dabber-glow 1.1s ease-out; }
-    @keyframes arena-ambient { from { background-position: 0% 0%; } to { background-position: 100% 100%; } }
-    @keyframes particle-drift { from { transform: translate3d(-1%,-1%,0) rotate(0deg); } to { transform: translate3d(2%,2%,0) rotate(5deg); } }
-    @keyframes arena-enter  { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes dabber-glow  { 0%{ box-shadow:0 0 0 rgba(16,185,129,0);} 45%{ box-shadow:0 0 22px rgba(16,185,129,.55);} 100%{ box-shadow:0 0 0 rgba(16,185,129,0);} }
-    @media (prefers-reduced-motion:reduce) {
-      *,*::before,*::after { animation-duration:.01ms!important; animation-iteration-count:1!important; scroll-behavior:auto!important; transition-duration:.01ms!important; }
-    }
+    .rounds li.done { color: var(--cream-2); }
+    .rounds li.done::before { content: "\2713"; background: var(--sun); color: var(--ink); box-shadow: none; font-family: var(--font-body); font-weight: 800; }
+    .rounds li.current { background: rgba(244, 236, 216, .1); color: var(--cream); }
+    .rounds li.current::before { background: var(--tomato); color: var(--ink); box-shadow: none; }
+    @media (max-width: 760px) { .rounds li:not(.current) span { display: none; } .rounds li:not(.current) { padding-right: .45rem; } }
+    @media (max-width: 520px) { .rounds { display: none; } .wordmark-text { display: none; } }
 
-    /* ── Cipher Terminal ─────────────────────────────────── */
-    @keyframes cipher-scanline {
-      0%   { background-position: 0 0; }
-      100% { background-position: 0 100%; }
+    /* ── Broadcast ────────────────────────────────────────────────── */
+    .broadcast {
+      display: flex; align-items: center; gap: .9rem;
+      padding: .8rem clamp(1rem, 3vw, 2rem);
+      background: var(--sun); color: var(--ink); font-weight: 800; font-size: 1.125rem;
+      animation: slide-down .35s var(--ease-out) both;
     }
-    @keyframes cipher-flicker {
-      0%,100%{ opacity:1; } 2%{ opacity:.88; } 4%{ opacity:1; } 20%{ opacity:1; } 21%{ opacity:.93; } 22%{ opacity:1; } 50%{ opacity:1; } 51%{ opacity:.95; } 52%{ opacity:1; }
+    .broadcast > i { font-size: 1.6rem; }
+    .broadcast p { flex: 1; }
+    .broadcast .icon-btn { color: var(--ink); box-shadow: inset 0 0 0 1.5px rgba(22, 19, 15,.3); }
+    @keyframes slide-down { from { transform: translateY(-100%); opacity: 0; } to { transform: none; opacity: 1; } }
+
+    main { display: block; }
+
+    /* ── Login: the poster ────────────────────────────────────────── */
+    .login {
+      position: relative; overflow: hidden;
+      min-height: calc(100dvh - 68px);
+      display: grid; align-items: center;
+      padding: clamp(2rem, 6vw, 4.5rem) clamp(1rem, 4vw, 3rem);
     }
-    @keyframes cipher-cursor {
-      0%,49%{ border-color: #22d3ee; } 50%,100%{ border-color: transparent; }
-    }
-    @keyframes cipher-enter {
-      from { opacity:0; transform:translateY(10px) scale(.98); }
-      to   { opacity:1; transform:translateY(0)    scale(1); }
-    }
-    @keyframes glitch-h {
-      0%,100%{ clip-path:inset(0 0 98% 0); transform:translate(-2px,0); }
-      20%    { clip-path:inset(30% 0 55% 0); transform:translate(2px,0); }
-      50%    { clip-path:inset(70% 0 10% 0); transform:translate(-1px,0); }
-    }
-    .cipher-terminal {
-      background: #020508;
-      border: 1px solid rgba(34,211,238,.22);
-      border-radius: 20px;
-      box-shadow: 0 0 0 1px rgba(34,211,238,.06), 0 0 40px rgba(34,211,238,.07), inset 0 0 60px rgba(0,0,0,.8);
-      position: relative;
-      overflow: hidden;
-      animation: cipher-flicker 8s linear infinite, cipher-enter .55s cubic-bezier(.2,.75,.25,1) both;
-    }
-    .cipher-terminal::before {
-      content: '';
-      position: absolute; inset: 0; z-index: 1; pointer-events: none;
-      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.18) 2px, rgba(0,0,0,.18) 4px);
-      animation: cipher-scanline 6s linear infinite;
-    }
-    .cipher-terminal::after {
-      content: '';
-      position: absolute; inset: 0; z-index: 2; pointer-events: none;
-      background: radial-gradient(ellipse at 50% 0%, rgba(34,211,238,.05) 0%, transparent 65%);
-    }
-    .cipher-content { position: relative; z-index: 3; }
-    .cipher-typewriter {
-      overflow: hidden;
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
-    .cipher-cursor {
-      display: inline-block; width: 2px; height: 1em;
-      vertical-align: text-bottom; margin-left:2px;
-      border-right: 2px solid #22d3ee;
-      animation: cipher-cursor .75s step-end infinite;
-    }
-    .cipher-glitch {
-      position: relative;
-    }
-    .cipher-glitch::after {
-      content: attr(data-text);
-      position: absolute; left: 0; top: 0;
-      color: rgba(34,211,238,.55);
-      animation: glitch-h .4s step-end 1;
+    /* A giant halftone drawing-ball rising behind the title */
+    .halftone-sun {
+      position: absolute; left: -9vw; top: 50%;
+      width: min(62vw, 820px); aspect-ratio: 1; border-radius: 50%;
+      --dot: var(--night-3); --dot-size: 14px;
+      -webkit-mask-image: radial-gradient(circle at 60% 40%, #000 18%, rgba(0, 0, 0, .55) 45%, transparent 71%);
+      mask-image: radial-gradient(circle at 60% 40%, #000 18%, rgba(0, 0, 0, .55) 45%, transparent 71%);
+      transform: translateY(-50%);
+      animation: sun-rise 1.4s var(--ease-out) both;
       pointer-events: none;
     }
-    .cipher-input {
-      background: rgba(0,0,0,.5) !important;
-      border: 1px solid rgba(34,211,238,.22) !important;
-      color: #e2e8f0 !important;
-      font-family: 'Inter', sans-serif !important;
-      font-size: 0.875rem !important;
-      letter-spacing: 0.04em;
-      caret-color: #22d3ee;
+    @keyframes sun-rise { from { opacity: 0; transform: translateY(-38%) scale(.85); } to { opacity: 1; transform: translateY(-50%); } }
+    .login-inner {
+      position: relative; width: 100%; max-width: 1220px; margin: 0 auto;
+      display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+      gap: clamp(2rem, 6vw, 5rem); align-items: center;
     }
-    .cipher-input:focus {
-      border-color: rgba(34,211,238,.55) !important;
-      box-shadow: 0 0 0 3px rgba(34,211,238,.10) !important;
-      outline: none;
+    .login-title { font-size: clamp(3rem, 7.2vw, 6.6rem); line-height: .98; }
+    .login-title .word { display: block; white-space: nowrap; }
+    .login-title .ch { display: inline-block; animation: register .75s var(--ease-out) both; }
+    /* Each letter's two ink layers slide into register */
+    @keyframes register {
+      from { opacity: 0; transform: translateY(.25em); text-shadow: -.28em .22em 0 var(--tomato); }
+      to   { opacity: 1; transform: none; text-shadow: .055em .05em 0 var(--tomato); }
     }
-    .cipher-input::placeholder { color: rgba(148,163,184,.4) !important; }
-    @keyframes fragment-pulse {
-      0%,100% { box-shadow: 0 0 0 0 rgba(34,211,238,.0), inset 0 0 20px rgba(0,0,0,.6); }
-      50%     { box-shadow: 0 0 24px 2px rgba(34,211,238,.12), inset 0 0 20px rgba(0,0,0,.6); }
+    .login-lede { margin-top: 1.75rem; max-width: 30ch; font-size: clamp(1.25rem, 1.8vw, 1.5rem); line-height: 1.4; color: var(--cream-2); animation: rise .6s .55s var(--ease-out) both; }
+    .login-rounds { display: grid; gap: 1.05rem; margin: 2.5rem 0 0; padding: 0; list-style: none; animation: rise .6s .7s var(--ease-out) both; }
+    .login-rounds li { display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: center; }
+    .login-rounds b { display: block; font-size: 1.125rem; }
+    .login-rounds div > span { color: var(--cream-2); font-size: 1.0625rem; }
+
+    .login-side { display: grid; gap: 1.5rem; }
+    .caller-live {
+      display: flex; align-items: center; gap: 1.1rem;
+      padding: .9rem 1.4rem .9rem .9rem; border-radius: 999px;
+      background: var(--well-deep); justify-self: start;
+      animation: rise .6s .4s var(--ease-out) both;
     }
-    .cipher-fragment {
-      animation: fragment-pulse 3.5s ease-in-out infinite;
+    .caller-label { color: var(--cream-2); font-size: 1rem; font-weight: 700; }
+    .caller-phrase { font-family: var(--font-display); font-size: clamp(1.2rem, 2vw, 1.6rem); line-height: 1.1; color: var(--sun); }
+    .caller-phrase.swap { animation: phrase-in .45s var(--ease-out) both; }
+    @keyframes phrase-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    .slap { animation: slap .5s var(--ease-spring) both; }
+    @keyframes slap {
+      0%   { opacity: 0; transform: scale(1.7) rotate(calc(var(--rot, 0deg) - 30deg)); }
+      60%  { opacity: 1; transform: scale(.92) rotate(var(--rot, 0deg)); }
+      100% { transform: scale(1) rotate(var(--rot, 0deg)); }
     }
 
-    /* Immersive full-screen maze mode */
+    .login-ticket {
+      grid-template-columns: 124px 1fr;
+      transform: rotate(1.4deg);
+      transition: transform .45s var(--ease-spring);
+      animation: ticket-drop .8s .25s var(--ease-out) backwards;
+    }
+    .login-ticket:focus-within { transform: rotate(0deg); }
+    @keyframes ticket-drop { from { opacity: 0; transform: translateY(-40px) rotate(8deg); } to { opacity: 1; transform: rotate(1.4deg); } }
+    .login-ticket .ticket-stub { align-items: flex-start; }
+    .login-form { display: grid; gap: 1.2rem; padding: clamp(1.4rem, 3vw, 2.1rem); }
+    .login-form h2 { font-family: var(--font-display); font-weight: 400; font-size: 2.1rem; line-height: 1.02; color: var(--ink); }
+    .login-form p.sub { color: var(--ink-2); font-size: 1.0625rem; margin-top: .5rem; }
+    .login-form .btn { width: 100%; margin-top: .25rem; }
+
+    /* ── Round 1: Tambola ─────────────────────────────────────────── */
+    .dash { max-width: 1280px; margin: 0 auto; padding: clamp(1.25rem, 3vw, 2.25rem) clamp(1rem, 3vw, 2rem) 3rem; display: grid; gap: 2.25rem; }
+    .dash-top { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(290px, 1fr); gap: clamp(1.25rem, 3vw, 2.5rem); align-items: start; }
+
+    .question { padding: clamp(1.25rem, 3vw, 2.1rem); display: grid; gap: 1.35rem; }
+    .q-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .q-num { font-family: var(--font-display); font-size: 1.15rem; color: var(--cream-2); }
+    .q-text { min-height: 3.2em; max-width: 48ch; font-size: clamp(1.4rem, 2.25vw, 1.9rem); font-weight: 700; line-height: 1.35; white-space: pre-line; overflow-wrap: anywhere; }
+    .q-text.is-code { font-family: var(--font-mono); font-weight: 500; font-size: clamp(1.2rem, 1.9vw, 1.55rem); line-height: 1.5; }
+    .q-text.q-enter { animation: q-in .45s var(--ease-out) both; }
+    @keyframes q-in { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
+    .hint { display: flex; gap: .7rem; padding: .9rem 1.1rem; border-radius: var(--r); background: rgba(255, 200, 61, .13); color: #ffe6a8; font-size: 1.125rem; animation: rise .3s var(--ease-out) both; }
+    .hint i { color: var(--sun); font-size: 1.4rem; flex-shrink: 0; }
+    .answer-row { display: flex; gap: .75rem; }
+    .answer-row .input { flex: 1; min-width: 0; }
+    .q-actions { display: flex; flex-wrap: wrap; gap: .5rem 1.75rem; }
+    #answerFeedback { animation: rise .3s var(--ease-out) both; }
+
+    .caller { display: grid; gap: 1.6rem; padding-top: .25rem; }
+    .team-line { display: flex; align-items: center; gap: .8rem; }
+    .team-avatar { font-size: 2.3rem; line-height: 1; }
+    .team-name { font-family: var(--font-display); font-weight: 400; font-size: clamp(1.6rem, 2.5vw, 2.15rem); line-height: 1.05; overflow-wrap: anywhere; }
+    .team-sub { margin-top: .4rem; color: var(--cream-2); font-size: 1.0625rem; }
+    .last-call { display: flex; align-items: center; gap: 1.35rem; }
+    .last-call-label { color: var(--cream-2); font-size: 1rem; }
+    .last-call-name { font-family: var(--font-display); color: var(--sun); font-size: 1.3rem; line-height: 1.15; margin: .15rem 0 .2rem; }
+    .last-call-text { font-weight: 700; font-size: 1.125rem; line-height: 1.3; }
+    .ball.drop { animation: slap .55s var(--ease-spring) both; }
+    .rail-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: .8rem; font-weight: 700; }
+    .rail-head span:last-child { color: var(--cream-2); font-weight: 500; font-size: 1rem; }
+    .rail { display: flex; flex-wrap: wrap; gap: .6rem; max-height: 11rem; overflow-y: auto; padding: 6px; }
+    .rail .ball:first-child { animation: slap .5s var(--ease-spring) both; }
+    .rail-empty { color: var(--cream-2); font-size: 1.0625rem; }
+
+    .ticket-zone { display: grid; gap: 1rem; }
+    .ticket-zone .ticket { --tilt: -.5deg; transform: rotate(var(--tilt)); }
+    .ticket.dealt { animation: deal .85s var(--ease-out) backwards; }
+    @keyframes deal { from { opacity: 0; transform: translateY(46px) rotate(-3.5deg); } to { opacity: 1; transform: rotate(var(--tilt)); } }
+    .ticket.bump { animation: bump .45s var(--ease-spring); }
+    @keyframes bump { 0% { transform: rotate(var(--tilt)); } 35% { transform: rotate(calc(var(--tilt) + .6deg)) translateY(3px); } 100% { transform: rotate(var(--tilt)); } }
+    .cell.deal { animation: cell-in .4s var(--ease-out) both; }
+    @keyframes cell-in { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: none; } }
+    .ticket-help { max-width: 68ch; color: var(--cream-2); font-size: 1.0625rem; }
+    .stamp {
+      position: absolute; top: 50%; left: 58%; z-index: 4;
+      transform: translate(-50%, -50%) rotate(-11deg);
+      padding: .1em .4em; border: .08em solid var(--tomato); border-radius: .14em;
+      background: rgba(244, 236, 216, .92);
+      color: var(--tomato); font-family: var(--font-display);
+      font-size: clamp(2.2rem, 7vw, 5.4rem); line-height: 1; white-space: nowrap; text-transform: uppercase;
+      box-shadow: 0 20px 36px -16px rgba(0, 0, 0,.8);
+      pointer-events: none;
+      animation: slam .5s var(--ease-spring) both;
+    }
+    @keyframes slam { from { opacity: 0; transform: translate(-50%, -50%) rotate(-22deg) scale(2.3); } to { opacity: 1; transform: translate(-50%, -50%) rotate(-11deg) scale(1); } }
+
+    /* ── Round 2: Fog maze ────────────────────────────────────────── */
+    .maze {
+      max-width: 1320px; margin: 0 auto;
+      height: calc(100dvh - 68px); min-height: 600px;
+      padding: 1rem clamp(1rem, 3vw, 2rem) 1.25rem;
+      display: flex; flex-direction: column; gap: .9rem;
+      user-select: none;
+    }
+    .maze-hud { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+    .maze-title h2 { font-size: clamp(2rem, 3.6vw, 2.8rem); }
+    .maze-title p { margin-top: .4rem; color: var(--cream-2); font-size: 1.0625rem; }
+    .maze-meters { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+    .meter { display: grid; min-width: 96px; padding: .35rem .95rem; border-radius: 12px; background: var(--night-2); text-align: right; line-height: 1.15; }
+    .meter-label { color: var(--cream-2); font-size: .9375rem; }
+    .meter-value { font-family: var(--font-mono); font-weight: 700; font-size: 1.55rem; font-variant-numeric: tabular-nums; }
+    .icon-btn.is-active { color: var(--cream); box-shadow: inset 0 0 0 1.5px var(--tomato); }
+
+    .maze-frame {
+      position: relative; flex: 1; min-height: 0; overflow: hidden;
+      border-radius: 16px; background: #0b0d0e; cursor: pointer;
+      box-shadow: 0 0 0 4px var(--well-deep), 0 0 0 6px rgba(244, 236, 216, .08), var(--lift);
+    }
+    .maze-frame canvas { display: block; width: 100%; height: 100%; }
+    .frame-chip {
+      position: absolute; top: .9rem; z-index: 2;
+      display: flex; align-items: center; gap: .45rem;
+      padding: .45rem .8rem; border-radius: 10px;
+      background: rgba(10, 10, 10, .85); color: var(--cream); font-size: 1rem; line-height: 1.2;
+    }
+    #mazeCanvasClickHint { right: .9rem; pointer-events: none; }
+    #mazeInGameHud { left: .9rem; }
+    #mazeInGameHud button { border: 0; background: none; color: var(--sun); font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; padding: 0 0 0 .4rem; }
+    kbd {
+      display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 .4rem;
+      border-radius: 7px; background: var(--cream); color: var(--ink);
+      font-family: var(--font-mono); font-weight: 700; font-size: .9rem; line-height: 1;
+      box-shadow: 0 3px 0 #b1a88f;
+    }
+    .frame-overlay { position: absolute; inset: 0; z-index: 5; display: flex; padding: 1.25rem; overflow-y: auto; background: rgba(5, 5, 5, .9); cursor: default; }
+    .brief { width: 100%; max-width: 38rem; margin: auto; padding: clamp(1.25rem, 2.5vw, 1.9rem); border-radius: var(--r-lg); background: var(--night-2); box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .9), inset 0 0 0 1px var(--line); animation: sheet-in .35s var(--ease-out) both; }
+    .brief h2 { font-family: var(--font-display); font-weight: 400; font-size: clamp(2rem, 4.2vw, 2.6rem); line-height: 1.02; }
+    .brief .lede { margin-top: .6rem; color: var(--cream-2); }
+    .steps { display: grid; gap: .7rem; margin: 1.1rem 0; padding: 0; list-style: none; counter-reset: step; font-size: 1.0625rem; line-height: 1.45; }
+    .steps li { display: grid; grid-template-columns: 34px 1fr; gap: .9rem; align-items: start; }
+    .steps li::before {
+      counter-increment: step; content: counter(step);
+      display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+      background: var(--sun); color: var(--ink); font-family: var(--font-display); font-size: 1rem;
+    }
+    .controls-line { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; margin: 1rem 0 1.1rem; color: var(--cream-2); }
+    .brief .notice { font-size: 1rem; padding: .75rem .9rem; }
+    .controls-line .or { margin: 0 .4rem; }
+    .brief .btn { width: 100%; }
+
+    .objective { display: flex; align-items: center; gap: 1rem; padding: .85rem 1.2rem; border-radius: 14px; background: var(--night-2); }
+    .objective-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; background: var(--sun); animation: live-y 2s ease-out infinite; }
+    @keyframes live { 0% { box-shadow: 0 0 0 0 rgba(255, 90, 60, .65); } 70%, 100% { box-shadow: 0 0 0 9px rgba(255, 90, 60, 0); } }
+    @keyframes live-y { 0% { box-shadow: 0 0 0 0 rgba(255, 200, 61, .55); } 70%, 100% { box-shadow: 0 0 0 9px rgba(255, 200, 61, 0); } }
+    .objective[data-state="wrong"] .objective-dot { background: var(--tomato); animation-name: live; animation-duration: 1s; }
+    .objective[data-state="done"] .objective-dot { background: var(--cream); animation: none; }
+    .objective-label { color: var(--cream-2); font-weight: 700; font-size: 1rem; line-height: 1.2; }
+    .objective[data-state="wrong"] .objective-label { color: var(--tomato-hi); }
+    #mazeStatusMessage { font-size: 1.125rem; line-height: 1.35; }
+    .objective-hint { margin-left: auto; color: var(--cream-2); font-size: 1rem; text-align: right; }
+
     #viewLevel2.maze-fullscreen {
-      position: fixed !important;
-      inset: 0 !important;
-      z-index: 100 !important;
-      width: 100vw !important;
-      max-width: 100vw !important;
-      height: 100vh !important;
-      max-height: 100vh !important;
-      min-height: 100vh !important;
-      margin: 0 !important;
-      padding: 12px 18px 10px 18px !important;
-      background: radial-gradient(circle at 50% 50%, #060914 0%, #020308 100%) !important;
-      border-radius: 0 !important;
-      box-sizing: border-box !important;
+      position: fixed; inset: 0; z-index: 70;
+      max-width: none; height: 100dvh; min-height: 0;
+      padding: .75rem 1rem .9rem;
+      background: var(--well-deep);
     }
-    #viewLevel2.maze-fullscreen #mazeCanvasFrame {
-      border-radius: 16px !important;
-      border-color: rgba(79, 216, 255, 0.25) !important;
-      box-shadow: 0 0 60px rgba(0, 0, 0, 0.95), inset 0 0 30px rgba(0, 0, 0, 0.8) !important;
+    #viewLevel2.maze-fullscreen .maze-title p,
+    #viewLevel2.maze-fullscreen #mazeCanvasClickHint { display: none; }
+    #viewLevel2.maze-fullscreen .maze-title h2 { font-size: 1.7rem; }
+
+    /* ── Round 3: Final ───────────────────────────────────────────── */
+    .final { position: relative; max-width: 880px; margin: 0 auto; padding: clamp(1.75rem, 5vw, 3.5rem) clamp(1rem, 3vw, 2rem) 4rem; display: grid; gap: 2.25rem; }
+    .final-title { font-size: clamp(3.2rem, 8.5vw, 5.8rem); animation: rise .5s var(--ease-out) both; }
+    .final-lede { margin-top: 1.1rem; max-width: 42ch; font-size: clamp(1.2rem, 2vw, 1.45rem); line-height: 1.45; animation: rise .5s .1s var(--ease-out) both; }
+    .final-lede strong { color: var(--sun); }
+    .final-stats { display: flex; flex-wrap: wrap; gap: .4rem 2rem; margin: 1.25rem 0 0; color: var(--cream-2); animation: rise .5s .2s var(--ease-out) both; }
+    .final-stats div { display: flex; gap: .45rem; }
+    .final-stats dt { margin: 0; }
+    .final-stats dd { margin: 0; color: var(--cream); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    /* The intercepted message: a typed slip taped to the poster wall */
+    .intercept {
+      --tilt: -.8deg;
+      position: relative; padding: 1.8rem clamp(1.25rem, 3vw, 2rem) 1.5rem;
+      border-radius: 4px; background: var(--paper); color: var(--ink);
+      box-shadow: var(--lift); transform: rotate(var(--tilt));
+      animation: deal .7s .2s var(--ease-out) backwards;
     }
-    #viewLevel2.maze-fullscreen #mazeCanvasClickHint {
-      display: none !important;
+    .intercept::before {
+      content: ""; position: absolute; top: -14px; left: 50%; width: 120px; height: 28px;
+      transform: translateX(-50%) rotate(2deg);
+      background: rgba(255, 200, 61, .75); box-shadow: 0 1px 2px rgba(0, 0, 0, .2);
+    }
+    .intercept-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; font-size: 1rem; font-weight: 700; color: var(--ink-2); }
+    .intercept-status { display: inline-flex; align-items: center; gap: .5rem; color: var(--ink); }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--sun-deep); animation: blink 1s steps(2, start) infinite; }
+    .status-dot[data-state="ready"] { background: var(--ink); animation: none; }
+    .status-dot[data-state="done"] { background: var(--tomato); animation: none; }
+    @keyframes blink { to { visibility: hidden; } }
+    .intercept-payload { padding: 1.5rem 0 1.25rem; text-align: center; font-family: var(--font-mono); font-weight: 700; font-size: clamp(2rem, 7vw, 3.6rem); letter-spacing: .16em; line-height: 1.1; overflow-wrap: anywhere; user-select: all; }
+    .caret { display: inline-block; width: .08em; height: .9em; margin-left: .06em; vertical-align: -.08em; background: var(--tomato); animation: blink .9s steps(2, start) infinite; }
+    .intercept p { color: var(--ink-2); text-align: center; }
+    #cipherInputArea .answer-row .input { font-family: var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+
+    .repo { display: grid; gap: 1.4rem; padding: clamp(1.4rem, 3vw, 2rem); animation: rise .5s var(--ease-out) both; }
+    .repo-head { display: flex; align-items: center; gap: 1rem; }
+    .repo-head > i { font-size: 2.75rem; }
+    .repo-name { font-family: var(--font-display); font-size: clamp(1.4rem, 3vw, 1.9rem); line-height: 1.1; text-decoration: none; overflow-wrap: anywhere; }
+    .repo-name:hover { text-decoration: underline; text-decoration-color: var(--sun); text-underline-offset: 5px; }
+    .url-box { display: flex; align-items: center; gap: .5rem; padding: .45rem .45rem .45rem 1rem; border-radius: 12px; background: var(--well-deep); }
+    .url-box code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); font-size: 1.0625rem; color: var(--cream-2); user-select: all; }
+    .repo .btn-primary { justify-self: start; }
+
+    .final-answer { display: grid; gap: 1.25rem; padding: clamp(1.4rem, 3vw, 2rem); animation: rise .5s var(--ease-out) both; }
+    .final-answer h3 { font-size: clamp(1.6rem, 3vw, 2.1rem); }
+    .final-answer p.muted { margin-top: .5rem; max-width: 56ch; }
+    #finalAnswerInput { font-family: var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+
+    /* Winning moment: a cream poster slammed onto the wall */
+    .win-card {
+      position: relative; display: grid; justify-items: start; gap: .35rem;
+      padding: clamp(1.75rem, 4vw, 2.75rem);
+      border-radius: 6px; background: var(--paper); color: var(--ink);
+      box-shadow: var(--lift); transform: rotate(.6deg);
+      animation: win-slam .6s var(--ease-spring) both;
+    }
+    @keyframes win-slam { from { opacity: 0; transform: scale(1.35) rotate(-6deg); } to { opacity: 1; transform: rotate(.6deg); } }
+    .win-ball { position: absolute; top: -26px; right: 28px; }
+    .win-title { font-size: clamp(3rem, 9vw, 5.6rem); color: var(--ink); text-shadow: .055em .05em 0 var(--tomato); line-height: 1; margin-bottom: .75rem; }
+    .win-sub { font-weight: 700; color: var(--ink-2); }
+    .win-time { font-family: var(--font-mono); font-weight: 700; font-size: clamp(2.6rem, 8vw, 4.4rem); line-height: 1.05; color: var(--tomato-deep); font-variant-numeric: tabular-nums; }
+    .win-date { color: var(--ink-2); }
+    .win-shout { margin-top: 1.1rem; padding: .9rem 1.1rem; border-radius: var(--r); background: var(--ink); color: var(--sun); font-weight: 800; font-size: clamp(1.15rem, 2.2vw, 1.4rem); line-height: 1.35; }
+
+    /* ── Overlays ─────────────────────────────────────────────────── */
+    .sheet .lede { margin-top: .9rem; color: var(--cream-2); }
+    .sheet.poster .lede { color: var(--ink-2); }
+    .sheet .btn { width: 100%; margin-top: 1.75rem; }
+    .sheet-ball { margin-bottom: 1.4rem; }
+    .sheet-stats { display: flex; gap: 2.5rem; margin: 1.5rem 0 0; }
+    .sheet-stats dt { font-size: 1rem; color: var(--cream-2); margin: 0; }
+    .sheet.poster .sheet-stats dt { color: var(--ink-2); }
+    .sheet-stats dd { margin: 0; font-family: var(--font-display); font-size: 2.4rem; line-height: 1.05; font-variant-numeric: tabular-nums; }
+    .big-time { color: var(--tomato-deep); font-family: var(--font-mono); font-weight: 700; font-size: clamp(3.5rem, 12vw, 5rem); line-height: 1; margin-top: 1.4rem; font-variant-numeric: tabular-nums; }
+    #mazeSuccessOverlay { z-index: 75; }
+
+    @media (max-width: 1000px) {
+      .login-inner { grid-template-columns: 1fr; }
+      .login-ticket { max-width: 36rem; }
+      .halftone-sun { width: 120vw; left: -40vw; top: 26%; }
+      .dash-top { grid-template-columns: 1fr; }
+      .caller { grid-template-columns: 1fr 1fr; align-items: start; }
+    }
+    @media (max-width: 640px) {
+      .login-ticket { grid-template-columns: 1fr; }
+      .caller { grid-template-columns: 1fr; }
+      .answer-row { flex-direction: column; }
+      .answer-row .btn { width: 100%; }
+      .maze { height: auto; min-height: calc(100dvh - 68px); }
+      .maze-frame { min-height: 62vh; }
+      .objective-hint { display: none; }
     }
   </style>
 </head>
-<body class="bg-[#0d0f12] text-zinc-100 font-sans min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+<body>
 
-  <!-- HEADER -->
-  <header class="border-b border-zinc-800/80 bg-[#12141a]/90 backdrop-blur sticky top-0 z-40 px-4 sm:px-8 py-3.5 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-xl font-bold">🎟️</div>
-      <div>
-        <h1 class="text-base font-black tracking-tight text-white flex items-center gap-2">
-          BRAIN <span class="text-indigo-400 font-black">BREAKER</span>
-        </h1>
-      </div>
-    </div>
-    <div class="flex items-center gap-2">
-      <!-- Level badge (visible when logged in) -->
-      <div id="levelBadge" class="hidden items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-600/20 border border-indigo-500/30 text-xs font-bold text-indigo-300">
-        <span>⚡</span><span id="levelBadgeText">Level 1</span>
-      </div>
-      <button id="soundToggleBtn" onclick="toggleSound()" class="p-2 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700/60 transition text-xs flex items-center gap-1.5" title="Toggle Sound">
-        <span id="soundIcon">🔊</span>
-        <span class="hidden sm:inline text-[11px] font-semibold text-zinc-300">Sound</span>
+  <header class="topbar">
+    <a class="wordmark" href="/" aria-label="Brain Breaker home">
+      <span class="wordmark-ball" aria-hidden="true"></span>
+      <span class="wordmark-text">Brain Breaker</span>
+    </a>
+
+    <nav id="levelBadge" class="rounds hidden" aria-label="Stages">
+      <ol>
+        <li data-round="1"><span>Stage 1</span></li>
+        <li data-round="2"><span>Stage 2</span></li>
+        <li data-round="3"><span>Stage 3</span></li>
+      </ol>
+    </nav>
+
+    <div class="topbar-actions">
+      <button id="soundToggleBtn" class="icon-btn" onclick="toggleSound()" aria-pressed="true" title="Sound on">
+        <i id="soundIcon" class="ph ph-speaker-high" aria-hidden="true"></i>
+        <span class="sr-only">Toggle sound</span>
       </button>
-      <button id="logoutBtn" onclick="handleLogout()" class="hidden p-2 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700/60 transition text-xs" title="Logout">
-        Sign Out
+      <button id="logoutBtn" class="icon-btn hidden" onclick="handleLogout()">
+        <i class="ph ph-sign-out" aria-hidden="true"></i><span>Sign out</span>
       </button>
     </div>
   </header>
 
-  <!-- BROADCAST BANNER -->
-  <div id="broadcastBanner" class="hidden bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-red-500/20 border-b border-amber-500/30 px-4 py-2 text-center text-xs font-medium text-amber-200 flex items-center justify-center gap-2">
-    <span>📢</span>
-    <span id="broadcastText"></span>
-    <button onclick="document.getElementById('broadcastBanner').classList.add('hidden')" class="ml-3 text-zinc-400 hover:text-white">&times;</button>
+  <div id="broadcastBanner" class="broadcast hidden" role="status">
+    <i class="ph-bold ph-megaphone-simple" aria-hidden="true"></i>
+    <p id="broadcastText"></p>
+    <button class="icon-btn" onclick="document.getElementById('broadcastBanner').classList.add('hidden')" aria-label="Dismiss announcement">
+      <i class="ph-bold ph-x" aria-hidden="true"></i>
+    </button>
   </div>
 
-  <main class="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+  <main id="main">
 
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- VIEW 1: LOGIN                                          -->
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <section id="viewLogin" class="max-w-md mx-auto my-10 sm:my-20">
-      <div class="bg-[#151821] border border-zinc-800/80 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black/60 relative overflow-hidden">
-        <div class="absolute -right-12 -top-12 w-36 h-36 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
-        <div class="absolute -left-12 -bottom-12 w-36 h-36 bg-pink-500/10 rounded-full blur-2xl pointer-events-none"></div>
+    <!-- Login -->
+    <section id="viewLogin" class="login">
 
-        <div class="text-center mb-8">
-          <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-3xl mb-3 shadow-inner">🎯</div>
-          <h2 class="text-2xl font-bold tracking-tight text-white">Team Login</h2>
-          <p class="text-xs text-zinc-400 mt-1">Use your team credentials to enter the arena</p>
+      <div class="login-inner">
+        <div>
+          <h1 class="display print login-title" aria-label="Brain Breaker">
+            <span class="word" aria-hidden="true">Brain</span>
+            <span class="word" aria-hidden="true">Breaker</span>
+          </h1>
+          <p class="login-lede">Solve puzzles to draw numbers. Mark all fifteen on your ticket before anyone else does.</p>
+          <ol class="login-rounds">
+            <li><span class="ball is-gold" style="--size:46px;--rot:-6deg"><span>1</span></span><div><b>Tambola puzzles</b><span>Coding, maths, aptitude and riddles.</span></div></li>
+            <li><span class="ball" style="--size:46px;--rot:5deg"><span>2</span></span><div><b>Fog maze</b><span>Find your key with only a lamp to see by.</span></div></li>
+            <li><span class="ball" style="--size:46px;--rot:-3deg"><span>3</span></span><div><b>Final challenge</b><span>Decode the message. Follow the trail.</span></div></li>
+          </ol>
         </div>
 
-        <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+        <div class="login-side">
+        <div class="caller-live" aria-hidden="true">
+          <span id="callerSticker" class="ball is-hit" style="--size:84px;--rot:-7deg"><span>88</span></span>
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">Username</label>
-            <div class="relative">
-              <input type="text" id="loginUsername" required autocomplete="username"
-                placeholder="Your team username"
-                class="w-full bg-[#0e1017] border border-zinc-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition" />
-              <span class="absolute right-3.5 top-3.5 text-zinc-500 text-sm">👤</span>
+            <div class="caller-label">Now calling</div>
+            <div id="callerPhrase" class="caller-phrase">Two fat ladies</div>
+          </div>
+        </div>
+        <form id="loginForm" class="ticket login-ticket on-paper" onsubmit="handleLogin(event)" novalidate>
+          <div class="ticket-stub">
+            <div class="ticket-brand">Admit one team</div>
+            <div class="ticket-serial" id="loginSerial">No. 0000</div>
+          </div>
+          <div class="login-form">
+            <div>
+              <h2>Take your seat</h2>
+              <p class="sub">Use the login your organizers gave you.</p>
+            </div>
+            <div class="field">
+              <label class="field-label" for="loginUsername">Team username</label>
+              <input class="input" type="text" id="loginUsername" required autocomplete="username" autocapitalize="off" spellcheck="false" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="loginPassword">Password</label>
+              <input class="input" type="password" id="loginPassword" required autocomplete="current-password" />
+            </div>
+            <div id="loginError" class="notice notice-error hidden" role="alert">
+              <i class="ph-bold ph-warning-circle" aria-hidden="true"></i><span id="loginErrorText">Wrong username or password.</span>
+            </div>
+            <button type="submit" id="loginSubmitBtn" class="btn btn-primary">Enter the game</button>
+          </div>
+        </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Round 1: Tambola -->
+    <section id="viewDashboard" class="dash hidden" aria-labelledby="puzzleNumberBadge">
+      <div class="dash-top">
+        <div class="question well">
+          <div class="q-head">
+            <span id="puzzleCategoryBadge" class="tag"><i class="ph ph-puzzle-piece" aria-hidden="true"></i>Puzzle</span>
+            <span id="puzzleNumberBadge" class="q-num">Puzzle 1</span>
+          </div>
+
+          <div id="puzzleQuestionText" class="q-text" aria-live="polite">Loading your first puzzle</div>
+
+          <div id="hintBox" class="hint hidden"></div>
+
+          <div id="answerFeedback" class="notice hidden" role="status">
+            <i id="feedbackIcon" class="ph-bold ph-info" aria-hidden="true"></i>
+            <div id="feedbackMessage"></div>
+          </div>
+
+          <form id="puzzleAnswerForm" class="field" onsubmit="handleAnswerSubmit(event)">
+            <label class="field-label" for="puzzleAnswerInput">Your answer</label>
+            <div class="answer-row">
+              <input type="text" id="puzzleAnswerInput" class="input" autocomplete="off" autocapitalize="off" spellcheck="false" required />
+              <button type="submit" id="submitAnswerBtn" class="btn btn-primary">Check answer</button>
+            </div>
+          </form>
+
+          <div class="q-actions">
+            <button type="button" id="hintToggleBtn" class="link-btn hidden" onclick="toggleHint()">
+              <i class="ph ph-lightbulb" aria-hidden="true"></i><span id="hintToggleText">Show hint</span>
+            </button>
+            <button type="button" id="skipPuzzleBtn" class="link-btn" onclick="handleSkipPuzzle()">
+              <i class="ph ph-skip-forward" aria-hidden="true"></i><span id="skipText">Skip this one</span>
+            </button>
+          </div>
+        </div>
+
+        <aside class="caller" aria-label="Your draws">
+          <div>
+            <div class="team-line">
+              <span id="playerAvatar" class="team-avatar" aria-hidden="true"></span>
+              <h2 id="playerName" class="team-name">Team</h2>
+            </div>
+            <p class="team-sub"><span id="statQuestionsSolved" class="num">0</span> solved, <span id="statSkipped" class="num">0</span> skipped</p>
+          </div>
+
+          <div class="last-call">
+            <div id="lastBall" class="ball is-empty" style="--size:112px"><span>?</span></div>
+            <div>
+              <div class="last-call-label">Last number drawn</div>
+              <div id="lastCallName" class="last-call-name"></div>
+              <div id="lastCallText" class="last-call-text" aria-live="polite">Nothing yet</div>
             </div>
           </div>
 
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-zinc-300 mb-2">Password</label>
-            <div class="relative">
-              <input type="password" id="loginPassword" required autocomplete="current-password"
-                placeholder="Your team password"
-                class="w-full bg-[#0e1017] border border-zinc-700/80 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition" />
-              <span class="absolute right-3.5 top-3.5 text-zinc-500 text-sm">🔒</span>
+            <div class="rail-head"><span>Drawn so far</span><span id="collectedCountBadge">0 numbers</span></div>
+            <p id="collectedNumbersEmpty" class="rail-empty">Answer a puzzle to draw your first number.</p>
+            <div id="collectedNumbersGrid" class="rail hidden"></div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="ticket-zone">
+        <div id="ticketCard" class="ticket">
+          <div class="ticket-stub">
+            <div>
+              <div class="ticket-brand">Brain Breaker</div>
+              <div class="ticket-meta" id="ticketTeamTag">Team</div>
             </div>
+            <div>
+              <div class="ticket-count" id="statTicketNumbersHit">0<small>/15</small></div>
+              <div class="ticket-meta">marked</div>
+            </div>
+            <div class="ticket-serial" id="ticketSerialNo">No. 0000</div>
           </div>
-
-          <!-- Error message -->
-          <div id="loginError" class="hidden p-3 rounded-xl text-xs font-semibold text-red-300 bg-red-500/10 border border-red-500/30 flex items-center gap-2">
-            <span>❌</span><span id="loginErrorText">Invalid credentials.</span>
+          <div class="ticket-body">
+            <div id="ticketGrid" class="ticket-grid" role="grid" aria-label="Your Tambola ticket"></div>
           </div>
+          <div id="fullHouseStamp" class="stamp hidden" aria-hidden="true">Full house</div>
+        </div>
+        <p class="ticket-help">Each right answer draws a number from 1 to 90. If it is on your ticket, it gets stamped. Stamp all 15 to clear stage 1.</p>
+      </div>
+    </section>
 
-          <button type="submit" id="loginSubmitBtn"
-            class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition transform active:scale-[0.98] flex items-center justify-center gap-2">
-            <span>Enter Arena</span><span class="text-base">&rarr;</span>
+    <!-- Round 2: Fog maze -->
+    <section id="viewLevel2" class="maze hidden">
+      <div class="maze-hud">
+        <div class="maze-title">
+          <h2 class="display">Fog maze</h2>
+          <p>Four keys are hidden in the dark. Only one belongs to your team.</p>
+        </div>
+        <div class="maze-meters">
+          <div class="meter"><span class="meter-label">Attempt</span><span id="mazeRoundDisplay" class="meter-value">01</span></div>
+          <div class="meter"><span class="meter-label">Time</span><span id="mazeTimerDisplay" class="meter-value">00:00</span></div>
+          <button class="icon-btn" onclick="openMazeInstructionsModal()"><i class="ph ph-question" aria-hidden="true"></i><span>How to play</span></button>
+          <button id="mazeFullscreenBtn" class="icon-btn" onclick="toggleMazeFullscreen()" title="Fullscreen">
+            <i id="mazeFsIcon" class="ph ph-arrows-out" aria-hidden="true"></i><span id="mazeFsText">Fullscreen</span>
           </button>
+        </div>
+      </div>
+
+      <div id="mazeCanvasFrame" class="maze-frame" onclick="onMazeCanvasClick(event)">
+        <canvas id="mazeCanvas"></canvas>
+
+        <div id="mazeCanvasClickHint" class="frame-chip"><i class="ph ph-arrows-out" aria-hidden="true"></i>Click the maze for fullscreen</div>
+
+        <div id="mazeInGameHud" class="frame-chip hidden">
+          <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrow keys
+          <button onclick="event.stopPropagation(); openMazeInstructionsModal()">Help</button>
+        </div>
+
+        <div id="mazeReadyOverlay" class="frame-overlay">
+          <div class="brief">
+            <h2>Fog maze</h2>
+            <p class="lede">You carry a weak lamp. Everything else is dark.</p>
+            <ol class="steps">
+              <li><span>Walk the corridors. Four keys sit in dead ends far from the start.</span></li>
+              <li><span>Only one key colour is right for your team, and nobody will tell you which. Work it out.</span></li>
+              <li><span>Step onto the right key to clear stage 2. The clock is already running.</span></li>
+            </ol>
+            <div class="notice notice-error">
+              <i class="ph-bold ph-arrow-u-up-left" aria-hidden="true"></i>
+              <span>Pick the wrong key and you walk back to the start before trying again. The maze reshuffles, but your key colour never changes.</span>
+            </div>
+            <div class="controls-line"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span class="or">or</span><kbd>&uarr;</kbd><kbd>&larr;</kbd><kbd>&darr;</kbd><kbd>&rarr;</kbd><span class="or">to move</span></div>
+            <button id="startMazeBtn" class="btn btn-primary" onclick="startMazeRun()">Enter the maze</button>
+          </div>
+        </div>
+
+        <div id="mazeInstructionsModal" class="frame-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="mazeHelpTitle">
+          <div class="brief">
+            <h2 id="mazeHelpTitle">How the maze works</h2>
+            <ol class="steps">
+              <li><span>Four keys are hidden in dead ends. One colour is yours, and you are not told which.</span></li>
+              <li><span>Walk onto a key to test it. The right one clears stage 2.</span></li>
+              <li><span>A wrong key sends you back to the start. The maze and keys move, but your colour stays the same.</span></li>
+            </ol>
+            <div class="controls-line"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span class="or">or arrow keys to move.</span><kbd>Esc</kbd><span class="or">leaves fullscreen.</span></div>
+            <button class="btn btn-primary" onclick="closeMazeInstructionsModal()">Back to the maze</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="mazeObjectiveBar" class="objective" data-state="hunt">
+        <span id="mazeStatusDot" class="objective-dot" aria-hidden="true"></span>
+        <div>
+          <div id="mazeStatusLabel" class="objective-label">Objective</div>
+          <div id="mazeStatusMessage" aria-live="polite">Find your team's key somewhere in the fog.</div>
+        </div>
+        <div id="mazeStatusHint" class="objective-hint">4 keys, 1 is yours</div>
+      </div>
+    </section>
+
+    <!-- Round 3: Final -->
+    <section id="viewLevel3" class="final hidden">
+      <header>
+        <h2 class="display print final-title">Stage 3</h2>
+        <p class="final-lede">The <strong id="cipherKeyUnlockPhrase">right key</strong> opened a scrap of an intercepted message. Decode it to find out where to go next.</p>
+        <dl id="lvl3Stats" class="final-stats"></dl>
+      </header>
+
+      <div class="intercept">
+        <div class="intercept-head">
+          <span>Intercepted at <span id="cipherTimestamp" class="mono">--:--</span></span>
+          <span class="intercept-status"><span id="cipherStatusDot" class="status-dot" aria-hidden="true"></span><span id="cipherStatusText">Receiving</span></span>
+        </div>
+        <div class="intercept-payload"><span id="cipherPayload"></span><span class="caret" aria-hidden="true"></span></div>
+        <p>It was encoded before it was sent.</p>
+      </div>
+
+      <div id="cipherInputArea" class="field">
+        <label class="field-label" for="cipherAnswerInput">Decoded word</label>
+        <div class="answer-row">
+          <input type="text" id="cipherAnswerInput" class="input" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" onkeydown="if(event.key==='Enter') verifyCipherAnswer()" />
+          <button id="cipherVerifyBtn" class="btn btn-primary" onclick="verifyCipherAnswer()"><i class="ph-bold ph-lock-key-open" aria-hidden="true"></i>Unlock</button>
+        </div>
+        <div id="cipherFeedback" class="notice notice-error hidden" role="alert"><i class="ph-bold ph-x-circle" aria-hidden="true"></i><span>Not that. Try again.</span></div>
+      </div>
+
+      <div id="cipherSuccessArea" class="notice notice-hit hidden" role="status">
+        <i class="ph-bold ph-check-circle" aria-hidden="true"></i>
+        <span><strong>Decoded.</strong> The next clue is waiting below.</span>
+      </div>
+
+      <div id="repoGateSection" class="repo well hidden">
+        <div class="repo-head">
+          <i class="ph ph-github-logo" aria-hidden="true"></i>
+          <div>
+            <a class="repo-name" href="https://github.com/AkshatOP/gradient_l3" target="_blank" rel="noopener noreferrer">AkshatOP / gradient_l3</a>
+            <p class="muted">Public GitHub repository</p>
+          </div>
+        </div>
+        <p>Go to this repository. The next clue is in there somewhere.</p>
+        <div class="url-box">
+          <code>https://github.com/AkshatOP/gradient_l3</code>
+          <button id="copyRepoBtn" class="btn btn-quiet btn-sm" onclick="copyRepoUrl()"><i class="ph ph-copy" aria-hidden="true"></i><span>Copy link</span></button>
+        </div>
+        <a class="btn btn-primary" href="https://github.com/AkshatOP/gradient_l3" target="_blank" rel="noopener noreferrer"><i class="ph-bold ph-arrow-square-out" aria-hidden="true"></i>Open repository</a>
+      </div>
+
+      <div id="finalAnswerSection" class="final-answer well hidden">
+        <div>
+          <h3 class="display">Final answer</h3>
+          <p class="muted">Found the last secret in the repository? Enter it here. Only your first correct answer counts, and the exact time it lands is recorded.</p>
+        </div>
+        <form id="finalAnswerForm" class="field" onsubmit="submitFinalAnswer(event)" novalidate>
+          <label class="field-label" for="finalAnswerInput">Your answer</label>
+          <div class="answer-row">
+            <input type="text" id="finalAnswerInput" class="input" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" />
+            <button type="submit" id="finalSubmitBtn" class="btn btn-primary"><i class="ph-bold ph-paper-plane-tilt" aria-hidden="true"></i>Submit</button>
+          </div>
+          <div id="finalFeedback" class="notice notice-error hidden" role="alert"><i class="ph-bold ph-x-circle" aria-hidden="true"></i><span id="finalFeedbackText">That's not it. Keep digging.</span></div>
         </form>
       </div>
-    </section>
 
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- VIEW 2: PLAYER DASHBOARD (Level 1 — Tambola)          -->
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <section id="viewDashboard" class="hidden">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-        <!-- LEFT COLUMN -->
-        <div class="lg:col-span-6 space-y-6">
-
-          <!-- Team header + stats -->
-          <div class="bg-[#14161f] border border-zinc-800/80 rounded-2xl p-5 sm:p-6 shadow-xl">
-            <div class="flex items-center gap-3 mb-5">
-              <span id="playerAvatar" class="text-3xl">🚀</span>
-              <div>
-                <h2 id="playerName" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Team</h2>
-                <span class="text-xs text-indigo-400 font-bold">LEVEL 1 — TAMBOLA PUZZLE</span>
-              </div>
-            </div>
-            <div class="grid grid-cols-3 gap-2 sm:gap-4 pt-4 border-t border-zinc-800/70 text-center">
-              <div class="p-2">
-                <div id="statQuestionsSolved" class="text-2xl sm:text-3xl font-black text-white">0</div>
-                <div class="text-[11px] sm:text-xs text-zinc-400 mt-1 font-medium">Questions solved</div>
-              </div>
-              <div class="p-2 border-x border-zinc-800/70">
-                <div id="statNumbersCollected" class="text-2xl sm:text-3xl font-black text-white">0</div>
-                <div class="text-[11px] sm:text-xs text-zinc-400 mt-1 font-medium">Numbers collected</div>
-              </div>
-              <div class="p-2">
-                <div id="statTicketNumbersHit" class="text-2xl sm:text-3xl font-black text-emerald-400">0/15</div>
-                <div class="text-[11px] sm:text-xs text-zinc-400 mt-1 font-medium">Ticket numbers hit</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Tambola Ticket -->
-          <div class="bg-[#14161f] border border-zinc-800/80 rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center gap-2">
-                <span class="text-lg">🎟️</span>
-                <h3 class="text-base sm:text-lg font-bold text-white tracking-tight">Your ticket</h3>
-              </div>
-              <div class="text-xs font-mono text-zinc-400 bg-zinc-800/50 px-2.5 py-1 rounded-md border border-zinc-700/40">
-                3 &times; 9 &bull; 15 numbers
-              </div>
-            </div>
-            <div class="p-2 sm:p-3.5 rounded-xl border border-zinc-700/60 bg-[#171922] shadow-inner ticket-perforated">
-              <div class="flex items-center justify-between border-b border-zinc-800 pb-2 mb-3 text-[10px] font-ticket uppercase text-zinc-400 tracking-wider">
-                <span id="ticketSerialNo">TICKET #—</span>
-                <span class="text-emerald-400 font-bold">● CLASSIC HOUSIE</span>
-                <span id="ticketTeamTag">TEAM: ---</span>
-              </div>
-              <div id="ticketGrid" class="grid grid-rows-3 gap-1.5 sm:gap-2"></div>
-            </div>
-            <div class="mt-3.5 text-xs text-zinc-400 font-medium leading-relaxed">
-              <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1.5 align-middle"></span>
-              <strong class="text-zinc-200">Green</strong> = number obtained and matched. Empty cells are not part of your ticket.
-            </div>
-          </div>
-
-          <!-- Collected numbers -->
-          <div class="bg-[#14161f] border border-zinc-800/80 rounded-2xl p-5 sm:p-6 shadow-xl">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="text-base font-bold text-white tracking-tight">Numbers you've collected</h3>
-              <span id="collectedCountBadge" class="text-xs bg-zinc-800 text-zinc-300 font-mono px-2 py-0.5 rounded">0 numbers</span>
-            </div>
-            <div id="collectedNumbersEmpty" class="text-xs text-zinc-400 py-3">
-              Solve a puzzle to start collecting numbers.
-            </div>
-            <div id="collectedNumbersGrid" class="hidden flex flex-wrap gap-2 max-h-44 overflow-y-auto pr-1 pt-1"></div>
-          </div>
-        </div>
-
-        <!-- RIGHT COLUMN: PUZZLE -->
-        <div class="lg:col-span-6 space-y-6">
-          <div class="bg-[#14161f] border border-zinc-800/80 rounded-2xl p-6 sm:p-7 shadow-xl">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center gap-2">
-                <span class="text-emerald-400 text-lg">🧩</span>
-                <h3 class="text-lg font-bold text-white tracking-tight">Puzzle corner</h3>
-              </div>
-              <span id="puzzleNumberBadge" class="text-xs font-mono font-bold bg-zinc-800/80 text-zinc-300 px-3 py-1 rounded-lg border border-zinc-700/60">PUZZLE 1</span>
-            </div>
-            <div class="flex items-center gap-2.5 mb-5">
-              <span id="puzzleCategoryBadge" class="text-xs font-bold uppercase tracking-wide bg-purple-600/20 text-purple-400 border border-purple-500/30 px-2.5 py-0.5 rounded-md">RIDDLE</span>
-              <span class="text-xs text-zinc-400 font-medium">Solve correctly to earn a number</span>
-            </div>
-            <div class="mb-6">
-              <div id="puzzleQuestionText" class="text-lg sm:text-xl font-bold text-white leading-snug whitespace-pre-line font-sans">Loading question...</div>
-              <button type="button" id="hintToggleBtn" onclick="toggleHint()"
-                class="hidden mt-3 text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1.5 cursor-pointer">
-                <span>💡</span> <span id="hintToggleText">Show hint</span>
-              </button>
-              <div id="hintBox" class="hidden mt-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 leading-relaxed"></div>
-            </div>
-            <div id="answerFeedback" class="hidden mb-5 p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all">
-              <div class="flex items-center gap-2" id="feedbackMessage"></div>
-              <button onclick="document.getElementById('answerFeedback').classList.add('hidden')" class="text-zinc-400 hover:text-white">&times;</button>
-            </div>
-            <form id="puzzleAnswerForm" onsubmit="handleAnswerSubmit(event)" class="space-y-4">
-              <div>
-                <label class="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-2">YOUR ANSWER</label>
-                <input type="text" id="puzzleAnswerInput" autocomplete="off" required
-                  placeholder="Type your answer here..."
-                  class="w-full bg-[#0e1017] border border-zinc-700/80 rounded-xl px-4 py-3.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/25 font-sans transition" />
-              </div>
-              <div class="flex items-center gap-3 pt-1">
-                <button type="submit" id="submitAnswerBtn"
-                  class="flex-1 py-3.5 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition transform active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer">
-                  <span>Submit answer</span><span class="text-base">&nearr;</span>
-                </button>
-                <button type="button" id="skipPuzzleBtn" onclick="handleSkipPuzzle()"
-                  class="py-3.5 px-5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 font-bold text-sm transition flex items-center justify-center gap-1.5 cursor-pointer">
-                  Skip ⏭
-                </button>
-              </div>
-            </form>
-            <div class="mt-6 pt-5 border-t border-zinc-800/80">
-              <div class="flex items-center gap-2 text-xs font-bold text-amber-400 mb-2">
-                <span>💡</span> How it works
-              </div>
-              <p class="text-xs text-zinc-400 leading-relaxed">
-                Each correct answer awards a unique random number from 1 to 90. If that number matches a cell on your ticket, it gets stamped green! The first team to hit all 15 ticket numbers claims the Full House victory. You can skip any puzzle if you're stuck.
-              </p>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- VIEW 3: LEVEL 2 (STAGE 02 — FOG MAZE RUN)            -->
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <section id="viewLevel2" class="hidden w-full max-w-5xl mx-auto my-2 flex flex-col h-[calc(100vh-125px)] min-h-[580px] select-none">
-      <!-- HUD Header -->
-      <div class="flex items-center justify-between pb-3 px-2">
-        <div>
-          <div class="text-[10px] font-bold uppercase tracking-[0.28em] text-cyan-300/80">Brain Breaker</div>
-          <div class="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
-            <span>Stage 02</span>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold font-mono">FOG MAZE</span>
-          </div>
-          <div class="text-[11px] uppercase tracking-[0.18em] text-zinc-400">Find the correct key among the fog</div>
-        </div>
-
-        <div class="flex items-center gap-2 sm:gap-3">
-          <button onclick="openMazeInstructionsModal()" class="px-3 py-1.5 rounded-xl border border-indigo-500/30 bg-indigo-950/40 hover:bg-indigo-900/50 text-indigo-300 hover:text-white text-xs font-semibold backdrop-blur-md transition flex items-center gap-1.5 cursor-pointer" title="View mission instructions">
-            <span>ℹ️</span> <span class="hidden sm:inline">Instructions</span>
-          </button>
-          <button id="mazeFullscreenBtn" onclick="toggleMazeFullscreen()" class="px-3 py-1.5 rounded-xl border border-cyan-500/30 bg-cyan-950/40 hover:bg-cyan-900/50 text-cyan-300 hover:text-white text-xs font-semibold backdrop-blur-md transition flex items-center gap-1.5 cursor-pointer" title="Toggle Fullscreen Mode">
-            <span id="mazeFsIcon">⛶</span> <span id="mazeFsText" class="hidden sm:inline">Fullscreen</span>
-          </button>
-          <div class="rounded-xl border border-white/10 bg-zinc-900/60 px-3.5 py-1.5 text-right backdrop-blur-md">
-            <div class="text-[9px] uppercase tracking-[0.2em] text-zinc-400">Round</div>
-            <div id="mazeRoundDisplay" class="font-mono text-sm font-bold text-white">01</div>
-          </div>
-          <div class="min-w-[85px] rounded-xl border border-cyan-500/20 bg-cyan-950/40 px-3.5 py-1.5 text-right backdrop-blur-md">
-            <div class="text-[9px] uppercase tracking-[0.2em] text-cyan-300/70">Time</div>
-            <div id="mazeTimerDisplay" class="font-mono text-base sm:text-lg font-extrabold text-cyan-200">00:00</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Canvas Frame -->
-      <div id="mazeCanvasFrame" onclick="onMazeCanvasClick(event)" class="relative flex-1 w-full overflow-hidden rounded-2xl border border-white/10 bg-[#04060d] shadow-2xl flex items-center justify-center cursor-pointer group">
-        <canvas id="mazeCanvas" class="w-full h-full block"></canvas>
-        <div id="mazeCanvasClickHint" class="absolute top-3 right-3 z-20 px-2.5 py-1 rounded-lg bg-black/75 border border-cyan-500/30 text-[10px] font-mono font-bold text-cyan-300 pointer-events-none backdrop-blur-sm opacity-80 group-hover:opacity-100 transition shadow-lg flex items-center gap-1.5">
-          <span>⛶</span> <span>Click for Fullscreen</span>
-        </div>
-
-        <!-- Persistent in-maze instructions strip -->
-        <div id="mazeInGameHud" class="hidden absolute top-3 left-3 z-20 max-w-[calc(100%-140px)] px-3 py-2 rounded-xl bg-black/75 border border-white/10 text-[10px] font-mono backdrop-blur-sm shadow-lg flex items-center gap-2.5">
-          <span class="flex items-center gap-1.5 text-zinc-300"><strong class="text-white font-bold">WASD</strong>/<strong class="text-white font-bold">ARROWS</strong> to move</span>
-          <span class="text-zinc-600">·</span>
-          <!-- <span class="text-zinc-300">Find your key. Wrong picks reset to start.</span> -->
-          <span class="text-zinc-600">·</span>
-          <button onclick="openMazeInstructionsModal()" class="pointer-events-auto text-cyan-300 hover:text-white font-bold underline decoration-dotted cursor-pointer">ℹ️ Help</button>
-        </div>
-
-        <!-- Ready Overlay (Mission Briefing & Instructions) -->
-        <div id="mazeReadyOverlay" class="absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-[#02050b]/85 px-4 py-5 backdrop-blur-md">
-          <div class="my-auto w-full max-w-xl rounded-3xl border border-white/10 bg-[#07101a]/95 p-6 shadow-2xl space-y-4">
-            <div class="text-center">
-              <div class="text-[10px] font-semibold uppercase tracking-[0.3em] text-cyan-300/70">Brain Breaker · Stage 02</div>
-              <h1 class="mt-1 text-2xl sm:text-3xl font-black tracking-tight text-white">The Fog Maze</h1>
-              <p class="mt-1 text-xs text-zinc-400">Navigate the dark corridors and find your team's authentic key.</p>
-            </div>
-
-            <!-- Mission Briefing Section -->
-            <div class="rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-[#0d1b2a]/90 to-[#0c0f1c]/90 p-4 space-y-3 shadow-lg">
-              <div class="flex items-center gap-2">
-                <span class="text-lg">🎯</span>
-                <div>
-                  <div class="text-xs font-bold uppercase tracking-wider text-cyan-300 font-cipher">Your Mission</div>
-                  <div class="text-[10px] text-zinc-400 font-sans">Nobody will tell you the color — you have to find it out yourself.</div>
-                </div>
-              </div>
-
-              <div class="bg-black/50 border border-white/5 p-3 rounded-xl">
-                <ol class="text-xs sm:text-sm text-zinc-200 leading-relaxed font-sans font-medium list-decimal list-inside space-y-1">
-                  <li>Enter the fog maze and explore its corridors using the controls below.</li>
-                  <li>4 keys are hidden in distant dead ends — only <span class="font-bold text-cyan-300">one color</span> is authentic, and it's up to you to figure out which.</li>
-                  <li>Walk onto the matching key to clear Stage 02.</li>
-                </ol>
-              </div>
-            </div>
-
-            <!-- Rules Grid -->
-            <div class="grid gap-3 sm:grid-cols-2 text-xs">
-              <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-3 space-y-1.5">
-                <div class="text-[10px] font-bold uppercase tracking-wider text-cyan-300">How to Win</div>
-                <div class="text-zinc-300 space-y-1 leading-relaxed text-[11px]">
-                  <div>• <strong class="text-white">4 keys</strong> hidden in distant dead ends.</div>
-                  <div>• Walk onto your authentic key to clear Stage 02.</div>
-                </div>
-              </div>
-
-              <div class="rounded-2xl border border-red-500/20 bg-red-950/20 p-3 space-y-1.5">
-                <div class="text-[10px] font-bold uppercase tracking-wider text-red-300">If Wrong Key</div>
-                <div class="text-zinc-300 space-y-1 leading-relaxed text-[11px]">
-                  <div>• Must return to <strong class="text-red-300">START</strong>.</div>
-                  <div>• Maze &amp; locations reshuffle, but <strong class="text-cyan-300">your key color stays the same</strong>!</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs">
-              <div>
-                <span class="text-[10px] text-zinc-400 uppercase font-semibold">Controls: </span>
-                <span class="text-white font-mono text-[11px] font-bold">WASD</span> <span class="text-zinc-500">or</span> <span class="text-zinc-300">Arrow Keys</span>
-              </div>
-              <div class="text-right text-[10px] text-amber-300/90 font-mono">
-                ⏱ Continuous Timer
-              </div>
-            </div>
-
-            <div class="pt-1">
-              <button id="startMazeBtn" onclick="startMazeRun()"
-                class="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-black text-xs uppercase tracking-wider shadow-lg shadow-cyan-500/25 transition transform active:scale-[0.99] cursor-pointer">
-                Enter the Maze &rarr;
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- In-Game Instructions Modal -->
-        <div id="mazeInstructionsModal" class="hidden absolute inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-          <div class="w-full max-w-lg rounded-3xl border border-cyan-500/40 bg-[#0b0e1b]/95 p-6 shadow-2xl space-y-4 text-left">
-            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <div class="flex items-center gap-2">
-                <span class="text-xl">🎯</span>
-                <div>
-                  <h3 class="text-sm font-bold text-white uppercase tracking-wider font-cipher">Mission Instructions</h3>
-                  <p class="text-[10px] text-zinc-400 font-sans">Your objective and controls, at a glance</p>
-                </div>
-              </div>
-              <button onclick="closeMazeInstructionsModal()" class="text-zinc-400 hover:text-white text-xl font-mono cursor-pointer">&times;</button>
-            </div>
-
-            <div class="bg-black/50 border border-white/5 p-4 rounded-2xl space-y-3">
-              <div class="flex items-center gap-2">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-cyan-300">Objective</span>
-              </div>
-              <ol class="text-sm text-zinc-200 leading-relaxed font-sans font-medium list-decimal list-inside space-y-1">
-                <li>4 keys are hidden in distant dead ends — only one color is authentic, and you're not told which.</li>
-                <li>Walk onto a key to test it. Guess right and Stage 02 is cleared.</li>
-                <li>Guess wrong and you're sent back to <strong class="text-red-300">START</strong>. The maze reshuffles and the keys move — but the correct color never changes.</li>
-              </ol>
-            </div>
-
-            <div class="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-xs">
-              <div>
-                <span class="text-[10px] text-zinc-400 uppercase font-semibold">Controls: </span>
-                <span class="text-white font-mono text-[11px] font-bold">WASD</span> <span class="text-zinc-500">or</span> <span class="text-zinc-300">Arrow Keys</span>
-              </div>
-              <div class="text-right text-[10px] text-amber-300/90 font-mono">Esc exits fullscreen</div>
-            </div>
-
-            <div class="flex items-center justify-end gap-2 pt-2">
-              <button onclick="closeMazeInstructionsModal()" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-black font-bold text-xs transition cursor-pointer">
-                Resume Maze
-              </button>
-            </div>
-          </div>
-        </div>
-
-      </div><!-- /mazeCanvasFrame -->
-
-
-      <!-- Objective Bar -->
-      <div class="pt-3">
-        <div id="mazeObjectiveBar" class="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/40 px-5 py-2.5 backdrop-blur-xl transition-all">
-          <div class="flex items-center gap-3">
-            <div id="mazeStatusDot" class="h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(79,216,255,0.9)] animate-pulse"></div>
-            <div>
-              <div id="mazeStatusLabel" class="text-[9px] font-bold uppercase tracking-[0.24em] text-white/40">Objective</div>
-              <div id="mazeStatusMessage" class="text-xs text-zinc-200 font-medium">Find the correct key hidden in the fog.</div>
-            </div>
-          </div>
-          <div id="mazeStatusHint" class="hidden sm:block text-right text-[10px] font-mono uppercase tracking-wider text-zinc-400">
-            WASD / ARROWS · 4 KEYS · 1 CORRECT
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- VIEW 4: LEVEL 3 (STAGE 03: GIT SECRET & MORSE CIPHER) -->
-    <!-- ═══════════════════════════════════════════════════════ -->
-    <section id="viewLevel3" class="hidden max-w-2xl mx-auto my-8">
-      <!-- Single Unified Stage 03 Card -->
-      <div id="cipherGateCard" class="bg-gradient-to-b from-[#151726] via-[#0f111d] to-[#0a0c14] border border-purple-500/25 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden space-y-6">
-        
-        <!-- Ambient background glow accents -->
-        <div class="absolute -top-16 -right-16 w-56 h-56 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute top-1/2 -left-16 w-56 h-56 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
-
-        <!-- 1. Stage 03 Header & Stats -->
-        <div class="relative z-10 space-y-4">
-          <div class="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 text-center sm:text-left">
-            <div class="flex items-center sm:items-start gap-4">
-              <div class="text-4xl p-3 bg-purple-600/15 rounded-2xl border border-purple-500/30 shrink-0">🎯</div>
-              <div class="space-y-1">
-                <div class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400 flex items-center justify-center sm:justify-start gap-1.5 font-mono">
-                  <span>✓</span> ROUND 2 COMPLETED · FINAL ROUND
-                </div>
-                <h2 class="text-2xl sm:text-3xl font-black text-white font-display tracking-tight">Stage 03: The Final Challenge</h2>
-                <p class="text-xs sm:text-sm text-zinc-400 font-sans">Everything you need lies within.</p>
-              </div>
-            </div>
-            <span class="px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold font-mono text-[11px] shrink-0">FINAL STAGE</span>
-          </div>
-
-          <!-- Stats Strip -->
-          <div class="py-2 px-3.5 rounded-xl bg-black/40 border border-white/5 text-xs text-zinc-300 flex flex-wrap items-center justify-between gap-2 font-mono">
-            <div id="lvl3Stats" class="text-xs flex flex-wrap gap-4"></div>
-          </div>
-        </div>
-
-        <!-- Divider -->
-        <div class="h-px w-full bg-gradient-to-r from-transparent via-zinc-700/60 to-transparent relative z-10"></div>
-
-        <!-- 2. Narrative Unlock Instruction (Prominent, Bold, Increased Font Size) -->
-        <div class="relative z-10 space-y-2">
-          <h3 class="text-lg sm:text-xl font-bold text-white font-sans tracking-tight leading-snug">
-            The <span id="cipherKeyUnlockPhrase" class="text-cyan-300">authentic key</span> unlocked something — a fragment of code, intercepted mid-transmission.
-          </h3>
-          <p class="text-sm sm:text-base text-zinc-300 font-sans leading-relaxed">
-            We don't know what it means yet. Figure out what it says, and you'll know where to go next.
-          </p>
-        </div>
-
-        <!-- 3. Intercepted Cipher Fragment & Input Area -->
-        <div class="relative z-10 space-y-4">
-          <!-- Cipher Box -->
-          <div class="rounded-2xl border border-cyan-500/25 bg-[#050811] p-5 sm:p-6 space-y-4 shadow-inner">
-            <!-- Header bar with signal status -->
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,.8)]"></span>
-                <span class="text-[10px] sm:text-[11px] font-mono font-semibold text-zinc-400 tracking-[0.15em] uppercase">SIGNAL · INTERCEPTED</span>
-              </div>
-              <div class="flex items-center gap-3">
-                <div class="flex items-center gap-2 text-[10px] sm:text-[11px] font-mono text-zinc-500">
-                  <span>freq · <span id="cipherTimestamp" class="text-zinc-400">--:--</span></span>
-                  <span class="text-zinc-700">|</span>
-                  <span class="text-zinc-400 font-semibold tracking-wider">RAW · ENCODED</span>
-                </div>
-                <div class="flex items-center gap-1.5 pl-2 border-l border-zinc-800">
-                  <span id="cipherStatusDot" class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,.7)] animate-pulse"></span>
-                  <span id="cipherStatusText" class="text-[10px] font-sans text-amber-300/80 tracking-wide">receiving…</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Payload display -->
-            <div class="py-1">
-              <div class="text-[11px] font-sans text-zinc-500 mb-2 uppercase tracking-[0.25em] text-center font-medium">PAYLOAD</div>
-              <div class="bg-black/80 border border-cyan-500/20 rounded-xl px-4 py-4 text-center select-all break-all">
-                <span id="cipherPayload" class="text-cyan-300 font-mono font-bold text-lg sm:text-2xl tracking-[0.2em]"></span><span class="cipher-cursor"></span>
-              </div>
-            </div>
-
-            <!-- Description -->
-            <p class="text-xs text-zinc-400 font-sans text-center leading-relaxed">
-              Something was encoded before transmission. Decode it to proceed.
-            </p>
-          </div>
-
-          <!-- Input Area -->
-          <div id="cipherInputArea" class="space-y-3">
-            <div class="flex items-center gap-2 sm:gap-3">
-              <input
-                type="text"
-                id="cipherAnswerInput"
-                placeholder="Enter the decoded word"
-                autocomplete="off" autocorrect="off" spellcheck="false"
-                class="cipher-input flex-1 px-4 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base"
-                onkeydown="if(event.key==='Enter') verifyCipherAnswer()"
-              />
-              <button
-                onclick="verifyCipherAnswer()"
-                id="cipherVerifyBtn"
-                class="px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm sm:text-base transition shadow-lg shadow-cyan-950/60 cursor-pointer shrink-0 font-sans flex items-center gap-2">
-                <span>Unlock</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-              </button>
-            </div>
-            <div id="cipherFeedback" class="hidden text-xs font-sans p-3 rounded-xl"></div>
-          </div>
-
-          <!-- Success Area -->
-          <div id="cipherSuccessArea" class="hidden rounded-xl border border-emerald-500/25 bg-emerald-950/30 px-4 py-3.5 flex items-center gap-3">
-            <div class="w-8 h-8 rounded-full bg-emerald-400/15 border border-emerald-400/30 flex items-center justify-center text-emerald-300 text-base shrink-0">✓</div>
-            <div>
-              <div class="text-xs sm:text-sm font-semibold text-emerald-300 font-sans">Signal decoded — access granted</div>
-              <div class="text-[11px] sm:text-xs text-zinc-400 mt-0.5 font-sans">Stage 03 is now unlocked.</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 4. Unlocked GitHub Repository Card (Revealed seamlessly inside the same card) -->
-        <div id="repoGateSection" class="hidden relative z-10 pt-6 border-t border-zinc-800/80 space-y-5">
-          <div class="flex items-start justify-between gap-4">
-            <div class="flex items-center gap-3.5">
-              <div class="w-11 h-11 rounded-xl bg-zinc-900 border border-zinc-700/80 flex items-center justify-center text-white shrink-0 shadow-inner">
-                <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-                  <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
-                </svg>
-              </div>
-              <div>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <a href="https://github.com/AkshatOP/gradient_l3" target="_blank" rel="noopener noreferrer"
-                    class="text-base sm:text-lg font-bold text-white hover:text-indigo-400 transition underline-offset-4 hover:underline font-display tracking-tight">
-                    AkshatOP / gradient_l3
-                  </a>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold border border-zinc-700 bg-zinc-800 text-zinc-400">
-                    Public
-                  </span>
-                </div>
-                <p class="text-xs text-zinc-400 mt-0.5 font-sans">Official GitHub Repository</p>
-              </div>
-            </div>
-            <a href="https://github.com/AkshatOP/gradient_l3" target="_blank" rel="noopener noreferrer"
-              class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-xs font-semibold text-white transition cursor-pointer font-sans">
-              <span>View on GitHub</span>
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-            </a>
-          </div>
-
-          <!-- Clue / Objective Section -->
-          <div class="rounded-2xl border border-indigo-500/25 bg-[#0b0e1a] p-4 sm:p-5 space-y-3">
-            <div class="flex items-center justify-between text-xs">
-              <div class="flex items-center gap-2 text-indigo-300 font-bold uppercase tracking-wider text-[11px] font-mono">
-                <span class="text-sm">🔍</span>
-                <span>Next Objective</span>
-              </div>
-              <button onclick="copyRepoUrl()" id="copyRepoBtn" class="flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-mono font-medium transition cursor-pointer">
-                <span>📋 Copy Link</span>
-              </button>
-            </div>
-            <div class="bg-black/50 border border-white/5 p-3.5 rounded-xl space-y-2">
-              <p class="text-sm sm:text-base text-zinc-100 font-medium leading-relaxed font-sans">
-                Go to that repository and <span class="text-cyan-300 font-bold">you'll find a clue there</span>.
-              </p>
-              <div class="text-xs text-zinc-400 font-mono truncate select-all bg-black/40 px-3 py-2 rounded-lg border border-white/5">
-                https://github.com/AkshatOP/gradient_l3
-              </div>
-            </div>
-          </div>
-
-          <!-- Action Button -->
-          <div class="pt-1">
-            <a href="https://github.com/AkshatOP/gradient_l3" target="_blank" rel="noopener noreferrer"
-              class="w-full py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold text-sm uppercase tracking-wider shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 transition transform active:scale-[0.99] cursor-pointer font-sans">
-              <span>Open Repository</span>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-            </a>
-          </div>
-        </div>
-
+      <div id="finalWinCard" class="win-card hidden" role="status" aria-live="assertive">
+        <div class="ball is-hit win-ball" style="--size:84px;--rot:-8deg"><span>90</span></div>
+        <h3 class="display print win-title">You've won</h3>
+        <p id="finalWinLabel" class="win-sub">Time in the game</p>
+        <div id="finalWinTime" class="win-time">--:--:--</div>
+        <p id="finalWinDate" class="win-date"></p>
+        <p class="win-shout">Now shout it out loud. Call the judges over and tell them your answer.</p>
       </div>
     </section>
 
   </main>
 
-  <!-- WINNER MODAL -->
-  <div id="winnerModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-gradient-to-b from-[#1c1d28] to-[#12131b] border-2 border-amber-500/50 rounded-3xl max-w-md w-full p-8 shadow-2xl text-center space-y-5 relative overflow-hidden">
-      <div class="text-6xl animate-bounce">🏆</div>
-      <h2 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-500">FULL HOUSE!</h2>
-      <p class="text-sm text-zinc-300">
-        Congratulations <span id="winnerTeamName" class="font-bold text-amber-300"></span>! You hit all 15 ticket numbers and completed Level 1!
-      </p>
-      <div class="py-3 px-4 rounded-xl bg-zinc-800/80 border border-zinc-700/60 text-xs font-mono text-zinc-300 space-y-1">
-        <div>Questions Solved: <span id="winnerQuestionsCount" class="font-bold text-white"></span></div>
-        <div>Numbers Collected: <span id="winnerCollectedCount" class="font-bold text-white"></span></div>
-      </div>
-      <button onclick="handleLevelComplete()"
-        class="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-extrabold text-sm shadow-lg shadow-amber-500/30 hover:opacity-90 transition cursor-pointer">
-        Proceed to Level 2 &rarr;
-      </button>
+  <!-- Full house -->
+  <div id="winnerModal" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="winnerTitle">
+    <div class="sheet poster">
+      <div class="ball is-hit sheet-ball" style="--size:72px"><span>15</span></div>
+      <h2 id="winnerTitle">Full house</h2>
+      <p class="lede"><span id="winnerTeamName"></span> marked every number on the ticket. Stage 1 is done.</p>
+      <dl class="sheet-stats">
+        <div><dt>Puzzles solved</dt><dd id="winnerQuestionsCount">0</dd></div>
+        <div><dt>Numbers drawn</dt><dd id="winnerCollectedCount">0</dd></div>
+      </dl>
+      <button class="btn btn-primary" onclick="handleLevelComplete()">Go to stage 2</button>
     </div>
   </div>
 
-  <!-- FOCUS LOST OVERLAY -->
-  <!-- Stage 02 Success Overlay (fixed, covers full screen) -->
-  <div id="mazeSuccessOverlay" class="hidden fixed inset-0 z-[55] flex items-center justify-center bg-[#02050b]/90 backdrop-blur-md p-4">
-    <div class="w-full max-w-md rounded-3xl border border-emerald-400/30 bg-[#07130f]/95 p-8 text-center shadow-2xl space-y-4">
-      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-emerald-400/30 bg-emerald-400/10 text-3xl text-emerald-300 shadow-[0_0_40px_rgba(52,211,153,0.3)] animate-bounce">
-        ✓
-      </div>
-      <div class="text-[11px] font-bold uppercase tracking-[0.3em] text-emerald-300">Key Verified</div>
-      <h2 class="text-3xl font-black text-white">Stage 02 Complete!</h2>
-      <p id="mazeFinalKeyDesc" class="text-xs text-zinc-300">You discovered the authentic key and conquered the Fog Maze.</p>
-      <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-2">
-        <div>
-          <div class="text-[10px] uppercase tracking-wider text-zinc-400">Total Stage Time</div>
-          <div id="mazeFinalTime" class="mt-1 font-mono text-4xl font-black text-emerald-300">00:00</div>
-        </div>
-        <div class="pt-2 border-t border-white/5 flex items-center justify-between text-xs font-mono text-zinc-400">
-          <span id="mazeFinalRounds">Completed in 1 attempt</span>
-          <span id="mazeFinalKeyPill" class="text-zinc-300 font-semibold uppercase"></span>
-        </div>
-      </div>
-      <button onclick="proceedToLevel3()"
-        class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-black text-sm uppercase tracking-wider shadow-lg shadow-emerald-500/25 transition cursor-pointer">
-        Proceed to Stage 03 &rarr;
-      </button>
+  <!-- Maze cleared -->
+  <div id="mazeSuccessOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="mazeDoneTitle">
+    <div class="sheet poster">
+      <h2 id="mazeDoneTitle">Out of the fog</h2>
+      <p id="mazeFinalKeyDesc" class="lede">You found the right key.</p>
+      <div id="mazeFinalTime" class="big-time">00:00</div>
+      <dl class="sheet-stats">
+        <div><dt>Attempts</dt><dd id="mazeFinalRounds">1</dd></div>
+        <div><dt>Your key</dt><dd id="mazeFinalKeyPill">-</dd></div>
+      </dl>
+      <button class="btn btn-primary" onclick="proceedToLevel3()">Go to stage 3</button>
     </div>
   </div>
 
-  <div id="focusLostOverlay" class="hidden fixed inset-0 z-[60] bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-gradient-to-b from-[#241417] to-[#12131b] border-2 border-red-500/50 rounded-3xl max-w-md w-full p-8 shadow-2xl text-center space-y-4">
-      <div class="text-5xl">⚠️</div>
-      <h2 class="text-xl font-black text-red-400">You left the puzzle screen!</h2>
-      <p class="text-sm text-zinc-300">
-        Switching tabs, minimizing the window, or exiting fullscreen during the game is not allowed.
-        This has been reported to the admin (<span id="violationCount" class="font-bold text-red-300">1</span> flagged so far).
-      </p>
-      <button onclick="returnToGame()" class="w-full py-3.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-sm shadow-lg shadow-red-600/30 transition cursor-pointer">
-        Return to Game
-      </button>
+  <!-- Anti-cheat: left the screen -->
+  <div id="focusLostOverlay" class="overlay lock hidden" role="alertdialog" aria-modal="true" aria-labelledby="focusTitle">
+    <div class="sheet">
+      <div class="ball is-hit sheet-ball" style="--size:64px"><span>!</span></div>
+      <h2 id="focusTitle">You left the game screen</h2>
+      <p class="lede">Switching tabs, minimising the window or leaving fullscreen is not allowed right now. The organizers have been told (<span id="violationCount" class="num">1</span> so far).</p>
+      <button class="btn btn-primary" onclick="returnToGame()">Back to the game</button>
     </div>
   </div>
 
-  <!-- GAME ENDED OVERLAY -->
-  <div id="gameEndedOverlay" class="hidden fixed inset-0 z-[70] bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-gradient-to-b from-[#1c1d28] to-[#12131b] border-2 border-indigo-500/50 rounded-3xl max-w-md w-full p-8 shadow-2xl text-center space-y-4">
-      <div class="text-5xl">🏁</div>
-      <h2 class="text-xl font-black text-indigo-300">Game Ended by Admin</h2>
-      <p class="text-sm text-zinc-300">The Brain Breaker arena has been closed. Thanks for playing! Check with the admin for final results.</p>
+  <div id="gameEndedOverlay" class="overlay lock hidden" role="alertdialog" aria-modal="true" aria-labelledby="endedTitle">
+    <div class="sheet">
+      <div class="ball sheet-ball" style="--size:64px"><span>90</span></div>
+      <h2 id="endedTitle">That's the last call</h2>
+      <p class="lede">The organizers have closed the game. Thanks for playing. Results will be announced at the front.</p>
     </div>
   </div>
 
-  <!-- REMOVED OVERLAY -->
-  <div id="removedOverlay" class="hidden fixed inset-0 z-[70] bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="bg-gradient-to-b from-[#241417] to-[#12131b] border-2 border-red-500/50 rounded-3xl max-w-md w-full p-8 shadow-2xl text-center space-y-4">
-      <div class="text-5xl">🚫</div>
-      <h2 class="text-xl font-black text-red-400">Removed from the Game</h2>
-      <p class="text-sm text-zinc-300">The admin has removed your team from this game. If you believe this is a mistake, please speak to the admin directly.</p>
+  <div id="removedOverlay" class="overlay lock hidden" role="alertdialog" aria-modal="true" aria-labelledby="removedTitle">
+    <div class="sheet">
+      <div class="ball is-hit sheet-ball" style="--size:64px"><span>&times;</span></div>
+      <h2 id="removedTitle">Your team has been removed</h2>
+      <p class="lede">The organizers took your team out of the game. If you think this is a mistake, talk to them directly.</p>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <!-- CLIENT-SIDE APP LOGIC                                  -->
-  <!-- ═══════════════════════════════════════════════════════ -->
   <script>
+    const DEV_MODE = location.hostname === "localhost";
+    const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     // ── State ────────────────────────────────────────────────────────────────
     let currentToken    = localStorage.getItem("brain_token")    || "";
     let currentTeamName = localStorage.getItem("brain_teamname") || "";
@@ -868,14 +735,31 @@
     let cachedTeamState = null;
     let awayFromGame    = false;
     let gameLocked      = false;
-    let anticheatEnabled = false;  // set by server, toggled via SSE
+    let anticheatEnabled = false;
+    let winnerAnnounced = false;
 
-    // ── Audio ─────────────────────────────────────────────────────────────────
+    function escapeHtml(str) {
+      return String(str ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+    }
+    function hashText(s) {
+      let h = 0x811c9dc5;
+      for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+      return h;
+    }
+    function restartAnimation(el, cls) {
+      el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
+    }
+    function replayAnimation(el) {
+      el.style.animation = "none"; void el.offsetWidth; el.style.animation = "";
+    }
+
+    // ── Audio ────────────────────────────────────────────────────────────────
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playTone(freq, type, duration, delay = 0) {
       if (!soundEnabled) return;
       setTimeout(() => {
         try {
+          if (audioCtx.state === "suspended") audioCtx.resume();
           const osc  = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
           osc.type = type;
@@ -884,46 +768,104 @@
           gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
           osc.connect(gain); gain.connect(audioCtx.destination);
           osc.start(); osc.stop(audioCtx.currentTime + duration);
-        } catch(e) {}
+        } catch (e) {}
       }, delay);
     }
     function playDabberSound(isHit) {
       if (!soundEnabled) return;
       if (isHit) {
-        playTone(523.25, 'sine', 0.18);
-        playTone(659.25, 'sine', 0.22, 90);
-        playTone(783.99, 'triangle', 0.35, 180);
+        playTone(523.25, "sine", 0.18);
+        playTone(659.25, "sine", 0.22, 90);
+        playTone(783.99, "triangle", 0.35, 180);
       } else {
-        playTone(330, 'triangle', 0.12);
+        playTone(330, "triangle", 0.12);
       }
     }
     function playHousieFanfare() {
       if (!soundEnabled) return;
-      [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => playTone(f, 'square', 0.4, i * 150));
+      [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => playTone(f, "square", 0.4, i * 150));
     }
     function toggleSound() {
       soundEnabled = !soundEnabled;
-      document.getElementById("soundIcon").innerText = soundEnabled ? "🔊" : "🔇";
+      const btn = document.getElementById("soundToggleBtn");
+      document.getElementById("soundIcon").className = soundEnabled ? "ph ph-speaker-high" : "ph ph-speaker-slash";
+      btn.setAttribute("aria-pressed", String(soundEnabled));
+      btn.title = soundEnabled ? "Sound on" : "Sound off";
     }
 
-    // ── Login ─────────────────────────────────────────────────────────────────
+    // ── Login screen: title letters + live caller board ─────────────────────
+    function splitTitle() {
+      let i = 0;
+      document.querySelectorAll(".login-title .word").forEach(word => {
+        word.innerHTML = [...word.textContent].map(ch => `<span class="ch" style="animation-delay:${80 + i++ * 45}ms">${ch}</span>`).join("");
+      });
+    }
+
+    // Traditional Housie calls (family-friendly subset)
+    const HOUSIE_CALLS = {
+      1: "Kelly's eye", 2: "One little duck", 3: "Cup of tea", 4: "Knock at the door", 5: "Man alive",
+      6: "Half a dozen", 7: "Lucky seven", 8: "Garden gate", 9: "Doctor's orders", 10: "Uncle's den",
+      11: "Legs eleven", 12: "One dozen", 13: "Unlucky for some", 14: "Valentine's day", 15: "Young and keen",
+      16: "Sweet sixteen", 17: "Dancing queen", 18: "Coming of age", 19: "Goodbye teens", 20: "One score",
+      21: "Key of the door", 22: "Two little ducks", 23: "Thee and me", 24: "Two dozen", 25: "Duck and dive",
+      26: "Pick and mix", 27: "Gateway to heaven", 29: "Rise and shine", 31: "Get up and run", 32: "Buckle my shoe",
+      33: "All the threes", 34: "Ask for more", 35: "Jump and jive", 36: "Three dozen", 38: "Christmas cake",
+      39: "Steps", 45: "Halfway there", 48: "Four dozen", 50: "Half a century", 55: "All the fives",
+      57: "Heinz varieties", 60: "Five dozen", 62: "Tickety-boo", 66: "Clickety click", 71: "Bang on the drum",
+      72: "Six dozen", 73: "Queen bee", 76: "Trombones", 77: "Sunset strip", 81: "Stop and run",
+      84: "Seven dozen", 85: "Staying alive", 86: "Between the sticks", 88: "Two fat ladies", 89: "Nearly there",
+      90: "Top of the house"
+    };
+    function callFor(n) { return HOUSIE_CALLS[n] || ""; }
+    function stickerTilt(n) { return `${((Number(n) * 37) % 13) - 6}deg`; }
+
+    let boardTimer = null;
+    function buildCallerBoard() {
+      document.getElementById("loginSerial").textContent = `No. ${String(Math.floor(Math.random() * 9000) + 1000)}`;
+    }
+    function startCallerBoard() {
+      if (boardTimer || REDUCED_MOTION) return;
+      const calls = Object.keys(HOUSIE_CALLS).map(Number);
+      const sticker = document.getElementById("callerSticker");
+      const phrase = document.getElementById("callerPhrase");
+      let last = 88;
+      boardTimer = setInterval(() => {
+        let n;
+        do { n = calls[Math.floor(Math.random() * calls.length)]; } while (n === last);
+        last = n;
+        sticker.style.setProperty("--rot", stickerTilt(n));
+        sticker.className = `ball${n % 3 === 0 ? " is-gold" : " is-hit"}`;
+        sticker.querySelector("span").textContent = n;
+        restartAnimation(sticker, "slap");
+        phrase.textContent = callFor(n);
+        restartAnimation(phrase, "swap");
+      }, 2600);
+    }
+    function stopCallerBoard() {
+      if (boardTimer) { clearInterval(boardTimer); boardTimer = null; }
+    }
+
+    // ── Login ────────────────────────────────────────────────────────────────
     function resetLoginButton() {
       const btn = document.getElementById("loginSubmitBtn");
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = `<span>Enter Arena</span><span class="text-base">&rarr;</span>`;
-      }
+      if (btn) { btn.disabled = false; btn.textContent = "Enter the game"; }
     }
 
     async function handleLogin(e) {
       e.preventDefault();
-      const username = document.getElementById("loginUsername").value.trim();
-      const password = document.getElementById("loginPassword").value.trim();
-      if (!username || !password) return;
+      const userEl = document.getElementById("loginUsername");
+      const passEl = document.getElementById("loginPassword");
+      const username = userEl.value.trim();
+      const password = passEl.value.trim();
+      if (!username || !password) {
+        showLoginError(!username ? "Enter your team username." : "Enter your password.");
+        (!username ? userEl : passEl).focus();
+        return;
+      }
 
       const btn = document.getElementById("loginSubmitBtn");
       btn.disabled = true;
-      btn.innerHTML = `<svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg><span>Logging in...</span>`;
+      btn.textContent = "Checking your ticket";
 
       try {
         const res  = await fetch("/api/login", {
@@ -945,17 +887,18 @@
           if (anticheatEnabled) requestGameFullscreen();
           routeToLevel(currentLevel, data);
         } else {
-          showLoginError(data.error || "Invalid credentials. Please try again.");
+          showLoginError(res.status === 401 ? "That username and password don't match. Check with your organizers." : (data.error || "Could not sign in. Try again."));
+          restartAnimation(document.getElementById("loginForm"), "shake");
           resetLoginButton();
         }
       } catch (err) {
-        showLoginError("Cannot connect to server. Ensure server.py is running.");
+        showLoginError("Can't reach the game server. Check your connection and try again.");
         resetLoginButton();
       }
     }
 
     function showLoginError(msg) {
-      document.getElementById("loginErrorText").innerText = msg;
+      document.getElementById("loginErrorText").textContent = msg;
       document.getElementById("loginError").classList.remove("hidden");
     }
     function hideLoginError() {
@@ -966,19 +909,14 @@
       localStorage.removeItem("brain_token");
       localStorage.removeItem("brain_teamname");
       currentToken = ""; currentTeamName = ""; gameLocked = false;
-      if (document.fullscreenElement) { try { document.exitFullscreen(); } catch(e) {} }
+      cachedTeamState = null; renderedHits = null; lastPuzzleId = null; winnerAnnounced = false;
+      if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (e) {} }
 
-      if (mazeAnimId) {
-        cancelAnimationFrame(mazeAnimId);
-        mazeAnimId = null;
-      }
-      if (mazeSyncTimer) {
-        clearInterval(mazeSyncTimer);
-        mazeSyncTimer = null;
-      }
+      if (mazeAnimId) { cancelAnimationFrame(mazeAnimId); mazeAnimId = null; }
+      if (mazeSyncTimer) { clearInterval(mazeSyncTimer); mazeSyncTimer = null; }
       mazeEngine = null;
 
-      ["winnerModal", "focusLostOverlay", "gameEndedOverlay", "removedOverlay"].forEach(id => {
+      ["winnerModal", "focusLostOverlay", "gameEndedOverlay", "removedOverlay", "mazeSuccessOverlay"].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add("hidden");
       });
@@ -989,18 +927,20 @@
       if (pwdInput) pwdInput.value = "";
 
       showView("viewLogin");
-      document.getElementById("logoutBtn").classList.add("hidden");
-      document.getElementById("levelBadge").classList.add("hidden");
     }
 
-    // ── Level routing ─────────────────────────────────────────────────────────
-    function routeToLevel(level, stateData) {
-      // Update header
-      document.getElementById("levelBadgeText").innerText = `Level ${level}`;
-      document.getElementById("levelBadge").classList.remove("hidden");
-      document.getElementById("levelBadge").classList.add("flex");
-      document.getElementById("logoutBtn").classList.remove("hidden");
+    // ── Level routing ────────────────────────────────────────────────────────
+    function setRoundTracker(level) {
+      document.querySelectorAll("#levelBadge li").forEach(li => {
+        const r = Number(li.dataset.round);
+        li.classList.toggle("done", r < level);
+        li.classList.toggle("current", r === level);
+        if (r === level) li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current");
+      });
+    }
 
+    function routeToLevel(level, stateData) {
+      setRoundTracker(level);
       if (level === 1) {
         showView("viewDashboard");
         if (stateData) renderDashboard(stateData);
@@ -1014,24 +954,23 @@
       }
     }
 
-    function reloadToCurrentLevel() {
-      loadTeamState();
-    }
-
-    // ── Views ─────────────────────────────────────────────────────────────────
     function showView(id) {
-      ["viewLogin","viewDashboard","viewLevel2","viewLevel3"].forEach(v => {
+      ["viewLogin", "viewDashboard", "viewLevel2", "viewLevel3"].forEach(v => {
         const el = document.getElementById(v);
         if (el) el.classList.add("hidden");
       });
       const target = document.getElementById(id);
       if (target) target.classList.remove("hidden");
-      if (id === "viewLogin") {
-        resetLoginButton();
-      }
+
+      const inGame = id !== "viewLogin";
+      document.getElementById("levelBadge").classList.toggle("hidden", !inGame);
+      document.getElementById("logoutBtn").classList.toggle("hidden", !inGame);
+
+      if (id === "viewLogin") { resetLoginButton(); startCallerBoard(); }
+      else stopCallerBoard();
     }
 
-    // ── Level 2: Maze Run Engine & Renderer ───────────────────────────────────
+    // ── Round 2: maze ────────────────────────────────────────────────────────
     let mazeEngine = null;
     let mazeAnimId = null;
     let mazeLightCanvas = null;
@@ -1043,7 +982,7 @@
       const totalSeconds = Math.floor(elapsedMs / 1000);
       const minutes = Math.floor(totalSeconds / 60);
       const seconds = totalSeconds % 60;
-      return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
     }
 
     let currentMazeTargetColor = null;
@@ -1054,9 +993,8 @@
         return currentMazeTargetColor;
       }
       if (currentMazeTargetColor) return currentMazeTargetColor;
-      // Derive color deterministically from team name so it's stable across reloads.
-      // This is used internally by the engine only — never shown to the player.
-      const raw = String((stateData && stateData.team_name) || (currentTeam && currentTeam.team_name) || "team");
+      // Stable fallback derived from the team name, used only by the engine.
+      const raw = String((stateData && stateData.team_name) || (cachedTeamState && cachedTeamState.team_name) || currentTeamName || "team");
       const colors = ["RED", "BLUE", "GREEN", "YELLOW"];
       let sum = 0;
       for (let i = 0; i < raw.length; i++) sum += raw.charCodeAt(i);
@@ -1068,7 +1006,6 @@
       const modal = document.getElementById("mazeInstructionsModal");
       if (modal) modal.classList.remove("hidden");
     }
-
     function closeMazeInstructionsModal() {
       const modal = document.getElementById("mazeInstructionsModal");
       if (modal) modal.classList.add("hidden");
@@ -1078,13 +1015,9 @@
       const canvas = document.getElementById("mazeCanvas");
       if (!canvas || !window.BrainBreakerMaze) return;
 
-      if (!mazeLightCanvas) {
-        mazeLightCanvas = document.createElement("canvas");
-      }
+      if (!mazeLightCanvas) mazeLightCanvas = document.createElement("canvas");
 
-      // assignedColor is used only internally by the engine to determine the
-      // correct key — it is never surfaced in the UI. Players must discover
-      // it themselves by testing keys in the maze.
+      // The engine needs the correct colour internally; it is never shown in the UI.
       const assignedColor = ensureAssignedColor(stateData);
       const hud = document.getElementById("mazeInGameHud");
       if (hud) hud.classList.remove("hidden");
@@ -1098,28 +1031,19 @@
       }
 
       updateMazeHud(mazeEngine.getSnapshot());
-
-      mazeEngine.onStateChange = (snap) => {
-        updateMazeHud(snap);
-      };
-
-      mazeEngine.onSuccess = (elapsedMs, round) => {
-        handleMazeSuccess(elapsedMs, round);
-      };
+      mazeEngine.onStateChange = (snap) => updateMazeHud(snap);
+      mazeEngine.onSuccess = (elapsedMs, round) => handleMazeSuccess(elapsedMs, round);
 
       resizeMazeCanvas();
       window.addEventListener("resize", resizeMazeCanvas);
 
-      if (!mazeInputBound) {
-        bindMazeControls();
-        mazeInputBound = true;
-      }
+      if (!mazeInputBound) { bindMazeControls(); mazeInputBound = true; }
 
       if (mazeAnimId) cancelAnimationFrame(mazeAnimId);
       mazeLastTime = performance.now();
       mazeAnimId = requestAnimationFrame(mazeLoop);
 
-      // Start the timer and engine immediately as soon as players enter Round 2!
+      // The clock starts as soon as the team lands on round 2.
       mazeEngine.start();
       if (mazeSyncTimer) clearInterval(mazeSyncTimer);
       mazeSyncTimer = setInterval(syncMazeState, 8000);
@@ -1132,14 +1056,10 @@
       const dpr = window.devicePixelRatio || 1;
       const w = Math.floor(rect.width);
       const h = Math.floor(rect.height);
-
       if (w > 0 && h > 0 && (canvas.width !== w * dpr || canvas.height !== h * dpr)) {
         canvas.width = w * dpr;
         canvas.height = h * dpr;
-        if (mazeLightCanvas) {
-          mazeLightCanvas.width = w * dpr;
-          mazeLightCanvas.height = h * dpr;
-        }
+        if (mazeLightCanvas) { mazeLightCanvas.width = w * dpr; mazeLightCanvas.height = h * dpr; }
       }
     }
 
@@ -1147,39 +1067,25 @@
 
     function toggleMazeFullscreen(forceState) {
       const lvl2 = document.getElementById("viewLevel2");
-      const btn = document.getElementById("mazeFullscreenBtn");
+      const btn  = document.getElementById("mazeFullscreenBtn");
       const icon = document.getElementById("mazeFsIcon");
       const text = document.getElementById("mazeFsText");
       if (!lvl2) return;
 
-      if (typeof forceState === "boolean") {
-        isMazeFullscreen = forceState;
-      } else {
-        isMazeFullscreen = !isMazeFullscreen;
-      }
+      isMazeFullscreen = typeof forceState === "boolean" ? forceState : !isMazeFullscreen;
+
+      lvl2.classList.toggle("maze-fullscreen", isMazeFullscreen);
+      btn.classList.toggle("is-active", isMazeFullscreen);
+      icon.className = isMazeFullscreen ? "ph ph-arrows-in" : "ph ph-arrows-out";
+      text.textContent = isMazeFullscreen ? "Exit" : "Fullscreen";
+      btn.title = isMazeFullscreen ? "Exit fullscreen (Esc)" : "Fullscreen";
 
       if (isMazeFullscreen) {
-        lvl2.classList.add("maze-fullscreen");
-        if (icon) icon.innerText = "✕";
-        if (text) text.innerText = "Exit";
-        if (btn) {
-          btn.title = "Exit Fullscreen (Esc)";
-          btn.className = "px-3 py-1.5 rounded-xl border border-rose-500/40 bg-rose-950/50 hover:bg-rose-900/60 text-rose-300 hover:text-white text-xs font-semibold backdrop-blur-md transition flex items-center gap-1.5 cursor-pointer";
-        }
         if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
           document.documentElement.requestFullscreen().catch(() => {});
         }
-      } else {
-        lvl2.classList.remove("maze-fullscreen");
-        if (icon) icon.innerText = "⛶";
-        if (text) text.innerText = "Fullscreen";
-        if (btn) {
-          btn.title = "Expand to Fullscreen";
-          btn.className = "px-3 py-1.5 rounded-xl border border-cyan-500/30 bg-cyan-950/40 hover:bg-cyan-900/50 text-cyan-300 hover:text-white text-xs font-semibold backdrop-blur-md transition flex items-center gap-1.5 cursor-pointer";
-        }
-        if (document.fullscreenElement && document.exitFullscreen) {
-          document.exitFullscreen().catch(() => {});
-        }
+      } else if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
       }
 
       resizeMazeCanvas();
@@ -1188,70 +1094,50 @@
       setTimeout(resizeMazeCanvas, 200);
     }
 
-    function onMazeCanvasClick(e) {
-      const readyOverlay = document.getElementById("mazeReadyOverlay");
-      if (readyOverlay && !readyOverlay.classList.contains("hidden")) return;
-      const successOverlay = document.getElementById("mazeSuccessOverlay");
-      if (successOverlay && !successOverlay.classList.contains("hidden")) return;
-      const instructionsModal = document.getElementById("mazeInstructionsModal");
-      if (instructionsModal && !instructionsModal.classList.contains("hidden")) return;
-
-      if (!isMazeFullscreen) {
-        toggleMazeFullscreen(true);
-      }
+    function onMazeCanvasClick() {
+      const blocking = ["mazeReadyOverlay", "mazeSuccessOverlay", "mazeInstructionsModal"]
+        .some(id => { const el = document.getElementById(id); return el && !el.classList.contains("hidden"); });
+      if (blocking) return;
+      if (!isMazeFullscreen) toggleMazeFullscreen(true);
     }
 
     document.addEventListener("fullscreenchange", () => {
       const lvl2 = document.getElementById("viewLevel2");
       if (!lvl2 || lvl2.classList.contains("hidden")) return;
-      if (!document.fullscreenElement && isMazeFullscreen) {
-        toggleMazeFullscreen(false);
-      }
+      if (!document.fullscreenElement && isMazeFullscreen) toggleMazeFullscreen(false);
     });
+
+    function keyToDir(key) {
+      if (key === "ArrowUp" || key === "w" || key === "W") return "up";
+      if (key === "ArrowDown" || key === "s" || key === "S") return "down";
+      if (key === "ArrowLeft" || key === "a" || key === "A") return "left";
+      if (key === "ArrowRight" || key === "d" || key === "D") return "right";
+      return null;
+    }
 
     function bindMazeControls() {
       window.addEventListener("keydown", (e) => {
         const lvl2 = document.getElementById("viewLevel2");
         if (!lvl2 || lvl2.classList.contains("hidden")) return;
 
-        // Escape closes the instructions modal first, then exits fullscreen
         if (e.key === "Escape") {
           const modal = document.getElementById("mazeInstructionsModal");
-          if (modal && !modal.classList.contains("hidden")) {
-            e.preventDefault();
-            closeMazeInstructionsModal();
-            return;
-          }
-          if (isMazeFullscreen) {
-            e.preventDefault();
-            toggleMazeFullscreen(false);
-            return;
-          }
+          if (modal && !modal.classList.contains("hidden")) { e.preventDefault(); closeMazeInstructionsModal(); return; }
+          if (isMazeFullscreen) { e.preventDefault(); toggleMazeFullscreen(false); return; }
         }
 
         if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
         if (!mazeEngine) return;
 
-        // Dev mode cheat: backtick (`) — chosen because Ctrl+Shift+D is a
-        // reserved browser shortcut (e.g. "Bookmark all tabs" in Chrome/Edge)
-        // and gets intercepted before this handler runs.
-        if (e.key === '`' || e.code === 'Backquote') {
+        // Full-maze reveal for the organizer only (local development).
+        if (DEV_MODE && (e.key === "`" || e.code === "Backquote")) {
           e.preventDefault();
           mazeEngine.toggleDebug();
           return;
         }
 
-        const key = e.key;
-        let dir = null;
-        if (key === 'ArrowUp' || key === 'w' || key === 'W') dir = 'up';
-        else if (key === 'ArrowDown' || key === 's' || key === 'S') dir = 'down';
-        else if (key === 'ArrowLeft' || key === 'a' || key === 'A') dir = 'left';
-        else if (key === 'ArrowRight' || key === 'd' || key === 'D') dir = 'right';
-
-        if (dir) {
-          e.preventDefault();
-          mazeEngine.press(dir);
-        }
+        const dir = keyToDir(e.key);
+        if (dir) { e.preventDefault(); mazeEngine.press(dir); }
       });
 
       window.addEventListener("keyup", (e) => {
@@ -1259,29 +1145,17 @@
         if (!lvl2 || lvl2.classList.contains("hidden")) return;
         if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
         if (!mazeEngine) return;
-
-        const key = e.key;
-        let dir = null;
-        if (key === 'ArrowUp' || key === 'w' || key === 'W') dir = 'up';
-        else if (key === 'ArrowDown' || key === 's' || key === 'S') dir = 'down';
-        else if (key === 'ArrowLeft' || key === 'a' || key === 'A') dir = 'left';
-        else if (key === 'ArrowRight' || key === 'd' || key === 'D') dir = 'right';
-
-        if (dir) {
-          e.preventDefault();
-          mazeEngine.release(dir);
-        }
+        const dir = keyToDir(e.key);
+        if (dir) { e.preventDefault(); mazeEngine.release(dir); }
       });
     }
 
     function startMazeRun() {
       if (!mazeEngine) return;
       document.getElementById("mazeReadyOverlay").classList.add("hidden");
-      // Auto-enter fullscreen for immersive experience!
       toggleMazeFullscreen(true);
       mazeEngine.start();
-      playTone(520, 'sine', 0.15);
-
+      playTone(520, "sine", 0.15);
       if (mazeSyncTimer) clearInterval(mazeSyncTimer);
       mazeSyncTimer = setInterval(syncMazeState, 8000);
     }
@@ -1294,191 +1168,188 @@
           method: "POST", headers: {"Content-Type": "application/json"},
           body: JSON.stringify({token: currentToken, elapsed_ms: Math.round(snap.elapsedMs), round: snap.round}),
         });
-      } catch(e) {}
+      } catch (e) {}
     }
+
+    const BRAND_CONFETTI = ["#ff5a3c", "#ffc83d", "#f4ecd8", "#8fa3ff"];
 
     async function handleMazeSuccess(elapsedMs, round) {
       if (mazeSyncTimer) clearInterval(mazeSyncTimer);
-      confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
-      playTone(659.25, 'sine', 0.2);
-      setTimeout(() => playTone(880, 'sine', 0.3), 150);
+      const overlay = document.getElementById("mazeSuccessOverlay");
+      if (!overlay.classList.contains("hidden")) return;
+      if (typeof confetti === "function") confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: BRAND_CONFETTI, zIndex: 100 });
+      playTone(659.25, "sine", 0.2);
+      setTimeout(() => playTone(880, "sine", 0.3), 150);
 
       const color = currentMazeTargetColor || ensureAssignedColor() || "BLUE";
+      const pretty = color.charAt(0) + color.slice(1).toLowerCase();
 
-      document.getElementById("mazeFinalTime").innerText = formatMazeTime(elapsedMs);
-      document.getElementById("mazeFinalRounds").innerText = `Completed in ${round + 1} attempt${round > 0 ? 's' : ''}`;
-      
-      const keyDesc = document.getElementById("mazeFinalKeyDesc");
-      if (keyDesc) {
-        keyDesc.innerHTML = `The <strong class="text-zinc-200 font-semibold">${color.toLowerCase()}</strong> key unlocked the passage forward, conquering the Fog Maze.`;
-      }
-      const keyPill = document.getElementById("mazeFinalKeyPill");
-      if (keyPill) {
-        keyPill.innerText = `Key: ${color}`;
-      }
+      document.getElementById("mazeFinalTime").textContent = formatMazeTime(elapsedMs);
+      document.getElementById("mazeFinalRounds").textContent = String(round + 1);
+      document.getElementById("mazeFinalKeyDesc").innerHTML = `The <strong>${pretty.toLowerCase()}</strong> key was yours. Here is your total time in the maze.`;
+      document.getElementById("mazeFinalKeyPill").textContent = pretty;
 
-      document.getElementById("mazeSuccessOverlay").classList.remove("hidden");
+      overlay.classList.remove("hidden");
 
       try {
         await fetch("/api/level2/complete", {
           method: "POST", headers: {"Content-Type": "application/json"},
           body: JSON.stringify({token: currentToken, elapsed_ms: Math.round(elapsedMs), round: round}),
         });
-      } catch(e) {}
+      } catch (e) {}
     }
 
     function proceedToLevel3() {
-      if (isMazeFullscreen) {
-        toggleMazeFullscreen(false);
-      }
+      if (isMazeFullscreen) toggleMazeFullscreen(false);
       document.getElementById("mazeSuccessOverlay").classList.add("hidden");
       loadTeamState();
     }
 
-    // ── Cipher Gate ───────────────────────────────────────────────────────────
-    // Answer word: OVERRIDE
-    // Polyalphabetic Vigenère cipher keyed to the team's authentic maze key color:
-    // - BLUE   + PGYVSTXI -> OVERRIDE
-    // - GREEN  + UMIVEOUI -> OVERRIDE
-    // - RED    + FZHIVLUI -> OVERRIDE
-    // - YELLOW + MZPCFEBI -> OVERRIDE
-    const CIPHER_ANSWER_WORD = "OVERRIDE";
+    let lastHud = { status: null, time: null, round: null };
+    function updateMazeHud(snap) {
+      const time = formatMazeTime(snap.elapsedMs);
+      const round = String(snap.round + 1).padStart(2, "0");
+      if (time !== lastHud.time) { document.getElementById("mazeTimerDisplay").textContent = time; lastHud.time = time; }
+      if (round !== lastHud.round) { document.getElementById("mazeRoundDisplay").textContent = round; lastHud.round = round; }
+
+      if (snap.status === "SUCCESS") {
+        // Fallback if the success callback was missed (reconnect or reload).
+        const overlay = document.getElementById("mazeSuccessOverlay");
+        if (overlay && overlay.classList.contains("hidden") && lastHud.status !== "SUCCESS") handleMazeSuccess(snap.elapsedMs, snap.round);
+      }
+      if (snap.status === lastHud.status) return;
+      lastHud.status = snap.status;
+
+      const bar = document.getElementById("mazeObjectiveBar");
+      const label = document.getElementById("mazeStatusLabel");
+      const msg = document.getElementById("mazeStatusMessage");
+      const hint = document.getElementById("mazeStatusHint");
+
+      if (snap.status === "RETURN_TO_START") {
+        bar.dataset.state = "wrong";
+        label.textContent = "Wrong key";
+        msg.textContent = "That key isn't yours. Follow the red trail back to the start.";
+        hint.textContent = "Back to start";
+      } else if (snap.status === "SUCCESS") {
+        bar.dataset.state = "done";
+        label.textContent = "Cleared";
+        msg.textContent = "You found your key.";
+        hint.textContent = "Stage 3 unlocked";
+      } else {
+        bar.dataset.state = "hunt";
+        label.textContent = "Objective";
+        msg.textContent = "Find your team's key somewhere in the fog. Walk onto a key to test it.";
+        hint.textContent = "4 keys, 1 is yours";
+      }
+    }
+
+    function mazeLoop(now) {
+      const lvl2 = document.getElementById("viewLevel2");
+      if (!lvl2 || lvl2.classList.contains("hidden")) { mazeAnimId = null; return; }
+
+      const dt = Math.min(now - mazeLastTime, 100);
+      mazeLastTime = now;
+
+      if (mazeEngine) {
+        mazeEngine.update(dt);
+        const canvas = document.getElementById("mazeCanvas");
+        if (canvas && mazeLightCanvas) {
+          BrainBreakerMaze.renderScene(canvas.getContext("2d"), mazeLightCanvas.getContext("2d"), mazeEngine.state, canvas.width, canvas.height, now);
+        }
+        updateMazeHud(mazeEngine.getSnapshot());
+      }
+      mazeAnimId = requestAnimationFrame(mazeLoop);
+    }
+
+    // ── Round 3: cipher gate ─────────────────────────────────────────────────
+    const CIPHER_HASH = 0x2b79d5fd;
     const VIGENERE_MAP = {
-      "BLUE":   "PGYVSTXI",
-      "GREEN":  "UMIVEOUI",
-      "RED":    "FZHIVLUI",
-      "YELLOW": "MZPCFEBI"
+      BLUE:   "PGYVSTXI",
+      GREEN:  "UMIVEOUI",
+      RED:    "FZHIVLUI",
+      YELLOW: "MZPCFEBI"
     };
 
     function getCipherPayloadForColor(color) {
-      const c = String(color || "BLUE").toUpperCase();
-      return VIGENERE_MAP[c] || "PGYVSTXI";
+      return VIGENERE_MAP[String(color || "BLUE").toUpperCase()] || VIGENERE_MAP.BLUE;
     }
 
-    let currentCipherPayload = "PGYVSTXI";
+    let currentCipherPayload = VIGENERE_MAP.BLUE;
     let cipherSolved = false;
+
+    function setCipherStatus(state, text) {
+      document.getElementById("cipherStatusDot").dataset.state = state;
+      document.getElementById("cipherStatusText").textContent = text;
+    }
 
     function initCipherGate(assignedColor) {
       const color = String(assignedColor || currentMazeTargetColor || ensureAssignedColor() || "BLUE").toUpperCase();
       currentCipherPayload = getCipherPayloadForColor(color);
 
-      // Show correct timestamp
       const now = new Date();
-      const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-      const tsEl = document.getElementById("cipherTimestamp");
-      if (tsEl) tsEl.innerText = ts;
+      document.getElementById("cipherTimestamp").textContent = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      document.getElementById("cipherKeyUnlockPhrase").textContent = `${color.toLowerCase()} key`;
 
-      // Subtly mention which key unlocked the transmission path
-      const phraseEl = document.getElementById("cipherKeyUnlockPhrase");
-      if (phraseEl) {
-        phraseEl.innerText = `${color.toLowerCase()} key`;
-      }
-
-      // If already solved, skip animation
-      if (cipherSolved) {
-        const payloadEl = document.getElementById("cipherPayload");
-        if (payloadEl) payloadEl.innerText = currentCipherPayload;
+      const payloadEl = document.getElementById("cipherPayload");
+      if (cipherSolved || REDUCED_MOTION) {
+        payloadEl.textContent = currentCipherPayload;
+        if (!cipherSolved) setCipherStatus("ready", "Ready to decode");
         return;
       }
 
-      // Typewriter animation for the payload
-      const payloadEl = document.getElementById("cipherPayload");
-      if (!payloadEl) return;
-      payloadEl.innerText = "";
+      payloadEl.textContent = "";
       let i = 0;
-      const totalDelay = 1000;
-      const charDelay = Math.min(60, Math.floor(totalDelay / currentCipherPayload.length));
+      const charDelay = Math.min(90, Math.floor(1100 / currentCipherPayload.length));
       if (window.cipherTypeInterval) clearInterval(window.cipherTypeInterval);
       window.cipherTypeInterval = setInterval(() => {
         if (i < currentCipherPayload.length) {
-          payloadEl.innerText += currentCipherPayload[i++];
-          playTone(800 + i * 40, 'triangle', 0.04);
+          payloadEl.textContent += currentCipherPayload[i++];
+          playTone(800 + i * 40, "triangle", 0.04);
         } else {
           clearInterval(window.cipherTypeInterval);
-          const dot  = document.getElementById("cipherStatusDot");
-          const text = document.getElementById("cipherStatusText");
-          if (dot)  { dot.className  = "w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,.8)] animate-pulse"; }
-          if (text) { text.innerText = "ready"; text.className = "text-[10px] font-sans text-cyan-300/70 tracking-wide"; }
+          setCipherStatus("ready", "Ready to decode");
           const inp = document.getElementById("cipherAnswerInput");
           if (inp) setTimeout(() => inp.focus(), 200);
         }
       }, charDelay);
     }
 
+    function showCipherSolved(animate) {
+      setCipherStatus("done", "Decoded");
+      document.getElementById("cipherInputArea").classList.add("hidden");
+      document.getElementById("cipherSuccessArea").classList.remove("hidden");
+      const repo = document.getElementById("repoGateSection");
+      const reveal = () => {
+        repo.classList.remove("hidden");
+        if (!finalWonAt) document.getElementById("finalAnswerSection").classList.remove("hidden");
+        if (animate) repo.scrollIntoView({ behavior: REDUCED_MOTION ? "auto" : "smooth", block: "center" });
+      };
+      if (animate) setTimeout(reveal, 650); else reveal();
+    }
+
     function verifyCipherAnswer() {
       const inp  = document.getElementById("cipherAnswerInput");
       const feed = document.getElementById("cipherFeedback");
-      const btn  = document.getElementById("cipherVerifyBtn");
-      if (!inp || !feed) return;
-
       const val = inp.value.trim().toUpperCase();
-      if (!val) {
-        inp.focus();
-        return;
-      }
+      if (!val) { inp.focus(); return; }
 
-      if (val === CIPHER_ANSWER_WORD) {
-        // ✅ Correct
+      if (hashText(val) === CIPHER_HASH) {
         cipherSolved = true;
-
-        // Sound: success tones
-        playTone(523.25, 'sine', 0.15);
-        setTimeout(() => playTone(659.25, 'sine', 0.18), 120);
-        setTimeout(() => playTone(783.99, 'sine', 0.22), 260);
-        setTimeout(() => playTone(1046.50, 'triangle', 0.28), 400);
-
-        // Update status dot & label
-        const dot  = document.getElementById("cipherStatusDot");
-        const txt  = document.getElementById("cipherStatusText");
-        if (dot) { dot.className  = "w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,.9)]"; dot.style.animation = 'none'; }
-        if (txt) { txt.innerText = "decoded"; txt.className = "text-[10px] font-sans text-emerald-300 tracking-wide font-semibold"; }
-
-        // Hide input, show success area
-        document.getElementById("cipherInputArea").classList.add("hidden");
-        const successArea = document.getElementById("cipherSuccessArea");
-        successArea.classList.remove("hidden");
-        successArea.style.animation = "cipher-enter .4s cubic-bezier(.2,.75,.25,1) both";
-
-        // Reveal the GitHub repo card with a small delay for drama
+        feed.classList.add("hidden");
+        playTone(523.25, "sine", 0.15);
+        setTimeout(() => playTone(659.25, "sine", 0.18), 120);
+        setTimeout(() => playTone(783.99, "sine", 0.22), 260);
+        setTimeout(() => playTone(1046.50, "triangle", 0.28), 400);
+        showCipherSolved(true);
+        if (window.bbRippleFrom) window.bbRippleFrom(document.getElementById("cipherPayload"), "big");
         setTimeout(() => {
-          const repo = document.getElementById("repoGateSection");
-          if (repo) {
-            repo.classList.remove("hidden");
-            repo.style.animation = "cipher-enter .55s cubic-bezier(.2,.75,.25,1) both";
-            repo.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }, 700);
-
-        // Mini confetti burst
-        setTimeout(() => {
-          if (typeof confetti === 'function') {
-            confetti({ particleCount: 60, spread: 50, origin: { y: 0.5 }, colors: ['#22d3ee','#06b6d4','#a5f3fc','#fff'] });
-          }
-        }, 400);
-
+          if (typeof confetti === "function") confetti({ particleCount: 70, spread: 60, origin: { y: 0.5 }, colors: BRAND_CONFETTI });
+        }, 350);
       } else {
-        // ❌ Wrong
-        playTone(280, 'sawtooth', 0.15);
-        feed.className = "text-xs font-sans p-3 rounded-xl bg-red-950/50 border border-red-500/20 text-red-300";
-        feed.innerHTML = `Incorrect — try again.`;
+        playTone(280, "sawtooth", 0.15);
         feed.classList.remove("hidden");
-        inp.value = "";
-        inp.focus();
-
-        // Shake animation on input
-        inp.style.animation = "none";
-        requestAnimationFrame(() => {
-          inp.style.animation = "";
-          inp.style.transition = "transform 0.05s";
-          const shake = [0, -6, 6, -4, 4, -2, 2, 0];
-          let s = 0;
-          const doShake = () => {
-            if (s >= shake.length) { inp.style.transform = ""; return; }
-            inp.style.transform = `translateX(${shake[s++]}px)`;
-            setTimeout(doShake, 50);
-          };
-          doShake();
-        });
+        restartAnimation(feed, "shake");
+        inp.select();
       }
     }
 
@@ -1486,59 +1357,142 @@
       const color = ensureAssignedColor(stateData) || "BLUE";
       const statsEl = document.getElementById("lvl3Stats");
       if (statsEl && stateData) {
-        const timeStr = formatMazeTime(stateData.maze_elapsed_ms || 0);
-        const attempts = (stateData.maze_round || 0) + 1;
+        const pretty = color.charAt(0) + color.slice(1).toLowerCase();
         statsEl.innerHTML = `
-          <div>Level 1 Questions: <strong class="text-white">${stateData.questions_solved || 15}</strong></div>
-          <div>Level 2 Time: <strong class="text-emerald-300 font-mono">${timeStr}</strong></div>
-          <div>Level 2 Key: <strong class="text-zinc-200 font-mono uppercase">${color}</strong></div>
-          <div>Level 2 Attempts: <strong class="text-white font-mono">${attempts}</strong></div>
-        `;
+          <div><dt>Puzzles solved</dt><dd>${Number(stateData.questions_solved) || 0}</dd></div>
+          <div><dt>Maze time</dt><dd class="mono">${formatMazeTime(stateData.maze_elapsed_ms || 0)}</dd></div>
+          <div><dt>Maze attempts</dt><dd>${(stateData.maze_round || 0) + 1}</dd></div>
+          <div><dt>Your key</dt><dd>${pretty}</dd></div>`;
       }
-
-      const phraseEl = document.getElementById("cipherKeyUnlockPhrase");
-      if (phraseEl) phraseEl.innerText = `${color.toLowerCase()} key`;
-
+      document.getElementById("cipherKeyUnlockPhrase").textContent = `${color.toLowerCase()} key`;
       currentCipherPayload = getCipherPayloadForColor(color);
 
-      // Re-check cipher state — if already solved earlier this session keep repo visible
+      finalWonAt = (stateData && stateData.final_won_at) || null;
+      if (finalWonAt) cipherSolved = true;
+      document.getElementById("finalWinCard").classList.toggle("hidden", !finalWonAt);
+      if (!finalWonAt) document.getElementById("finalAnswerSection").classList.toggle("hidden", !cipherSolved);
+
       if (cipherSolved) {
-        const repo = document.getElementById("repoGateSection");
-        const inputArea = document.getElementById("cipherInputArea");
-        const successArea = document.getElementById("cipherSuccessArea");
-        const payloadEl = document.getElementById("cipherPayload");
-        const dot = document.getElementById("cipherStatusDot");
-        const txt = document.getElementById("cipherStatusText");
-        if (repo)        { repo.classList.remove("hidden"); }
-        if (inputArea)   { inputArea.classList.add("hidden"); }
-        if (successArea) { successArea.classList.remove("hidden"); }
-        if (payloadEl)   { payloadEl.innerText = currentCipherPayload; }
-        if (dot) { dot.className = "w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,.9)]"; dot.style.animation = 'none'; }
-        if (txt) { txt.innerText = "decoded"; txt.className = "text-[10px] font-sans text-emerald-300 tracking-wide font-semibold"; }
+        document.getElementById("cipherPayload").textContent = currentCipherPayload;
+        showCipherSolved(false);
       } else {
         initCipherGate(color);
       }
+      if (finalWonAt) showFinalWin(finalWonAt, false, stateData.final_duration_ms, stateData.first_login_at);
     }
 
-    function copyRepoUrl() {
-      const url = "https://github.com/AkshatOP/gradient_l3";
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(url).then(showCopiedNotice).catch(() => fallbackCopy(url));
+    // ── Stage 3: final answer (checked by the server) ────────────────────────
+    let finalWonAt = null;
+
+    function formatWinTime(iso) {
+      const d = new Date(iso);
+      if (isNaN(d)) return { time: String(iso), date: "" };
+      const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+      return {
+        time: `${time}.${String(d.getMilliseconds()).padStart(3, "0")}`,
+        date: d.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+      };
+    }
+
+    function formatDuration(ms) {
+      const total = Math.max(0, Math.round(ms));
+      const pad = (n, w = 2) => String(n).padStart(w, "0");
+      const h = Math.floor(total / 3600000);
+      const m = Math.floor((total % 3600000) / 60000);
+      const s = Math.floor((total % 60000) / 1000);
+      return `${pad(h)}:${pad(m)}:${pad(s)}.${pad(total % 1000, 3)}`;
+    }
+
+    // durationMs and startedIso come from the server: first login to the correct answer.
+    function showFinalWin(iso, animate, durationMs, startedIso) {
+      finalWonAt = iso;
+      const end = formatWinTime(iso);
+      const label = document.getElementById("finalWinLabel");
+      const timeEl = document.getElementById("finalWinTime");
+      const detail = document.getElementById("finalWinDate");
+      if (durationMs !== null && durationMs !== undefined) {
+        label.textContent = "Time in the game";
+        timeEl.textContent = formatDuration(durationMs);
+        detail.textContent = startedIso
+          ? `From your first login at ${formatWinTime(startedIso).time.slice(0, 8)} to your answer at ${end.time}.`
+          : `Answer accepted at ${end.time}.`;
       } else {
-        fallbackCopy(url);
+        // No recorded start time (e.g. the database column is missing): show the clock time instead.
+        label.textContent = "Your answer was accepted at";
+        timeEl.textContent = end.time;
+        detail.textContent = end.date;
+      }
+      document.getElementById("finalAnswerSection").classList.add("hidden");
+      const card = document.getElementById("finalWinCard");
+      card.classList.remove("hidden");
+      if (!animate) return;
+      replayAnimation(card);
+      card.scrollIntoView({ behavior: REDUCED_MOTION ? "auto" : "smooth", block: "center" });
+      playHousieFanfare();
+      if (window.bbRipple) {
+        [0, 300, 650].forEach(ms => setTimeout(() => window.bbRipple(innerWidth / 2, innerHeight / 2, "big"), ms));
+      }
+      if (typeof confetti === "function" && !REDUCED_MOTION) {
+        const end = Date.now() + 4000;
+        const iv = setInterval(() => {
+          if (Date.now() > end) return clearInterval(iv);
+          confetti({ startVelocity: 34, spread: 360, ticks: 80, origin: { x: Math.random(), y: Math.random() - 0.2 }, colors: BRAND_CONFETTI, zIndex: 100 });
+        }, 260);
       }
     }
 
+    async function submitFinalAnswer(e) {
+      e.preventDefault();
+      if (gameLocked || !currentToken) return;
+      const input = document.getElementById("finalAnswerInput");
+      const btn = document.getElementById("finalSubmitBtn");
+      const feed = document.getElementById("finalFeedback");
+      const feedText = document.getElementById("finalFeedbackText");
+      const answer = input.value.trim();
+      if (!answer) { input.focus(); return; }
+
+      btn.disabled = true;
+      btn.lastChild.textContent = "Checking";
+      try {
+        const res = await fetch("/api/level3/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: currentToken, answer }),
+        });
+        const data = await res.json();
+        if (data.game_ended || data.removed) { applyLockState(data); return; }
+        if (data.correct && data.won_at) {
+          feed.classList.add("hidden");
+          showFinalWin(data.won_at, true, data.duration_ms, data.first_login_at);
+        } else {
+          playTone(280, "sawtooth", 0.15);
+          feedText.textContent = data.error || "That's not it. Keep digging.";
+          feed.classList.remove("hidden");
+          restartAnimation(feed, "shake");
+          input.select();
+        }
+      } catch (err) {
+        feedText.textContent = "Your answer didn't reach the server. Check your connection and try again.";
+        feed.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+        btn.lastChild.textContent = "Submit";
+      }
+    }
+
+    const REPO_URL = "https://github.com/AkshatOP/gradient_l3";
+    function copyRepoUrl() {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(REPO_URL).then(showCopiedNotice).catch(() => fallbackCopy(REPO_URL));
+      } else {
+        fallbackCopy(REPO_URL);
+      }
+    }
     function showCopiedNotice() {
       const btn = document.getElementById("copyRepoBtn");
-      if (btn) {
-        btn.innerHTML = '<span class="text-emerald-400 font-bold">✓ Copied!</span>';
-        setTimeout(() => {
-          btn.innerHTML = '<span>📋 Copy Link</span>';
-        }, 2000);
-      }
+      btn.innerHTML = '<i class="ph-bold ph-check" aria-hidden="true"></i><span>Copied</span>';
+      setTimeout(() => { btn.innerHTML = '<i class="ph ph-copy" aria-hidden="true"></i><span>Copy link</span>'; }, 2000);
     }
-
     function fallbackCopy(text) {
       const ta = document.createElement("textarea");
       ta.value = text;
@@ -1548,163 +1502,55 @@
       document.body.removeChild(ta);
     }
 
-    // ── Morse Code Decoder (Internal Support) ─────────────────────────────────
-    const MORSE_MAP = {
-      '.-': 'A', '-...': 'B', '-.-.': 'C', '-..': 'D', '.': 'E', '..-.': 'F',
-      '--.': 'G', '....': 'H', '..': 'I', '.---': 'J', '-.-': 'K', '.-..': 'L',
-      '--': 'M', '-.': 'N', '---': 'O', '.--.': 'P', '--.-': 'Q', '.-.': 'R',
-      '...': 'S', '-': 'T', '..-': 'U', '...-': 'V', '.--': 'W', '-..-': 'X',
-      '-.--': 'Y', '--..': 'Z',
-      '-----': '0', '.----': '1', '..---': '2', '...--': '3', '....-': '4',
-      '.....': '5', '-....': '6', '--...': '7', '---..': '8', '----.': '9',
-      '.-.-.-': '.', '--..--': ',', '..--..': '?', '.----.': "'", '-.-.--': '!',
-      '-..-.': '/', '-.--.': '(', '-.--.-': ')', '---...': ':', '-....-': '-',
-    };
-
-    function decodeMorse(morseStr) {
-      if (!morseStr || !morseStr.trim()) return '';
-      const words = morseStr.trim().split(/\s*\/\s*|\s{2,}/);
-      return words.map(word => {
-        const letters = word.trim().split(/\s+/);
-        return letters.map(code => MORSE_MAP[code] || (code === '' ? '' : '?')).join('');
-      }).join(' ');
-    }
-
-    function handleMorseInput() {
-      const inputEl = document.getElementById("morseInput");
-      const outEl = document.getElementById("morseOutput");
-      if (!inputEl || !outEl) return;
-      const decoded = decodeMorse(inputEl.value);
-      outEl.innerText = decoded || "(Waiting for input...)";
-    }
-
-    function appendMorse(token) {
-      const inputEl = document.getElementById("morseInput");
-      if (!inputEl) return;
-      inputEl.value += token;
-      if (token === '.') playTone(600, 'sine', 0.08);
-      else if (token === '-') playTone(600, 'sine', 0.22);
-      handleMorseInput();
-      inputEl.focus();
-    }
-
-    function clearMorseDecoder() {
-      const inputEl = document.getElementById("morseInput");
-      if (inputEl) inputEl.value = "";
-      handleMorseInput();
-    }
-
-    function updateMazeHud(snap) {
-      const timerEl = document.getElementById("mazeTimerDisplay");
-      const roundEl = document.getElementById("mazeRoundDisplay");
-      if (timerEl) timerEl.innerText = formatMazeTime(snap.elapsedMs);
-      if (roundEl) roundEl.innerText = String(snap.round + 1).padStart(2, '0');
-
-      const dot = document.getElementById("mazeStatusDot");
-      const label = document.getElementById("mazeStatusLabel");
-      const msg = document.getElementById("mazeStatusMessage");
-      const hint = document.getElementById("mazeStatusHint");
-
-      if (!dot || !label || !msg) return;
-
-      if (snap.status === 'RETURN_TO_START') {
-        dot.className = "h-2.5 w-2.5 shrink-0 rounded-full bg-red-400 shadow-[0_0_12px_rgba(248,113,113,0.9)] animate-pulse";
-        label.innerText = "Wrong Key";
-        label.className = "text-[9px] font-bold uppercase tracking-[0.24em] text-red-300";
-        msg.innerText = "Wrong key rejected! Follow the glowing path back to START.";
-        if (hint) hint.innerText = "FOLLOW RED PATH BACK TO START";
-      } else if (snap.status === 'SUCCESS') {
-        dot.className = "h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.9)]";
-        label.innerText = "Complete";
-        label.className = "text-[9px] font-bold uppercase tracking-[0.24em] text-emerald-300";
-        msg.innerText = "Authentic key found! Stage 02 complete.";
-        if (hint) hint.innerText = "PROCEED TO STAGE 03";
-
-        // Safety fallback: if onSuccess callback was missed (e.g. reconnect/reload),
-        // show the success overlay manually.
-        const overlay = document.getElementById("mazeSuccessOverlay");
-        if (overlay && overlay.classList.contains("hidden")) {
-          handleMazeSuccess(snap.elapsedMs, snap.round);
-        }
-
-      } else {
-        dot.className = "h-2.5 w-2.5 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(79,216,255,0.9)] animate-pulse";
-        label.innerText = "Objective";
-        label.className = "text-[9px] font-bold uppercase tracking-[0.24em] text-white/50";
-        msg.innerText = "Find your authentic key hidden in the fog. Test one to find out.";
-        if (hint) hint.innerText = "4 KEYS · 1 CORRECT";
-      }
-    }
-
-    function mazeLoop(now) {
-      const lvl2 = document.getElementById("viewLevel2");
-      if (!lvl2 || lvl2.classList.contains("hidden")) {
-        mazeAnimId = null;
-        return;
-      }
-
-      const dt = Math.min(now - mazeLastTime, 100);
-      mazeLastTime = now;
-
-      if (mazeEngine) {
-        mazeEngine.update(dt);
-        const canvas = document.getElementById("mazeCanvas");
-        if (canvas && mazeLightCanvas) {
-          const ctx = canvas.getContext("2d");
-          const lightCtx = mazeLightCanvas.getContext("2d");
-          BrainBreakerMaze.renderScene(ctx, lightCtx, mazeEngine.state, canvas.width, canvas.height, now);
-        }
-        updateMazeHud(mazeEngine.getSnapshot());
-      }
-
-      mazeAnimId = requestAnimationFrame(mazeLoop);
-    }
-
-    // ── Team state ────────────────────────────────────────────────────────────
+    // ── Team state ───────────────────────────────────────────────────────────
     async function loadTeamState() {
       if (!currentToken) return;
       try {
         const res = await fetch(`/api/state?token=${encodeURIComponent(currentToken)}`);
-        if (res.status === 401) {
-          handleLogout(); return;
-        }
+        if (res.status === 401) { handleLogout(); return; }
         const state = await res.json();
         cachedTeamState = state;
         currentLevel    = state.current_level || 1;
-        document.getElementById("levelBadgeText").innerText = `Level ${currentLevel}`;
+        currentTeamName = state.team_name || currentTeamName;
 
-        if (currentLevel > 1) {
-          routeToLevel(currentLevel, state);
-        } else {
-          renderDashboard(state);
-        }
+        if (currentLevel > 1) routeToLevel(currentLevel, state);
+        else { setRoundTracker(1); showView("viewDashboard"); renderDashboard(state); }
       } catch (err) {
         console.error("Error fetching state:", err);
+        const anyVisible = ["viewDashboard", "viewLevel2", "viewLevel3"].some(v => !document.getElementById(v).classList.contains("hidden"));
+        if (!anyVisible) {
+          showView("viewLogin");
+          showLoginError("Can't reach the game server. Check your connection and try again.");
+        }
       }
+    }
+
+    function ticketSerial(name) {
+      return `No. ${String(hashText(String(name || "team")) % 9000 + 1000)}`;
     }
 
     function renderDashboard(state) {
       applyLockState(state);
       if (gameLocked) return;
-      // Sync anticheat setting from server state
       anticheatEnabled = !!state.anticheat_enabled;
+      cachedTeamState = state;
 
-      document.getElementById("playerName").innerText   = state.team_name;
-      document.getElementById("playerAvatar").innerText = state.avatar || "🚀";
-      document.getElementById("ticketTeamTag").innerText = `TEAM: ${state.team_name.toUpperCase()}`;
-      document.getElementById("ticketSerialNo").innerText = `TICKET #TB-${Math.floor(Math.random()*9000+1000)}`;
+      document.getElementById("playerName").textContent   = state.team_name;
+      document.getElementById("playerAvatar").textContent = state.avatar || "";
+      document.getElementById("ticketTeamTag").textContent = state.team_name;
+      document.getElementById("ticketSerialNo").textContent = ticketSerial(state.team_name);
 
-      document.getElementById("statQuestionsSolved").innerText  = state.questions_solved;
-      document.getElementById("statNumbersCollected").innerText = (state.numbers_collected || []).length;
-      document.getElementById("statTicketNumbersHit").innerText = `${state.ticket_numbers_hit_count}/15`;
+      document.getElementById("statQuestionsSolved").textContent = state.questions_solved || 0;
+      document.getElementById("statSkipped").textContent = state.questions_skipped || 0;
 
       renderTicketGrid(state.ticket, state.numbers_hit);
       renderCollectedNumbers(state.numbers_collected);
       renderPuzzleCorner(state.current_puzzle, state.is_winner);
 
-      if (state.is_winner && !state._winnerAnnounced) {
-        state._winnerAnnounced = true;
-        showWinnerCelebration(state);
+      document.getElementById("fullHouseStamp").classList.toggle("hidden", !state.is_winner);
+      if (state.is_winner && !winnerAnnounced) {
+        winnerAnnounced = true;
+        showWinnerCelebration({ team_name: state.team_name, questions_solved: state.questions_solved, drawn: (state.numbers_collected || []).length });
       }
     }
 
@@ -1714,133 +1560,192 @@
         gameLocked = true;
         document.getElementById("removedOverlay").classList.remove("hidden");
         document.getElementById("focusLostOverlay").classList.add("hidden");
-        if (document.fullscreenElement) { try { document.exitFullscreen(); } catch(e) {} }
+        if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (e) {} }
       } else if (state.game_ended) {
         gameLocked = true;
         document.getElementById("gameEndedOverlay").classList.remove("hidden");
         document.getElementById("focusLostOverlay").classList.add("hidden");
-        if (document.fullscreenElement) { try { document.exitFullscreen(); } catch(e) {} }
+        if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (e) {} }
       }
     }
 
+    let renderedHits = null;
     function renderTicketGrid(ticket, numbersHit) {
-      const grid   = document.getElementById("ticketGrid");
-      grid.innerHTML = "";
+      const grid = document.getElementById("ticketGrid");
+      const card = document.getElementById("ticketCard");
       const hitSet = new Set(numbersHit || []);
-      ticket.forEach(row => {
-        const rowDiv = document.createElement("div");
-        rowDiv.className = "grid grid-cols-9 gap-1 sm:gap-2";
-        row.forEach(val => {
+      const firstRender = renderedHits === null;
+      let newHit = false;
+
+      grid.innerHTML = "";
+      (ticket || []).forEach((row, r) => {
+        (row || []).forEach((val, c) => {
           const cell = document.createElement("div");
-          cell.className = "h-10 sm:h-12 flex items-center justify-center rounded-lg sm:rounded-xl text-sm sm:text-base font-extrabold transition-all relative select-none";
+          cell.className = "cell";
+          cell.setAttribute("role", "gridcell");
           if (val === null) {
-            cell.className += " border border-zinc-800/80 bg-zinc-900/40 text-zinc-600 font-mono text-xs";
-            cell.innerHTML = `<span>&bull;</span>`;
-          } else if (hitSet.has(val)) {
-            cell.className += " dabber-mark text-white font-mono shadow-md animate-stamp";
-            cell.innerHTML = `<span>${val}</span>`;
+            cell.classList.add("blank");
+            cell.setAttribute("aria-label", "blank");
           } else {
-            cell.className += " border border-zinc-700/80 bg-[#1c1f2b] text-zinc-100 font-mono hover:border-zinc-500 shadow-sm";
             cell.innerHTML = `<span>${val}</span>`;
+            const hit = hitSet.has(val);
+            cell.setAttribute("aria-label", hit ? `${val}, marked` : String(val));
+            if (hit) {
+              cell.classList.add("hit");
+              cell.style.setProperty("--rot", stickerTilt(val));
+              if (!firstRender && !renderedHits.has(val)) { cell.classList.add("just-hit"); newHit = true; }
+            }
           }
-          rowDiv.appendChild(cell);
+          if (firstRender && !REDUCED_MOTION) {
+            cell.classList.add("deal");
+            cell.style.animationDelay = `${250 + (c * 3 + r) * 16}ms`;
+          }
+          grid.appendChild(cell);
         });
-        grid.appendChild(rowDiv);
       });
+
+      if (firstRender) card.classList.add("dealt");
+      else if (newHit) { card.classList.remove("dealt"); restartAnimation(card, "bump"); }
+      if (firstRender) card.classList.remove("bump");
+      renderedHits = hitSet;
+      document.getElementById("statTicketNumbersHit").innerHTML = `${hitSet.size}<small>/15</small>`;
+    }
+
+    function setLastBall(n, hit, animate) {
+      const ball = document.getElementById("lastBall");
+      ball.className = `ball${hit ? " is-hit" : ""}`;
+      ball.style.setProperty("--rot", stickerTilt(n));
+      ball.querySelector("span").textContent = n;
+      document.getElementById("lastCallName").textContent = callFor(n);
+      if (animate && !REDUCED_MOTION) restartAnimation(ball, "drop");
+      document.getElementById("lastCallText").textContent = hit ? `${n} is on your ticket` : `${n} is not on your ticket`;
     }
 
     function renderCollectedNumbers(numbers) {
       const container = document.getElementById("collectedNumbersGrid");
       const emptyMsg  = document.getElementById("collectedNumbersEmpty");
-      const badge     = document.getElementById("collectedCountBadge");
-      badge.innerText = `${(numbers||[]).length} numbers`;
-      if (!numbers || !numbers.length) {
-        emptyMsg.classList.remove("hidden"); container.classList.add("hidden"); return;
+      const list = numbers || [];
+      document.getElementById("collectedCountBadge").textContent = `${list.length} ${list.length === 1 ? "number" : "numbers"}`;
+      if (!list.length) {
+        emptyMsg.classList.remove("hidden"); container.classList.add("hidden");
+        const ball = document.getElementById("lastBall");
+        ball.className = "ball is-empty"; ball.querySelector("span").textContent = "?";
+        document.getElementById("lastCallName").textContent = "";
+        document.getElementById("lastCallText").textContent = "Nothing yet";
+        return;
       }
       emptyMsg.classList.add("hidden"); container.classList.remove("hidden");
+
+      const newest = list[list.length - 1];
+      const shownBall = document.getElementById("lastBall").querySelector("span").textContent;
+      if (shownBall !== String(newest.number)) setLastBall(newest.number, newest.hit, false);
+
       container.innerHTML = "";
-      [...numbers].reverse().forEach(item => {
-        const chip = document.createElement("div");
-        chip.className = `px-2.5 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition ${item.hit
-          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-          : 'bg-zinc-800/90 text-zinc-300 border border-zinc-700/60'}`;
-        chip.innerHTML = `<span>${item.number}</span>${item.hit ? '<span class="text-[10px] text-emerald-400">✓ Hit</span>' : ''}`;
-        container.appendChild(chip);
+      [...list].reverse().forEach(item => {
+        const b = document.createElement("span");
+        b.className = `ball${item.hit ? " is-hit" : ""}`;
+        b.style.setProperty("--size", "46px");
+        b.style.setProperty("--rot", stickerTilt(item.number));
+        b.title = item.hit ? `${item.number}, on your ticket` : `${item.number}`;
+        b.innerHTML = `<span>${item.number}</span>`;
+        container.appendChild(b);
       });
     }
 
-    function renderPuzzleCorner(puzzle, isWinner) {
-      const input      = document.getElementById("puzzleAnswerInput");
-      const submitBtn  = document.getElementById("submitAnswerBtn");
-      const skipBtn    = document.getElementById("skipPuzzleBtn");
-      const hintBtn    = document.getElementById("hintToggleBtn");
-      const hintBox    = document.getElementById("hintBox");
+    const CATEGORY_ICONS = {
+      CODING: "ph-code", APTITUDE: "ph-calculator", MATH: "ph-function",
+      MATHS: "ph-function", REASONING: "ph-puzzle-piece", RIDDLE: "ph-question"
+    };
+    let lastPuzzleId = null;
 
-      hintBox.classList.add("hidden");
-      hintBox.innerText = "";
-      document.getElementById("hintToggleText").innerText = "Show hint";
-      hintBtn.classList.add("hidden");
+    function setPuzzleEnabled(on) {
+      ["puzzleAnswerInput", "submitAnswerBtn", "skipPuzzleBtn"].forEach(id => { document.getElementById(id).disabled = !on; });
+    }
+
+    function renderPuzzleCorner(puzzle, isWinner) {
+      const input    = document.getElementById("puzzleAnswerInput");
+      const textEl   = document.getElementById("puzzleQuestionText");
+      const hintBtn  = document.getElementById("hintToggleBtn");
+      const hintBox  = document.getElementById("hintBox");
+      const catBadge = document.getElementById("puzzleCategoryBadge");
 
       if (isWinner) {
-        document.getElementById("puzzleNumberBadge").innerText    = "COMPLETE";
-        document.getElementById("puzzleCategoryBadge").innerText  = "VICTORY";
-        document.getElementById("puzzleQuestionText").innerHTML   = "🎉 Full House achieved! Proceeding to Level 2...";
-        input.disabled = true; submitBtn.disabled = true; skipBtn.disabled = true;
-        submitBtn.className = "flex-1 py-3.5 px-5 rounded-xl bg-zinc-700 text-zinc-400 font-bold text-sm cursor-not-allowed";
+        document.getElementById("puzzleNumberBadge").textContent = "Stage complete";
+        catBadge.innerHTML = `<i class="ph ph-trophy" aria-hidden="true"></i>Full house`;
+        textEl.className = "q-text";
+        textEl.textContent = "Every number on your ticket is marked. Stage 2 is next.";
+        hintBtn.classList.add("hidden"); hintBox.classList.add("hidden");
+        setPuzzleEnabled(false);
         return;
       }
       if (!puzzle) {
-        document.getElementById("puzzleQuestionText").innerText = "All puzzles have been completed!";
-        input.disabled = true; submitBtn.disabled = true; skipBtn.disabled = true;
+        textEl.className = "q-text";
+        textEl.textContent = "You have worked through every puzzle. Wait for the organizers.";
+        hintBtn.classList.add("hidden"); hintBox.classList.add("hidden");
+        setPuzzleEnabled(false);
         return;
       }
-      document.getElementById("puzzleNumberBadge").innerText   = `PUZZLE ${puzzle.puzzle_number}`;
-      document.getElementById("puzzleCategoryBadge").innerText = puzzle.category || "PUZZLE";
-      const cat = (puzzle.category || "").toUpperCase();
-      const catBadge = document.getElementById("puzzleCategoryBadge");
-      const catStyles = {
-        "CODING":    "text-xs font-bold uppercase tracking-wide bg-blue-600/20 text-blue-400 border border-blue-500/30 px-2.5 py-0.5 rounded-md",
-        "APTITUDE":  "text-xs font-bold uppercase tracking-wide bg-amber-600/20 text-amber-400 border border-amber-500/30 px-2.5 py-0.5 rounded-md",
-        "MATH":      "text-xs font-bold uppercase tracking-wide bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-md",
-        "REASONING": "text-xs font-bold uppercase tracking-wide bg-cyan-600/20 text-cyan-400 border border-cyan-500/30 px-2.5 py-0.5 rounded-md",
-      };
-      catBadge.className = catStyles[cat] || "text-xs font-bold uppercase tracking-wide bg-purple-600/20 text-purple-400 border border-purple-500/30 px-2.5 py-0.5 rounded-md";
-      document.getElementById("puzzleQuestionText").innerText = puzzle.question;
 
-      if (puzzle.hint) {
-        hintBtn.classList.remove("hidden");
-        hintBtn.dataset.hint = puzzle.hint;
-      }
+      const changed = puzzle.id !== lastPuzzleId || puzzle.puzzle_number !== (textEl.dataset.num | 0);
+      if (!changed) return;
+      lastPuzzleId = puzzle.id;
+      textEl.dataset.num = puzzle.puzzle_number;
 
-      input.disabled = false; input.value = ""; input.focus();
-      submitBtn.disabled = false; skipBtn.disabled = false;
-      submitBtn.className = "flex-1 py-3.5 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 transition transform active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer";
+      const cat = String(puzzle.category || "PUZZLE").toUpperCase();
+      const catLabel = cat.charAt(0) + cat.slice(1).toLowerCase();
+      catBadge.innerHTML = `<i class="ph ${CATEGORY_ICONS[cat] || "ph-puzzle-piece"}" aria-hidden="true"></i>${escapeHtml(catLabel)}`;
+      document.getElementById("puzzleNumberBadge").textContent = `Puzzle ${puzzle.puzzle_number}`;
+
+      textEl.className = `q-text${cat === "CODING" ? " is-code" : ""}`;
+      textEl.textContent = puzzle.question;
+      if (!REDUCED_MOTION) restartAnimation(textEl, "q-enter");
+
+      hintBox.classList.add("hidden");
+      hintBox.innerHTML = "";
+      document.getElementById("hintToggleText").textContent = "Show hint";
+      hintBtn.classList.toggle("hidden", !puzzle.hint);
+      hintBtn.dataset.hint = puzzle.hint || "";
+
+      setPuzzleEnabled(true);
+      input.value = "";
+      input.focus({ preventScroll: true });
     }
+
     function toggleHint() {
       const hintBox = document.getElementById("hintBox");
       const hintBtn = document.getElementById("hintToggleBtn");
       const label   = document.getElementById("hintToggleText");
       if (hintBox.classList.contains("hidden")) {
-        hintBox.innerText = hintBtn.dataset.hint || "";
+        hintBox.innerHTML = `<i class="ph ph-lightbulb" aria-hidden="true"></i><span>${escapeHtml(hintBtn.dataset.hint || "")}</span>`;
         hintBox.classList.remove("hidden");
-        label.innerText = "Hide hint";
+        label.textContent = "Hide hint";
       } else {
         hintBox.classList.add("hidden");
-        label.innerText = "Show hint";
+        label.textContent = "Show hint";
       }
     }
 
-    // ── Submit answer ─────────────────────────────────────────────────────────
+    function showFeedback(kind, html) {
+      const box  = document.getElementById("answerFeedback");
+      const icon = document.getElementById("feedbackIcon");
+      const icons = { hit: "ph-seal-check", info: "ph-circle-half", error: "ph-x-circle" };
+      box.className = `notice notice-${kind}`;
+      icon.className = `ph-bold ${icons[kind] || "ph-info"}`;
+      document.getElementById("feedbackMessage").innerHTML = html;
+      replayAnimation(box);
+    }
+
+    // ── Submit answer ────────────────────────────────────────────────────────
     async function handleAnswerSubmit(e) {
       e.preventDefault();
       if (gameLocked) return;
       const input  = document.getElementById("puzzleAnswerInput");
       const answer = input.value.trim();
-      if (!answer || !currentToken) return;
+      if (!answer || !currentToken) { input.focus(); return; }
 
       const submitBtn = document.getElementById("submitAnswerBtn");
       submitBtn.disabled = true;
-      submitBtn.innerText = "Checking...";
+      submitBtn.textContent = "Checking";
 
       try {
         const res    = await fetch("/api/submit-answer", {
@@ -1850,51 +1755,65 @@
         });
         const result = await res.json();
         submitBtn.disabled = false;
-        submitBtn.innerHTML = `<span>Submit answer</span> <span class="text-base">&nearr;</span>`;
+        submitBtn.textContent = "Check answer";
 
         if (result.game_ended || result.removed) { applyLockState(result); return; }
 
-        const feedbackBox = document.getElementById("answerFeedback");
-        const feedbackMsg = document.getElementById("feedbackMessage");
-        feedbackBox.classList.remove("hidden");
-
         if (result.correct) {
           playDabberSound(result.hit);
-          if (result.hit) {
-            feedbackBox.className = "mb-5 p-3.5 rounded-xl text-xs font-bold flex items-center justify-between bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
-            feedbackMsg.innerHTML = `<span>🎯 <strong>CORRECT!</strong> Awarded: <span class="font-mono text-base text-white px-2 py-0.5 rounded bg-emerald-600">${result.awarded_number}</span> — <strong>MATCHED YOUR TICKET!</strong></span>`;
+          const n = result.awarded_number;
+          if (n !== null && n !== undefined) {
+            setLastBall(n, result.hit, true);
+            if (window.bbRippleFrom) window.bbRippleFrom(document.getElementById("lastBall"), result.hit ? "hit" : "miss");
+            if (cachedTeamState) {
+              cachedTeamState.numbers_collected = [...(cachedTeamState.numbers_collected || []), { number: n, hit: result.hit }];
+              renderCollectedNumbers(cachedTeamState.numbers_collected);
+            }
+            showFeedback(result.hit ? "hit" : "info", result.hit
+              ? `Correct. You drew <strong>${n}</strong>${callFor(n) ? `, ${callFor(n).toLowerCase()}` : ""}. It is on your ticket, so it has been stamped.`
+              : `Correct. You drew <strong>${n}</strong>${callFor(n) ? `, ${callFor(n).toLowerCase()}` : ""}. It is not on your ticket this time.`);
           } else {
-            feedbackBox.className = "mb-5 p-3.5 rounded-xl text-xs font-bold flex items-center justify-between bg-blue-500/20 text-blue-300 border border-blue-500/40";
-            feedbackMsg.innerHTML = `<span>💡 <strong>CORRECT!</strong> Awarded: <span class="font-mono text-base text-white px-2 py-0.5 rounded bg-blue-600">${result.awarded_number}</span> (Added to collection tray)</span>`;
+            showFeedback("info", "Correct. There are no numbers left to draw.");
           }
-          loadTeamState();
-          if (result.level_completed) {
+          document.getElementById("statQuestionsSolved").textContent = result.questions_solved;
+          if (cachedTeamState && cachedTeamState.ticket) renderTicketGrid(cachedTeamState.ticket, result.numbers_hit);
+
+          if (result.is_winner || result.level_completed) {
+            setPuzzleEnabled(false);
+            winnerAnnounced = true;
+            const drawn = ((cachedTeamState && cachedTeamState.numbers_collected) || []).length + 1;
+            if (window.bbRipple) { window.bbRipple(innerWidth / 2, innerHeight / 2, "big"); setTimeout(() => window.bbRipple(innerWidth / 2, innerHeight / 2, "big"), 350); }
+            document.getElementById("ticketCard").scrollIntoView({ behavior: REDUCED_MOTION ? "auto" : "smooth", block: "center" });
             setTimeout(() => {
-              document.getElementById("winnerModal").classList.add("hidden");
-              showLevelCompleteScreen();
-            }, 3500);
-          }
-          if (result.is_winner && !result.level_completed) {
-            showWinnerCelebration(cachedTeamState);
+              const stamp = document.getElementById("fullHouseStamp");
+              stamp.classList.remove("hidden");
+              restartAnimation(stamp, "stamp");
+            }, 700);
+            setTimeout(() => showWinnerCelebration({ team_name: currentTeamName, questions_solved: result.questions_solved, drawn }), 2100);
+          } else {
+            // Let the draw land before the next puzzle slides in.
+            setTimeout(loadTeamState, REDUCED_MOTION ? 0 : 650);
           }
         } else {
-          playTone(220, 'sawtooth', 0.25);
-          feedbackBox.className = "mb-5 p-3.5 rounded-xl text-xs font-bold flex items-center justify-between bg-red-500/20 text-red-300 border border-red-500/40";
-          feedbackMsg.innerHTML = `<span>❌ ${result.message || 'Incorrect answer. Try again!'}</span>`;
+          playTone(220, "sawtooth", 0.25);
+          showFeedback("error", "That's not it. Check your working and try again, or skip this one.");
+          restartAnimation(input, "shake");
           input.select();
         }
       } catch (err) {
         console.error(err);
         submitBtn.disabled = false;
-        submitBtn.innerHTML = `<span>Submit answer</span> <span class="text-base">&nearr;</span>`;
+        submitBtn.textContent = "Check answer";
+        showFeedback("error", "Your answer didn't reach the server. Check your connection and try again.");
       }
     }
 
-    // ── Skip puzzle ───────────────────────────────────────────────────────────
+    // ── Skip puzzle ──────────────────────────────────────────────────────────
     async function handleSkipPuzzle() {
       if (!currentToken || gameLocked) return;
       const skipBtn = document.getElementById("skipPuzzleBtn");
-      skipBtn.disabled = true; skipBtn.innerText = "Skipping...";
+      const skipText = document.getElementById("skipText");
+      skipBtn.disabled = true; skipText.textContent = "Skipping";
       try {
         const res  = await fetch("/api/skip-puzzle", {
           method:  "POST",
@@ -1902,31 +1821,31 @@
           body:    JSON.stringify({token: currentToken}),
         });
         const data = await res.json();
-        skipBtn.disabled = false; skipBtn.innerHTML = "Skip ⏭";
+        skipBtn.disabled = false; skipText.textContent = "Skip this one";
         if (data.game_ended || data.removed) { applyLockState(data); return; }
         if (data.success) {
           document.getElementById("answerFeedback").classList.add("hidden");
           loadTeamState();
         }
       } catch (err) {
-        skipBtn.disabled = false; skipBtn.innerHTML = "Skip ⏭";
+        skipBtn.disabled = false; skipText.textContent = "Skip this one";
       }
     }
 
-    // ── Winner celebration ────────────────────────────────────────────────
-    function showWinnerCelebration(state) {
-      if (!state) return;
+    // ── Full house ───────────────────────────────────────────────────────────
+    function showWinnerCelebration(info) {
+      if (!info) return;
       playHousieFanfare();
-      document.getElementById("winnerTeamName").innerText      = state.team_name;
-      document.getElementById("winnerQuestionsCount").innerText = state.questions_solved;
-      document.getElementById("winnerCollectedCount").innerText = (state.numbers_collected||[]).length;
+      document.getElementById("winnerTeamName").textContent       = info.team_name || currentTeamName;
+      document.getElementById("winnerQuestionsCount").textContent = info.questions_solved || 0;
+      document.getElementById("winnerCollectedCount").textContent = info.drawn || 0;
       document.getElementById("winnerModal").classList.remove("hidden");
-      if (typeof confetti === 'function') {
-        const end = Date.now() + 3500;
+      if (typeof confetti === "function" && !REDUCED_MOTION) {
+        const end = Date.now() + 3000;
         const iv  = setInterval(() => {
           if (Date.now() > end) return clearInterval(iv);
-          confetti({ startVelocity:30, spread:360, ticks:60, origin:{x:Math.random(),y:Math.random()-0.2} });
-        }, 300);
+          confetti({ startVelocity: 32, spread: 360, ticks: 70, origin: { x: Math.random(), y: Math.random() - 0.2 }, colors: BRAND_CONFETTI, zIndex: 100 });
+        }, 280);
       }
     }
 
@@ -1935,7 +1854,7 @@
       loadTeamState();
     }
 
-    // ── SSE ───────────────────────────────────────────────────────────────────
+    // ── SSE ──────────────────────────────────────────────────────────────────
     function setupSSE() {
       if (eventSource) eventSource.close();
       try {
@@ -1944,32 +1863,33 @@
           try {
             const event = JSON.parse(e.data);
             if (event.type === "admin_broadcast") {
-              document.getElementById("broadcastText").innerText = event.data?.message || "";
-              document.getElementById("broadcastBanner").classList.remove("hidden");
-              playTone(440, 'sine', 0.2);
+              document.getElementById("broadcastText").textContent = event.data?.message || "";
+              const banner = document.getElementById("broadcastBanner");
+              banner.classList.remove("hidden");
+              restartAnimation(banner, "broadcast");
+              playTone(440, "sine", 0.2);
             } else if (event.type === "anticheat_changed") {
-              // Admin toggled anti-cheat in real time
               const wasEnabled = anticheatEnabled;
               anticheatEnabled = !!event.data?.enabled;
-              // If turned off, dismiss the focus-lost overlay immediately
               if (wasEnabled && !anticheatEnabled) {
                 awayFromGame = false;
                 document.getElementById("focusLostOverlay").classList.add("hidden");
-                if (document.fullscreenElement) { try { document.exitFullscreen(); } catch(e) {} }
+                if (document.fullscreenElement) { try { document.exitFullscreen(); } catch (e) {} }
               }
-            } else if (["game_reset","game_ended","game_resumed","team_level_changed"].includes(event.type)) {
-              if (currentToken) loadTeamState();
-            } else if (event.type === "team_removed") {
+            } else if (["game_reset", "game_ended", "game_resumed", "team_level_changed", "team_removed"].includes(event.type)) {
+              if (event.type === "game_reset") { renderedHits = null; lastPuzzleId = null; winnerAnnounced = false; cipherSolved = false; finalWonAt = null; }
+              if (event.type === "game_resumed") {
+                gameLocked = false;
+                document.getElementById("gameEndedOverlay").classList.add("hidden");
+              }
               if (currentToken) loadTeamState();
             }
-          } catch(err) {}
+          } catch (err) {}
         };
-      } catch(err) {}
+      } catch (err) {}
     }
 
-    // ── Anti-cheat ────────────────────────────────────────────────────────────
-    // All enforcement is strictly gated on anticheatEnabled, which is set
-    // by the server and toggled live by admin via SSE.
+    // ── Anti-cheat (tab switching, gated by the admin toggle) ────────────────
     function requestGameFullscreen() {
       if (!anticheatEnabled) return;
       const el = document.documentElement;
@@ -1988,10 +1908,8 @@
           body:    JSON.stringify({token: currentToken}),
         });
         const data = await res.json();
-        if (data.tab_switch_count) {
-          document.getElementById("violationCount").innerText = data.tab_switch_count;
-        }
-      } catch(err) {}
+        if (data.tab_switch_count) document.getElementById("violationCount").textContent = data.tab_switch_count;
+      } catch (err) {}
     }
     function flagFocusLost() {
       if (!anticheatEnabled) return;
@@ -2011,17 +1929,14 @@
     window.addEventListener("blur", () => { if (anticheatEnabled) flagFocusLost(); });
     document.addEventListener("fullscreenchange",       () => { if (anticheatEnabled && !isInFullscreen()) flagFocusLost(); });
     document.addEventListener("webkitfullscreenchange", () => { if (anticheatEnabled && !isInFullscreen()) flagFocusLost(); });
-    document.addEventListener("contextmenu", (e) => {
-      if (anticheatEnabled && !document.getElementById("viewDashboard").classList.contains("hidden")) e.preventDefault();
-    });
 
-    // ── Init ──────────────────────────────────────────────────────────────────
+    // ── Init ─────────────────────────────────────────────────────────────────
     window.addEventListener("DOMContentLoaded", () => {
+      splitTitle();
+      buildCallerBoard();
       setupSSE();
       if (currentToken) {
-        // Restore session — validate with server
-        document.getElementById("logoutBtn").classList.remove("hidden");
-        showView("viewDashboard"); // temp, loadTeamState will redirect if needed
+        document.getElementById("viewLogin").classList.add("hidden");
         loadTeamState();
       } else {
         showView("viewLogin");

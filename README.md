@@ -105,6 +105,7 @@ Optional env vars:
 ```bash
 PORT=8080 ADMIN_PASSWORD=MySecret TICKET_HIT_CHANCE=0.70 python server.py
 ```
+- `FINAL_ANSWER`: The Stage 3 final answer. Defaults to `GRADIENT2026WINNER`. It is only ever checked on the server, never sent to the browser.
 - `TICKET_HIT_CHANCE`: Probability (0.0 to 1.0) that a correct answer cuts an unhit number on the team's ticket. Defaults to `0.70` (70% cut probability). Set to `0.85` or `1.0` for even faster cuts!
 
 ### 3. Create teams (Admin)
@@ -145,6 +146,7 @@ PORT=8080 ADMIN_PASSWORD=MySecret TICKET_HIT_CHANCE=0.70 python server.py
 | `POST` | `/api/submit-answer` | token in body | Submit answer, get awarded number |
 | `POST` | `/api/skip-puzzle` | token in body | Skip current question |
 | `POST` | `/api/tab-violation` | token in body | Report tab-switch (only active when anti-cheat is ON) |
+| `POST` | `/api/level3/submit` | token in body | Stage 3 final answer. Checked on the server against `FINAL_ANSWER` (ignores case and spaces); the first correct submission's time is saved as the Stage 3 `won_at` |
 
 ### Admin endpoints
 | Method | Path | Auth | Description |
