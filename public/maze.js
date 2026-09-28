@@ -12,7 +12,7 @@
  * - 31x31 maze, DFS base + controlled loops, dead ends
  * - Four keys RED / BLUE / GREEN / YELLOW, exactly ONE correct (persists all game)
  * - Keys far from START and strongly separated
- * - Wrong key -> forced return to START, same maze, new key positions, same colour
+ * - Wrong key -> navigate back to START without a displayed route, same maze, new keys
  * - Fog of war, no page refresh
  * - Ctrl + Shift + D = developer debug mode
  * - onSuccess callback for Stage 3 integration
@@ -351,71 +351,6 @@
   }
 
   // ==========================================================================
-  // PATH FINDING
-  // ==========================================================================
-
-  function findPath(maze, from, to) {
-    const total = maze.cols * maze.rows;
-    const visited = new Uint8Array(total);
-    const previous = new Int32Array(total);
-    previous.fill(-1);
-
-    const queue = [{ col: from.col, row: from.row }];
-
-    const fromIndex = index(maze, from.col, from.row);
-    const toIndex = index(maze, to.col, to.row);
-
-    visited[fromIndex] = 1;
-
-    const steps = [
-      { dc: 0, dr: -1 },
-      { dc: 1, dr: 0 },
-      { dc: 0, dr: 1 },
-      { dc: -1, dr: 0 }
-    ];
-
-    for (let head = 0; head < queue.length; head += 1) {
-      const current = queue[head];
-      const currentIndex = index(maze, current.col, current.row);
-
-      if (currentIndex === toIndex) break;
-
-      for (const { dc, dr } of steps) {
-        if (!canMove(maze, current.col, current.row, dc, dr)) continue;
-
-        const next = { col: current.col + dc, row: current.row + dr };
-        const nextIndex = index(maze, next.col, next.row);
-
-        if (visited[nextIndex]) continue;
-
-        visited[nextIndex] = 1;
-        previous[nextIndex] = currentIndex;
-        queue.push(next);
-      }
-    }
-
-    if (!visited[toIndex]) return [];
-
-    const path = [];
-    let currentIndex = toIndex;
-
-    while (currentIndex !== -1) {
-      const row = Math.floor(currentIndex / maze.cols);
-      const col = currentIndex % maze.cols;
-
-      path.push({ col, row });
-
-      if (currentIndex === fromIndex) break;
-
-      currentIndex = previous[currentIndex];
-    }
-
-    path.reverse();
-
-    return path;
-  }
-
-  // ==========================================================================
   // KEY PLACEMENT
   // ==========================================================================
 
@@ -653,8 +588,6 @@
         round: initialRound,
         wrongKey: null,
         wrongKeyCount: 0,
-        returnPath: [],
-        returnPathIndex: 0,
         wrongFeedbackRemainingMs: 0,
         held: [],
         seen: new Uint8Array(maze.cols * maze.rows),
@@ -739,9 +672,6 @@
       // RESET FOG
       this.state.seen = new Uint8Array(maze.cols * maze.rows);
 
-      // RESET RETURN DATA
-      this.state.returnPath = [];
-      this.state.returnPathIndex = 0;
       this.state.wrongKey = null;
       this.state.wrongFeedbackRemainingMs = 0;
 
@@ -995,10 +925,6 @@
 
     // CHOOSE NEXT CELL
     chooseNextCell() {
-      if (this.state.status === 'RETURN_TO_START') return this.chooseReturnCell();
-
-      if (this.state.status !== 'PLAYING') return false;
-
       return this.chooseNormalCell();
     }
 
@@ -1029,57 +955,6 @@
       return false;
     }
 
-    // RETURN PATH
-    chooseReturnCell() {
-      const { player, returnPath } = this.state;
-
-      let returnPathIndex = this.state.returnPathIndex;
-
-      if (returnPath.length === 0) return false;
-
-      // Find current position in return path in case the player entered a transition.
-      const currentIndex = returnPath.findIndex(cell =>
-        sameCell(cell, { col: Math.round(player.col), row: Math.round(player.row) })
-      );
-
-      if (currentIndex >= 0) {
-        returnPathIndex = currentIndex;
-        this.state.returnPathIndex = currentIndex;
-      }
-
-      if (returnPathIndex >= returnPath.length - 1) return false;
-
-      const current = returnPath[returnPathIndex];
-      const next = returnPath[returnPathIndex + 1];
-
-      const dc = next.col - current.col;
-      const dr = next.row - current.row;
-
-      let requiredDirection = 'up';
-
-      if (dc === 1) requiredDirection = 'right';
-      else if (dc === -1) requiredDirection = 'left';
-      else if (dr === 1) requiredDirection = 'down';
-
-      // Only the correct return direction works.
-      // NEW: show which way the (mapped) key points, even if the path doesn't allow it.
-      if (this.held.length > 0) {
-        player.facing = this.mapDir(this.held[this.held.length - 1]);
-      }
-
-      // NEW: held keys are mapped, so while disoriented the player must press the opposite key.
-      if (!this.held.some(d => this.mapDir(d) === requiredDirection)) return false;
-
-      player.facing = requiredDirection;
-
-      player.from = { ...current };
-      player.to = { ...next };
-      player.t = 0;
-      player.moving = true;
-
-      return true;
-    }
-
     // CELL ARRIVAL
     handleCellArrival() {
       const { status, player, maze } = this.state;
@@ -1088,13 +963,6 @@
 
       // RETURN TO START
       if (status === 'RETURN_TO_START') {
-        const nextIndex = this.state.returnPathIndex + 1;
-        const expected = this.state.returnPath[nextIndex];
-
-        if (expected && sameCell(currentCell, expected)) {
-          this.state.returnPathIndex = nextIndex;
-        }
-
         if (sameCell(currentCell, maze.start)) {
           // NEW: back at START -> controls return to normal
           this.state.controlsReversedMs = 0;
@@ -1160,10 +1028,6 @@
         : CONFIG.disorient.untilStart
           ? Infinity
           : CONFIG.disorient.durationMs;
-
-      // Calculate shortest route back to START.
-      this.state.returnPath = findPath(maze, currentCell, maze.start);
-      this.state.returnPathIndex = 0;
 
       this.releaseAll();
 
@@ -1739,124 +1603,6 @@
     ctx.restore();
   }
 
-  // RETURN BARRIERS
-  function drawReturnBarriers(ctx, state, vp, time = performance.now()) {
-    if (state.status !== 'RETURN_TO_START' && state.status !== 'RESETTING') return;
-
-    if (state.returnPath.length === 0) return;
-
-    const current = state.returnPath[state.returnPathIndex];
-    const next = state.returnPath[state.returnPathIndex + 1];
-
-    if (!current) return;
-
-    const { maze } = state;
-
-    const x = vp.originX + current.col * vp.size;
-    const y = vp.originY + current.row * vp.size;
-
-    const size = vp.size;
-
-    // Direction player is allowed to travel.
-    const allowed = next
-      ? { dc: next.col - current.col, dr: next.row - current.row }
-      : null;
-
-    const barriers = [
-      { dc: 0, dr: -1, wall: WALL.N, x1: x, y1: y, x2: x + size, y2: y },
-      { dc: 1, dr: 0, wall: WALL.E, x1: x + size, y1: y, x2: x + size, y2: y + size },
-      { dc: 0, dr: 1, wall: WALL.S, x1: x, y1: y + size, x2: x + size, y2: y + size },
-      { dc: -1, dr: 0, wall: WALL.W, x1: x, y1: y, x2: x, y2: y + size }
-    ];
-
-    const mask = maze.walls[index(maze, current.col, current.row)];
-
-    const pulse = 0.5 + 0.5 * Math.sin(time / 170);
-
-    ctx.save();
-
-    // DRAW EACH CLOSED PASSAGE
-    for (const barrier of barriers) {
-      // Keep the actual return path open.
-      if (allowed && barrier.dc === allowed.dc && barrier.dr === allowed.dr) continue;
-
-      // Only draw over an actual opening in the maze.
-      if (mask & barrier.wall) continue;
-
-      const x1 = barrier.x1;
-      const y1 = barrier.y1;
-      const x2 = barrier.x2;
-      const y2 = barrier.y2;
-
-      // OUTER RED ATMOSPHERIC GLOW
-      ctx.strokeStyle = `rgba(255,55,80,${0.18 + pulse * 0.12})`;
-      ctx.shadowColor = 'rgba(255,40,65,0.9)';
-      ctx.shadowBlur = size * 0.65;
-      ctx.lineWidth = Math.max(5, size * 0.3);
-      ctx.lineCap = 'round';
-
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-
-      // DARK ENERGY CORE
-      ctx.shadowBlur = size * 0.25;
-      ctx.strokeStyle = '#3a0d16';
-      ctx.lineWidth = Math.max(3, size * 0.15);
-
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-
-      // BRIGHT ENERGY LINE
-      ctx.shadowColor = '#ff334f';
-      ctx.shadowBlur = size * 0.25;
-      ctx.strokeStyle = `rgba(255,80,105,${0.65 + pulse * 0.25})`;
-      ctx.lineWidth = Math.max(1.2, size * 0.045);
-
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.stroke();
-
-      // ENERGY SPARKS
-      const sparkCount = Math.max(2, Math.floor(size / 8));
-
-      const dx = x2 - x1;
-      const dy = y2 - y1;
-
-      const length = Math.sqrt(dx * dx + dy * dy);
-
-      const nx = -dy / length;
-      const ny = dx / length;
-
-      ctx.strokeStyle = `rgba(255,130,145,${0.35 + pulse * 0.4})`;
-      ctx.lineWidth = Math.max(0.8, size * 0.025);
-      ctx.shadowBlur = size * 0.15;
-
-      for (let i = 0; i < sparkCount; i += 1) {
-        // Deterministic position so sparks don't flicker randomly.
-        const t = (i + 1) / (sparkCount + 1);
-
-        const offset = Math.sin(time / 120 + i * 4.7) * size * 0.06;
-
-        const sx = x1 + dx * t + nx * offset;
-        const sy = y1 + dy * t + ny * offset;
-
-        const sparkSize = size * (0.04 + pulse * 0.025);
-
-        ctx.beginPath();
-        ctx.moveTo(sx - nx * sparkSize, sy - ny * sparkSize);
-        ctx.lineTo(sx + nx * sparkSize, sy + ny * sparkSize);
-        ctx.stroke();
-      }
-    }
-
-    ctx.restore();
-  }
-
   // WRONG FEEDBACK
   function drawWrongKeyFeedback(ctx, state, width, height) {
     if (
@@ -1895,32 +1641,20 @@
     ctx.restore();
   }
 
-  // DISORIENTED CONTROLS BANNER (NEW)
+  // WRONG-KEY RETURN BANNER
   function drawDisorientBanner(ctx, state, width) {
     const remaining = state.controlsReversedMs;
 
     if (!remaining || remaining <= 0) return;
 
-    const untilStart = !isFinite(remaining);
     const total = CONFIG.disorient.durationMs;
+    const fade = isFinite(remaining)
+      ? Math.min(1, (total - remaining) / 150 + 0.2, remaining / 400)
+      : 1;
 
-    let progress;
-    let fade;
-
-    if (untilStart) {
-      // Bar shows how much of the way back to START is left.
-      const len = Math.max(1, state.returnPath.length - 1);
-      progress = Math.max(0, Math.min(1, 1 - state.returnPathIndex / len));
-      fade = 1;
-    } else {
-      progress = Math.max(0, Math.min(1, remaining / total));
-      // Fade in quickly, fade out during the last 400ms.
-      fade = Math.min(1, (total - remaining) / 150 + 0.2, remaining / 400);
-    }
-
-    const w = Math.min(320, width - 24);
-    const h = untilStart ? 144 : 124;
-    const x = width / 2 - w / 2;
+    const w = Math.min(240, width - 24);
+    const h = 108;
+    const x = Math.max(12, width - w - 14);
     const y = 14;
 
     ctx.save();
@@ -1931,36 +1665,27 @@
     ctx.fillRect(x, y, w, h);
 
     ctx.strokeStyle = '#ff4d6d';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
     ctx.strokeRect(x, y, w, h);
 
     ctx.textAlign = 'center';
+    const bannerCenterX = x + w / 2;
 
-    ctx.font = '800 20px Arial, sans-serif';
+    ctx.font = '800 15px Arial, sans-serif';
     ctx.fillStyle = '#ff4d6d';
-    ctx.fillText('\u274C WRONG KEY', width / 2, y + 30);
+    ctx.fillText('\u274C WRONG KEY', bannerCenterX, y + 24);
 
-    ctx.font = '700 14px Arial, sans-serif';
-    ctx.fillStyle = '#ffd166';
-    ctx.fillText('CONTROLS DISORIENTED', width / 2, y + 52);
-
-    ctx.font = '700 13px Arial, sans-serif';
+    ctx.font = '700 10px Arial, sans-serif';
     ctx.fillStyle = '#d7e4ff';
-    ctx.fillText('W \u2192 DOWN     S \u2192 UP', width / 2, y + 72);
-    ctx.fillText('D \u2192 LEFT     A \u2192 RIGHT', width / 2, y + 92);
+    ctx.fillText('FIND YOUR WAY BACK TO START', bannerCenterX, y + 46);
 
-    // Time-left bar
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    ctx.fillRect(x + 16, y + 104, w - 32, 6);
+    ctx.font = '700 9px Arial, sans-serif';
+    ctx.fillStyle = '#ffd166';
+    ctx.fillText('CONTROLS DISORIENTED', bannerCenterX, y + 63);
 
-    ctx.fillStyle = '#ff4d6d';
-    ctx.fillRect(x + 16, y + 104, (w - 32) * progress, 6);
-
-    if (untilStart) {
-      ctx.font = '700 11px Arial, sans-serif';
-      ctx.fillStyle = '#9fb6c4';
-      ctx.fillText('UNTIL YOU REACH START', width / 2, y + 128);
-    }
+    ctx.fillStyle = '#d7e4ff';
+    ctx.fillText('W \u2192 DOWN     S \u2192 UP', bannerCenterX, y + 80);
+    ctx.fillText('D \u2192 LEFT     A \u2192 RIGHT', bannerCenterX, y + 95);
 
     ctx.restore();
   }
@@ -2091,9 +1816,6 @@
 
     // START
     if (!debug) drawStartPad(ctx, state, vp, time, false);
-
-    // RETURN BARRIERS
-    drawReturnBarriers(ctx, state, vp);
 
     // PLAYER
     drawPlayer(ctx, state, vp, time);

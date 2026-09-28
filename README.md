@@ -169,7 +169,7 @@ PORT=8080 ADMIN_PASSWORD=MySecret TICKET_HIT_CHANCE=0.70 python server.py
 | Level | Game | Description | Status |
 |---|---|---|---|
 | **Level 1** | **Tambola Puzzle** | Solve coding, math, aptitude puzzles → earn numbers 1–90 → stamp 3×9 ticket → Full House | ✅ Complete |
-| **Level 2** | **Fog Maze Run** | 27×17 DFS maze with dynamic Fog of War light halo → find authentic key among 4 colored keys → wrong key requires returning to START | ✅ Complete |
+| **Level 2** | **Fog Maze Run** | 27×17 DFS maze with dynamic Fog of War light halo → find authentic key among 4 colored keys → after a wrong key, navigate back to START without a displayed route | ✅ Complete |
 | **Level 3** | **The Final Challenge** | Clean GitHub repository display (`AkshatOP/gradient_l3`) with 1-click clone command; zero spoilers, participants investigate on their own | ✅ Complete |
 
 ---
