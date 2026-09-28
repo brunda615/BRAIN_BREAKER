@@ -133,11 +133,11 @@
     .question { padding: clamp(1.25rem, 3vw, 2.1rem); display: grid; gap: 1.35rem; }
     .q-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
     .q-num { font-family: var(--font-display); font-size: 1.15rem; color: var(--cream-2); }
-    .q-text { min-height: 3.2em; max-width: 48ch; font-size: clamp(1.4rem, 2.25vw, 1.9rem); font-weight: 700; line-height: 1.35; white-space: pre-line; overflow-wrap: anywhere; }
-    .q-text.is-code { font-family: var(--font-mono); font-weight: 500; font-size: clamp(1.2rem, 1.9vw, 1.55rem); line-height: 1.5; }
+    .q-text { min-height: 3.2em; max-width: 48ch; font-size: clamp(1.7rem, 2.8vw, 2.5rem); font-weight: 700; line-height: 1.35; white-space: pre-line; overflow-wrap: anywhere; }
+    .q-text.is-code { font-family: var(--font-mono); font-weight: 500; font-size: clamp(1.5rem, 2.2vw, 2rem); line-height: 1.5; }
     .q-text.q-enter { animation: q-in .45s var(--ease-out) both; }
     @keyframes q-in { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
-    .hint { display: flex; gap: .7rem; padding: .9rem 1.1rem; border-radius: var(--r); background: rgba(255, 200, 61, .13); color: #ffe6a8; font-size: 1.125rem; animation: rise .3s var(--ease-out) both; }
+    .hint { display: flex; gap: .7rem; padding: .9rem 1.1rem; border-radius: var(--r); background: rgba(255, 200, 61, .13); color: #ffe6a8; font-size: 1.35rem; animation: rise .3s var(--ease-out) both; }
     .hint i { color: var(--sun); font-size: 1.4rem; flex-shrink: 0; }
     .answer-row { display: flex; gap: .75rem; }
     .answer-row .input { flex: 1; min-width: 0; }
@@ -184,11 +184,20 @@
 
     /* ── Round 2: Fog maze ────────────────────────────────────────── */
     .maze {
-      max-width: 1320px; margin: 0 auto;
-      height: calc(100dvh - 68px); min-height: 600px;
-      padding: 1rem clamp(1rem, 3vw, 2rem) 1.25rem;
-      display: flex; flex-direction: column; gap: .9rem;
+      max-width: 1680px; margin: 0 auto;
+      width: 100%;
+      height: calc(100dvh - 12px); min-height: 520px;
+      padding: .25rem clamp(.25rem, .8vw, .7rem) .4rem;
+      display: flex; flex-direction: column; gap: .5rem;
       user-select: none;
+    }
+
+    @media (max-width: 900px) {
+      .maze {
+        height: calc(100dvh - 18px); min-height: 420px;
+        padding: .5rem clamp(.5rem, 1.5vw, 1rem) .75rem;
+        gap: .75rem;
+      }
     }
     .maze-hud { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
     .maze-title h2 { font-size: clamp(2rem, 3.6vw, 2.8rem); }
@@ -1228,7 +1237,7 @@
       if (snap.status === "RETURN_TO_START") {
         bar.dataset.state = "wrong";
         label.textContent = "Wrong key";
-        msg.textContent = "That key isn't yours. Follow the red trail back to the start.";
+        msg.textContent = "That key isn't yours. Get back to the start.";
         hint.textContent = "Back to start";
       } else if (snap.status === "SUCCESS") {
         bar.dataset.state = "done";

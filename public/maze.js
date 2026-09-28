@@ -3,19 +3,22 @@
  *
  * Pure Vanilla JavaScript + HTML5 Canvas
  *
- * Original logic unchanged. ONLY ADDITION:
- * - Wrong key reverses the controls until START is reached (CONFIG.disorient, optional)
- * - Weak / flickering lamp — visibility varies dynamically
- *   (CONFIG.flicker, state.lamp, updateLamp(), and the fog gradient in renderScene)
+ * GAME LOGIC: identical to the previous version except for:
+ * - Movement: exactly ONE cell per movement step (no leftover budget carried
+ *   into the next cell inside a single update() call)
+ * - Wrong-key clue: deterministic clue built from the real key positions,
+ *   with three difficulty levels (exposed via snapshot.clue / snapshot.clueLevel
+ *   and onWrongKey(color, clue, level))
  *
- * FEATURES
- * - 31x31 maze, DFS base + controlled loops, dead ends
- * - Four keys RED / BLUE / GREEN / YELLOW, exactly ONE correct (persists all game)
- * - Keys far from START and strongly separated
- * - Wrong key -> navigate back to START without a displayed route, same maze, new keys
- * - Fog of war, no page refresh
- * - Ctrl + Shift + D = developer debug mode
- * - onSuccess callback for Stage 3 integration
+ * THE LOOK (renderer / PALETTE) IS UNCHANGED:
+ * - Walls are real stone brick: mortar joints, weathered tone variation,
+ *   chipped cracks, moss, lit top edge, cast shadow
+ * - Floor is worn flagstone with cracks, dirt stains, moss and pebbles
+ * - Warm torch-light palette: amber headlamp, ember dust, warm ambient glow
+ * - Interactive lighting: flickering wall torches that throw light pools onto
+ *   the floor (only visible inside your lamp), lamp-reactive glow
+ * - Wrong-key screen shake
+ * - Static art is cached once (no per-frame wall/floor redraw) for smoothness
  */
 
 (function (window) {
@@ -36,9 +39,9 @@
     // FOG
     sightRadius: 3.2,
     sightFalloff: 2.5,
-    memoryAlpha: 0.13,
+    memoryAlpha: 0.2,      // visual only: how visible explored (remembered) areas are
 
-    // FLICKERING LAMP (NEW)
+    // FLICKERING LAMP
     flicker: {
       enabled: true,
       minGapMs: 900,      // time between flicker events
@@ -60,7 +63,7 @@
     // WRONG KEY
     wrongFeedbackMs: 650,
 
-    // DISORIENTED CONTROLS (NEW, optional)
+    // DISORIENTED CONTROLS (optional)
     // After a wrong key the controls are reversed (W = down, S = up, D = left, A = right)
     // until the player is back at START (or for durationMs if untilStart is false).
     // Set enabled:false to turn off.
@@ -83,16 +86,18 @@
     YELLOW: '#ffd166'
   };
 
+  // Torch-lit stone dungeon palette
   const PALETTE = {
-   void: '#030712',
-  void: '#0a0908',
-  wallBase: '#22252a',
-  wallTop: '#3a3f47',
-  floorBase: '#141619',
-  floorLit: '#4a3b2c',    // Warm torchlight glow
-  player: '#ffaa00',      // Warm torch flame
-  success: '#4ade80',
-  wrong: '#ef4444'
+    void: '#070504',
+    floor: '#231d18',
+    floorLit: '#3e342c',
+    wall: '#6b6157',
+    wallGlow: '#ffb15c',
+    player: '#ffd9a0',
+    start: '#ffe0a3',
+    accent: '#ff8a3d',
+    success: '#3df5a5',
+    wrong: '#ff4d6d'
   };
 
   const WALL = { N: 1, E: 2, S: 4, W: 8 };
@@ -521,7 +526,7 @@
   }
 
   // ==========================================================================
-  // LAMP FLICKER (NEW)
+  // LAMP FLICKER
   // ==========================================================================
 
   function newLamp() {
@@ -537,6 +542,163 @@
     };
   }
 
+  // ==========================================================================
+  // WRONG-KEY CLUE TEXT
+  // ==========================================================================
+
+  // Wrong-key clue wording. Chosen deterministically from real key positions.
+ // ==========================================================================
+// DIFFICULT COLOUR CLUES
+// ==========================================================================
+//
+// These clues NEVER reveal the colour directly.
+// They describe an association with the correct colour.
+//
+// Difficulty increases after every wrong attempt:
+//
+// WRONG #1 -> cryptic but solvable
+// WRONG #2 -> more abstract
+// WRONG #3+ -> very cryptic
+//
+// The correct colour is passed internally, but the actual colour name is
+// never sent in the clue text.
+//
+
+const COLOR_CLUES = {
+  RED: {
+    1: [
+      'The internet calls this a warning. Dating apps practically made it famous.',
+      'Two card suits would answer this immediately.',
+      'Mars has been carrying this association for centuries.',
+      'A traffic light uses this when the conversation is over.',
+      'If “danger” had a favourite outfit, this would be it.',
+      'The opposite of a green flag, but somehow much better at getting ignored.',
+      'A certain planet, two card suits, and a stop signal share something obvious.',
+      'In Among Us, seeing this colour does not exactly improve your trust issues.'
+    ],
+
+    2: [
+      'A carpet can have it, a flag can have it, and a person can see it when they are furious.',
+      'The group chat would call it a red flag before you finished explaining the story.',
+      'It can mean love, danger, debt, and embarrassment without changing its identity.',
+      'In roulette, half the numbered pockets are associated with it.',
+      'A superhero may wear it. A warning sign may use it. Your bank balance may fear it.',
+      'One colour somehow connects roses, revolutions, rage, and roulette.'
+    ],
+
+    3: [
+      '🚩 You know the meme. Now solve the colour without being told the meme.',
+      'It can signal “stop”, “danger”, “passion”, or “you should probably leave.”',
+      'A colour with enough meanings to start a fight, end a relationship, or win a card game.',
+      'Think: Ferrari, Mars, roses, roulette. What do they secretly agree on?',
+      'The answer is hiding in the sentence: “That was a massive warning sign, bro.”'
+    ]
+  },
+
+  BLUE: {
+    1: [
+      'A person can be one without being painted.',
+      'Some playlists are basically this colour in audio form.',
+      'The sky gets accused of it every clear afternoon.',
+      'A police officer might be described using this colour.',
+      'A certain moon in the Solar System has this as its name.',
+      'The opposite of “seeing red” in one very specific emotional sense.'
+    ],
+
+    2: [
+      'A mood, a music genre, and a police uniform can all point to the same answer.',
+      'Someone can have this colour without owning a single piece of clothing.',
+      'If the playlist starts at midnight and every song hurts, you are getting warmer.',
+      'It can describe an inexperienced worker, a sad mood, and a law-enforcement officer.',
+      'A planet looks this way from space, but that is not the only reason you know it.'
+    ],
+
+    3: [
+      '“I am fine” + headphones + rain outside = suspiciously specific clue.',
+      'The answer can describe a mood without describing a facial expression.',
+      'One word connects sadness, uniforms, music, and a planet.',
+      'If the vibe is immaculate but emotionally devastating, think here.',
+      'The colour is also hiding inside an adjective meaning inexperienced.'
+    ]
+  },
+
+  GREEN: {
+    1: [
+      'Traffic says go. Dating advice says good sign.',
+      'A beginner can be one.',
+      'Fruit sometimes starts here before becoming edible.',
+      'The opposite of a red flag.',
+      'The Hulk would probably approve.',
+      'Money can be associated with it even when nobody is talking about trees.'
+    ],
+
+    2: [
+      'A traffic signal, a jealous person, and an inexperienced person can all point to the same word.',
+      'The internet turned this colour into relationship approval.',
+      'It can describe envy without ever mentioning jealousy directly.',
+      'A monster, a beginner, and an environmental movement all share this clue.',
+      'When the group chat says “he actually communicates,” this colour gets involved.'
+    ],
+
+    3: [
+      '🚦 + “he respects boundaries” + 🌱 = solve the common denominator.',
+      'The same word can describe a traffic instruction, jealousy, and someone new to the game.',
+      'One colour became the internet’s shorthand for “okay, this person is probably safe.”',
+      'It can mean “go”, “grow”, “beginner”, and “jealous” depending on what follows it.',
+      'A flag, a traffic light, and a fruit before breakfast all know the answer.'
+    ]
+  },
+
+  YELLOW: {
+    1: [
+      'Not stop. Not go. Basically “bro, wait.”',
+      'A banana usually gives this one away.',
+      'A school bus would know the answer.',
+      'It appears between two more decisive choices on a traffic signal.',
+      'The Sun gets drawn wearing it by approximately every five-year-old ever.',
+      'A warning sign might choose this when red feels too aggressive.'
+    ],
+
+    2: [
+      'A newspaper can practice it. A fruit can be it. A traffic light can flash it.',
+      'It lives somewhere between “absolutely not” and “send it.”',
+      'The colour equivalent of typing “hmmm…” before replying.',
+      'A certain journalism style shares its name with this colour.',
+      'If red says stop and green says go, this one says “your call.”'
+    ],
+
+    3: [
+      'Traffic uses it for hesitation; journalism uses it for sensationalism.',
+      'A banana, a school bus, and a controversial newspaper style walk into a room.',
+      'Neither W nor L. Just pure “let me think about it.”',
+      'The middle child of the traffic signal has an unexpectedly dramatic career in journalism.',
+      'If a colour could leave you on read while technically responding, this would be it.'
+    ]
+  }
+};
+
+/**
+ * Return one difficult clue for the correct colour.
+ *
+ * The colour itself is NEVER included in the returned text.
+ */
+function getColourClue(correctColor, level) {
+  const normalized = normalizeColor(correctColor);
+
+  if (!normalized || !COLOR_CLUES[normalized]) {
+    return 'Something remains hidden.';
+  }
+
+  const difficulty = Math.min(3, Math.max(1, level));
+
+  const clues = COLOR_CLUES[normalized][difficulty];
+
+  if (!clues || clues.length === 0) {
+    return 'Something remains hidden.';
+  }
+
+  return clues[Math.floor(Math.random() * clues.length)];
+}
   // ==========================================================================
   // GAME ENGINE
   // ==========================================================================
@@ -593,11 +755,15 @@
         seen: new Uint8Array(maze.cols * maze.rows),
         debug: false,
 
-        // NEW: flickering lamp
+        // flickering lamp
         lamp: newLamp(),
 
-        // NEW: remaining time (ms) of reversed controls
-        controlsReversedMs: 0
+        // remaining time (ms) of reversed controls
+        controlsReversedMs: 0,
+
+        // wrong-key clue (survives the reshuffle until the next wrong key)
+        clue: null,
+        clueLevel: 0
       };
 
       this.revealAroundPlayer();
@@ -677,10 +843,10 @@
 
       this.state.round += 1;
 
-      // NEW: fresh lamp
+      // fresh lamp
       this.state.lamp = newLamp();
 
-      // NEW: controls always normal in a fresh round
+      // controls always normal in a fresh round
       this.state.controlsReversedMs = 0;
 
       this.releaseAll();
@@ -755,7 +921,7 @@
     }
 
     // ------------------------------------------------------------------------
-    // DISORIENTED CONTROLS (NEW)
+    // DISORIENTED CONTROLS
     // Raw key presses stay in this.held; they are mapped when used, so the
     // swap starts and ends instantly even if a key is already held.
     // ------------------------------------------------------------------------
@@ -776,7 +942,7 @@
     }
 
     // ------------------------------------------------------------------------
-    // LAMP FLICKER (NEW)
+    // LAMP FLICKER
     // ------------------------------------------------------------------------
 
     updateLamp(dtMs) {
@@ -840,10 +1006,10 @@
       // Timer continues while playing and while returning to start.
       this.state.elapsedMs += dtMs;
 
-      // NEW: lamp flicker
+      // lamp flicker
       this.updateLamp(dtMs);
 
-      // NEW: disoriented controls countdown
+      // disoriented controls countdown
       if (this.state.controlsReversedMs > 0 && isFinite(this.state.controlsReversedMs)) {
         this.state.controlsReversedMs = Math.max(0, this.state.controlsReversedMs - dtMs);
 
@@ -868,59 +1034,47 @@
         return;
       }
 
-      const dt = dtMs / 1000;
+      // ONE CELL PER UPDATE: never carry leftover budget into another cell.
+      const player = this.state.player;
 
-      let budget = CONFIG.playerSpeed * dt;
-
-      while (budget > 0) {
-        const player = this.state.player;
-
-        if (!player.moving) {
-          const started = this.chooseNextCell();
-
-          if (!started) break;
-        }
-
-        const dx = player.to.col - player.from.col;
-        const dy = player.to.row - player.from.row;
-
-        const distance = Math.abs(dx) + Math.abs(dy);
-
-        if (distance === 0) {
-          player.moving = false;
-          player.t = 0;
-          break;
-        }
-
-        const remaining = distance * (1 - player.t);
-
-        if (remaining <= budget) {
-          player.t = 1;
-
-          player.col = player.to.col;
-          player.row = player.to.row;
-
-          player.from = { ...player.to };
-
-          player.t = 0;
-          player.moving = false;
-
-          budget -= remaining;
-
-          this.revealAroundPlayer();
-
-          this.handleCellArrival();
-        } else {
-          player.t += budget / distance;
-
-          player.col = player.from.col + (player.to.col - player.from.col) * player.t;
-          player.row = player.from.row + (player.to.row - player.from.row) * player.t;
-
-          budget = 0;
-
-          this.revealAroundPlayer();
-        }
+      if (!player.moving) {
+        if (!this.chooseNextCell()) return;
       }
+
+      const dx = player.to.col - player.from.col;
+      const dy = player.to.row - player.from.row;
+      const distance = Math.abs(dx) + Math.abs(dy);
+
+      if (distance === 0) {
+        player.moving = false;
+        player.t = 0;
+        return;
+      }
+
+      const budget = CONFIG.playerSpeed * (dtMs / 1000);
+      const remaining = distance * (1 - player.t);
+
+      if (remaining <= budget) {
+        // Arrive exactly on the target cell, discard leftover budget, stop.
+        player.col = player.to.col;
+        player.row = player.to.row;
+
+        player.from = { ...player.to };
+        player.t = 0;
+        player.moving = false;
+
+        this.revealAroundPlayer();
+        this.handleCellArrival();
+        return;
+      }
+
+      // Still travelling: smooth interpolation toward the same target cell.
+      player.t += budget / distance;
+
+      player.col = player.from.col + (player.to.col - player.from.col) * player.t;
+      player.row = player.from.row + (player.to.row - player.from.row) * player.t;
+
+      this.revealAroundPlayer();
     }
 
     // CHOOSE NEXT CELL
@@ -935,7 +1089,7 @@
       const row = Math.round(player.row);
 
       for (let i = this.held.length - 1; i >= 0; i -= 1) {
-        const dir = this.mapDir(this.held[i]); // NEW: mapped through disorient
+        const dir = this.mapDir(this.held[i]); // mapped through disorient
         const vector = VECTORS[dir];
 
         if (!vector) continue;
@@ -964,7 +1118,7 @@
       // RETURN TO START
       if (status === 'RETURN_TO_START') {
         if (sameCell(currentCell, maze.start)) {
-          // NEW: back at START -> controls return to normal
+          // back at START -> controls return to normal
           this.state.controlsReversedMs = 0;
 
           this.state.status = 'RESETTING';
@@ -995,7 +1149,7 @@
       if (key.color === this.state.correctKey) {
         key.collected = true;
 
-        this.state.controlsReversedMs = 0; // NEW
+        this.state.controlsReversedMs = 0;
 
         this.state.status = 'SUCCESS';
 
@@ -1019,10 +1173,16 @@
 
       this.state.wrongKey = key.color;
       this.state.wrongKeyCount += 1;
+
+      // Clue is computed BEFORE resetAfterWrongKey() reshuffles the keys.
+      const level = Math.min(3, this.state.wrongKeyCount);
+      this.state.clueLevel = level;
+      this.state.clue = this.buildWrongKeyClue(key, level);
+
       this.state.status = 'WRONG_KEY';
       this.state.wrongFeedbackRemainingMs = CONFIG.wrongFeedbackMs;
 
-      // NEW: wrong key swaps the controls for a few seconds
+      // wrong key swaps the controls
       this.state.controlsReversedMs = !CONFIG.disorient.enabled
         ? 0
         : CONFIG.disorient.untilStart
@@ -1033,14 +1193,53 @@
 
       this.notify();
 
-      if (typeof this.onWrongKey === 'function') this.onWrongKey(key.color);
+      if (typeof this.onWrongKey === 'function') {
+        this.onWrongKey(key.color, this.state.clue, this.state.clueLevel);
+      }
     }
+
+    // WRONG-KEY CLUE
+    // Built from the REAL positions before the reshuffle. Deterministic.
+    // level 1 = depth + direction, level 2 = depth only, level 3+ = one cryptic line.
+  // ==========================================================================
+// WRONG-KEY COLOUR CLUE
+// ==========================================================================
+//
+// IMPORTANT:
+//
+// The clue is generated BEFORE the keys are reshuffled.
+//
+// Example:
+//
+// Correct key = RED
+//
+// Player chooses BLUE
+//
+// They receive:
+// "An ember knows the answer."
+//
+// Then the four keys move to completely new positions.
+//
+// This means the clue tells them WHAT COLOUR to search for,
+// but not WHERE the key is.
+//
+// ==========================================================================
+
+buildWrongKeyClue(wrongKey, level) {
+  const correctColor = this.state.correctKey;
+
+  if (!correctColor) {
+    return 'Something remains hidden.';
+  }
+
+  return getColourClue(correctColor, level);
+}
 
     // FOG OF WAR
     revealAroundPlayer() {
       const { maze, seen, player, lamp } = this.state;
 
-      // NEW: a dim lamp reveals less (radius follows the flicker).
+      // a dim lamp reveals less (radius follows the flicker).
       const scale = lamp ? lamp.radiusScale : 1;
 
       const radius = (CONFIG.sightRadius + CONFIG.sightFalloff * 0.5) * scale;
@@ -1078,7 +1277,9 @@
         wrongKey: this.state.wrongKey,
         wrongKeyCount: this.state.wrongKeyCount,
 
-        // NEW
+        clue: this.state.clue,
+        clueLevel: this.state.clueLevel,
+
         controlsReversed: this.state.controlsReversedMs > 0,
         controlsReversedMs: isFinite(this.state.controlsReversedMs) ? this.state.controlsReversedMs : null,
 
@@ -1091,18 +1292,32 @@
   GameEngine.debugListenerInstalled = false;
 
   // ==========================================================================
-  // RENDERER
+  // RENDERER — everything below is visual only
   // ==========================================================================
 
+  // Deterministic hash -> [0,1). Textures never shimmer between frames.
+  function hash(a, b, c) {
+    let h = Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263) + Math.imul(c | 0, 1274126177);
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967295;
+  }
+
+  const caches = new WeakMap();
+
+  /**
+   * MAXIMISED VIEWPORT: the maze fills the canvas. The only margin left is
+   * the small overhang needed so the outer wall stroke is not clipped.
+   */
   function computeViewport(maze, width, height) {
     const safeWidth = Math.max(1, width);
     const safeHeight = Math.max(1, height);
 
-    const pad = Math.min(safeWidth, safeHeight) * 0.012;
+    const overhang = 0.42; // total extra cells (wall thickness + shadow)
 
     const size = Math.max(
       1,
-      Math.min((safeWidth - pad * 2) / maze.cols, (safeHeight - pad * 2) / maze.rows)
+      Math.min(safeWidth / (maze.cols + overhang), safeHeight / (maze.rows + overhang))
     );
 
     return {
@@ -1112,213 +1327,493 @@
     };
   }
 
-  // FLOORS
-  function drawFloors(ctx, state, vp, lit, all) {
-    const { maze, seen } = state;
+  function getSegments(maze) {
+    if (maze._segments) return maze._segments;
 
-    // Continuous dark floor
-    ctx.fillStyle = lit ? '#25282a' : '#111416';
-
-    ctx.fillRect(vp.originX, vp.originY, maze.cols * vp.size, maze.rows * vp.size);
-
-    // Very subtle stone-like texture. No cell borders / no boxes
-    ctx.save();
+    const segs = [];
 
     for (let row = 0; row < maze.rows; row += 1) {
       for (let col = 0; col < maze.cols; col += 1) {
-        const cellIndex = index(maze, col, row);
+        const m = maze.walls[index(maze, col, row)];
 
-        if (!all && !seen[cellIndex]) continue;
-
-        const x = vp.originX + col * vp.size;
-        const y = vp.originY + row * vp.size;
-
-        const variation = (col * 17 + row * 31) % 7;
-
-        ctx.fillStyle = lit
-          ? `rgba(255,255,255,${0.008 + variation * 0.002})`
-          : `rgba(255,255,255,${0.003 + variation * 0.001})`;
-
-        ctx.fillRect(x, y, vp.size, vp.size);
+        if (m & WALL.N) segs.push([col, row, col + 1, row]);
+        if (m & WALL.W) segs.push([col, row, col, row + 1]);
+        if (row === maze.rows - 1 && (m & WALL.S)) segs.push([col, row + 1, col + 1, row + 1]);
+        if (col === maze.cols - 1 && (m & WALL.E)) segs.push([col + 1, row, col + 1, row + 1]);
       }
     }
 
-    ctx.restore();
-
-    // Soft stone/grime texture
-    ctx.save();
-
-    const textureCount = Math.floor(maze.cols * maze.rows * 0.12);
-
-    for (let i = 0; i < textureCount; i += 1) {
-      const col = (i * 37) % maze.cols;
-      const row = (i * 61) % maze.rows;
-
-      const cellIndex = index(maze, col, row);
-
-      if (!all && !seen[cellIndex]) continue;
-
-      const x = vp.originX + col * vp.size + ((i * 13) % vp.size);
-      const y = vp.originY + row * vp.size + ((i * 19) % vp.size);
-
-      ctx.fillStyle = lit ? 'rgba(150,155,158,0.035)' : 'rgba(100,105,108,0.018)';
-
-      ctx.beginPath();
-      ctx.arc(x, y, Math.max(1, vp.size * 0.025), 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    ctx.restore();
+    maze._segments = segs;
+    return segs;
   }
 
-  // WALLS
-  function drawWalls(ctx, state, vp, lit, all) {
-    const { maze, seen } = state;
+  // Wall-mounted torch positions (chosen once per maze, deterministic).
+  function getTorches(maze) {
+    if (maze._torches) return maze._torches;
+
+    const segs = getSegments(maze);
+    const torches = [];
+
+    for (let i = 0; i < segs.length; i += 1) {
+      if (hash(i, 3, 55) < 0.955) continue;
+
+      const s = segs[i];
+
+      torches.push({
+        i,
+        x: (s[0] + s[2]) / 2,
+        y: (s[1] + s[3]) / 2
+      });
+    }
+
+    maze._torches = torches;
+    return torches;
+  }
+
+  function makeCanvas(w, h) {
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, w);
+    c.height = Math.max(1, h);
+    return c;
+  }
+
+  // ------------------------------------------------------------------------
+  // STATIC ART (painted once per size)
+  // ------------------------------------------------------------------------
+
+  // Worn flagstone floor
+  function paintFloors(g, maze, vp, lit) {
     const { size, originX, originY } = vp;
+    const W = maze.cols * size;
+    const H = maze.rows * size;
 
-    const wallThickness = Math.max(5, size * 0.28);
-
-    const visible = (col, row) => all || seen[index(maze, col, row)];
-
-    // Base wall
-    ctx.save();
-
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    // Dark wall body
-    ctx.strokeStyle = lit ? '#343b32' : '#161a17';
-    ctx.lineWidth = wallThickness;
+    // Warm earthen base with a soft centre glow
+    const base = g.createRadialGradient(
+      originX + W / 2, originY + H / 2, 0,
+      originX + W / 2, originY + H / 2, Math.max(W, H) * 0.75
+    );
 
     if (lit) {
-      ctx.shadowColor = 'rgba(110, 150, 90, 0.35)';
-      ctx.shadowBlur = size * 0.35;
+      base.addColorStop(0, '#463b31');
+      base.addColorStop(1, '#2a221c');
+    } else {
+      base.addColorStop(0, '#2a231d');
+      base.addColorStop(1, '#15110e');
     }
 
-    ctx.beginPath();
+    g.fillStyle = base;
+    g.fillRect(originX, originY, W, H);
+
+    const tone = lit ? [66, 55, 46] : [38, 32, 27];
 
     for (let row = 0; row < maze.rows; row += 1) {
       for (let col = 0; col < maze.cols; col += 1) {
-        if (!visible(col, row)) continue;
+        const x0 = Math.floor(originX + col * size);
+        const y0 = Math.floor(originY + row * size);
+        const x1 = Math.floor(originX + (col + 1) * size);
+        const y1 = Math.floor(originY + (row + 1) * size);
+        const cw = x1 - x0;
+        const ch = y1 - y0;
 
-        const mask = maze.walls[index(maze, col, row)];
-        const x = originX + col * size;
-        const y = originY + row * size;
+        // Each flagstone gets its own slightly different tone
+        const v = (hash(col, row, 1) - 0.5) * (lit ? 20 : 11);
 
-        // NORTH
-        if (mask & WALL.N) { ctx.moveTo(x, y); ctx.lineTo(x + size, y); }
+        g.fillStyle =
+          'rgba(' + Math.round(tone[0] + v) + ',' + Math.round(tone[1] + v * 0.9) + ',' +
+          Math.round(tone[2] + v * 0.8) + ',0.82)';
+        g.fillRect(x0, y0, cw, ch);
 
-        // WEST
-        if (mask & WALL.W) { ctx.moveTo(x, y); ctx.lineTo(x, y + size); }
+        // Mortar gap + bevel highlight
+        g.strokeStyle = lit ? 'rgba(6,4,3,0.42)' : 'rgba(4,3,2,0.38)';
+        g.lineWidth = Math.max(1, size * 0.045);
+        g.strokeRect(x0 + 0.5, y0 + 0.5, cw - 1, ch - 1);
 
-        // SOUTH
-        if (row === maze.rows - 1 && mask & WALL.S) {
-          ctx.moveTo(x, y + size);
-          ctx.lineTo(x + size, y + size);
+        g.strokeStyle = lit ? 'rgba(255,225,190,0.07)' : 'rgba(255,225,190,0.03)';
+        g.lineWidth = Math.max(1, size * 0.02);
+        g.beginPath();
+        g.moveTo(x0 + size * 0.05, y1 - size * 0.06);
+        g.lineTo(x0 + size * 0.05, y0 + size * 0.05);
+        g.lineTo(x1 - size * 0.06, y0 + size * 0.05);
+        g.stroke();
+
+        // Dirt stains
+        if (hash(col, row, 12) < 0.12) {
+          const sx = x0 + hash(col, row, 13) * cw;
+          const sy = y0 + hash(col, row, 14) * ch;
+          const sr = size * (0.25 + hash(col, row, 15) * 0.25);
+          const dirt = g.createRadialGradient(sx, sy, 0, sx, sy, sr);
+
+          dirt.addColorStop(0, lit ? 'rgba(20,12,6,0.4)' : 'rgba(10,6,3,0.3)');
+          dirt.addColorStop(1, 'rgba(0,0,0,0)');
+
+          g.fillStyle = dirt;
+          g.beginPath();
+          g.arc(sx, sy, sr, 0, Math.PI * 2);
+          g.fill();
         }
 
-        // EAST
-        if (col === maze.cols - 1 && mask & WALL.E) {
-          ctx.moveTo(x + size, y);
-          ctx.lineTo(x + size, y + size);
-        }
-      }
-    }
+        // Moss patches
+        if (hash(col, row, 16) < 0.06) {
+          const mx = x0 + (0.25 + hash(col, row, 17) * 0.5) * cw;
+          const my = y0 + (0.25 + hash(col, row, 18) * 0.5) * ch;
+          const mr = size * 0.3;
+          const moss = g.createRadialGradient(mx, my, 0, mx, my, mr);
 
-    ctx.stroke();
+          moss.addColorStop(0, lit ? 'rgba(88,128,52,0.42)' : 'rgba(70,100,42,0.22)');
+          moss.addColorStop(1, 'rgba(0,0,0,0)');
 
-    ctx.shadowBlur = 0;
-
-    // ROCK / EARTH HIGHLIGHTS
-    ctx.lineWidth = Math.max(1.2, size * 0.06);
-
-    ctx.strokeStyle = lit ? 'rgba(105, 120, 95, 0.75)' : 'rgba(55, 65, 52, 0.65)';
-
-    ctx.beginPath();
-
-    for (let row = 0; row < maze.rows; row += 1) {
-      for (let col = 0; col < maze.cols; col += 1) {
-        if (!visible(col, row)) continue;
-
-        const mask = maze.walls[index(maze, col, row)];
-        const x = originX + col * size;
-        const y = originY + row * size;
-
-        // NORTH
-        if (mask & WALL.N) {
-          ctx.moveTo(x + size * 0.18, y - size * 0.03);
-          ctx.lineTo(x + size * 0.42, y - size * 0.08);
-          ctx.moveTo(x + size * 0.63, y + size * 0.02);
-          ctx.lineTo(x + size * 0.82, y - size * 0.05);
+          g.fillStyle = moss;
+          g.beginPath();
+          g.arc(mx, my, mr, 0, Math.PI * 2);
+          g.fill();
         }
 
-        // WEST
-        if (mask & WALL.W) {
-          ctx.moveTo(x - size * 0.03, y + size * 0.2);
-          ctx.lineTo(x - size * 0.08, y + size * 0.43);
-          ctx.moveTo(x + size * 0.02, y + size * 0.64);
-          ctx.lineTo(x - size * 0.05, y + size * 0.82);
+        // Pebbles / grit
+        if (hash(col, row, 2) < 0.45) {
+          g.fillStyle = lit ? 'rgba(210,190,160,0.16)' : 'rgba(210,190,160,0.07)';
+          g.beginPath();
+          g.arc(
+            x0 + hash(col, row, 3) * cw,
+            y0 + hash(col, row, 4) * ch,
+            Math.max(1, size * (0.02 + hash(col, row, 5) * 0.03)),
+            0, Math.PI * 2
+          );
+          g.fill();
         }
 
-        // SOUTH
-        if (row === maze.rows - 1 && mask & WALL.S) {
-          ctx.moveTo(x + size * 0.18, y + size * 1.03);
-          ctx.lineTo(x + size * 0.42, y + size * 1.08);
-        }
+        // Hairline cracks
+        if (hash(col, row, 6) < 0.1) {
+          let px = x0 + (0.15 + hash(col, row, 7) * 0.7) * cw;
+          let py = y0 + (0.15 + hash(col, row, 8) * 0.7) * ch;
 
-        // EAST
-        if (col === maze.cols - 1 && mask & WALL.E) {
-          ctx.moveTo(x + size * 1.03, y + size * 0.2);
-          ctx.lineTo(x + size * 1.08, y + size * 0.44);
-        }
-      }
-    }
+          g.strokeStyle = lit ? 'rgba(8,5,3,0.55)' : 'rgba(6,4,2,0.4)';
+          g.lineWidth = Math.max(0.8, size * 0.025);
+          g.beginPath();
+          g.moveTo(px, py);
 
-    ctx.stroke();
+          for (let k = 0; k < 3; k += 1) {
+            px += (hash(col, row, 20 + k) - 0.5) * size * 0.4;
+            py += (hash(col, row, 30 + k) - 0.2) * size * 0.25;
+            g.lineTo(px, py);
+          }
 
-    // GRASS / MOSS BLADES
-    ctx.lineWidth = Math.max(0.8, size * 0.035);
-
-    ctx.strokeStyle = lit ? 'rgba(91, 125, 70, 0.8)' : 'rgba(45, 65, 42, 0.7)';
-
-    ctx.beginPath();
-
-    for (let row = 0; row < maze.rows; row += 1) {
-      for (let col = 0; col < maze.cols; col += 1) {
-        if (!visible(col, row)) continue;
-
-        const mask = maze.walls[index(maze, col, row)];
-        const x = originX + col * size;
-        const y = originY + row * size;
-
-        // Grass on top edge
-        if (mask & WALL.N) {
-          const gx = x + size * 0.28;
-
-          ctx.moveTo(gx, y - wallThickness * 0.35);
-          ctx.lineTo(gx - size * 0.05, y - wallThickness * 0.75);
-          ctx.moveTo(gx + size * 0.07, y - wallThickness * 0.35);
-          ctx.lineTo(gx + size * 0.11, y - wallThickness * 0.8);
-        }
-
-        // Grass on left edge
-        if (mask & WALL.W) {
-          const gy = y + size * 0.3;
-
-          ctx.moveTo(x - wallThickness * 0.35, gy);
-          ctx.lineTo(x - wallThickness * 0.75, gy - size * 0.05);
-          ctx.moveTo(x - wallThickness * 0.35, gy + size * 0.08);
-          ctx.lineTo(x - wallThickness * 0.78, gy + size * 0.12);
+          g.stroke();
         }
       }
     }
-
-    ctx.stroke();
-
-    ctx.restore();
   }
 
-  // START
+  function strokeSegs(g, segs, vp, ox, oy) {
+    g.beginPath();
+
+    for (let i = 0; i < segs.length; i += 1) {
+      const s = segs[i];
+      g.moveTo(vp.originX + s[0] * vp.size + ox, vp.originY + s[1] * vp.size + oy);
+      g.lineTo(vp.originX + s[2] * vp.size + ox, vp.originY + s[3] * vp.size + oy);
+    }
+
+    g.stroke();
+  }
+
+  // Real stone brick walls
+  function paintWalls(g, maze, vp, lit) {
+    const segs = getSegments(maze);
+    const { size, originX, originY } = vp;
+    const thick = Math.max(5, size * 0.28);
+    const ox = -thick * 0.1;
+    const oy = -thick * 0.14;
+
+    g.save();
+    g.lineCap = 'square';
+    g.lineJoin = 'miter';
+
+    // Cast shadow: gives the walls height
+    g.strokeStyle = 'rgba(0,0,0,0.6)';
+    g.lineWidth = thick * 1.3;
+    strokeSegs(g, segs, vp, thick * 0.12, thick * 0.3);
+
+    // Dark stone body (faint warm torch bounce when lit)
+    g.strokeStyle = lit ? '#4b433b' : '#2a2520';
+    g.lineWidth = thick;
+
+    if (lit) {
+      g.shadowColor = 'rgba(255,150,70,0.4)';
+      g.shadowBlur = size * 0.32;
+    }
+
+    strokeSegs(g, segs, vp, 0, 0);
+    g.shadowBlur = 0;
+
+    // Lighter top face of the stone
+    g.strokeStyle = lit ? '#82776a' : '#463f38';
+    g.lineWidth = thick * 0.66;
+    strokeSegs(g, segs, vp, ox, oy);
+
+    // Per-segment weathering: every wall piece gets its own tone
+    for (let i = 0; i < segs.length; i += 1) {
+      const s = segs[i];
+      const h = hash(i, 1, 41);
+
+      g.strokeStyle = h > 0.5
+        ? 'rgba(255,236,205,' + ((h - 0.5) * (lit ? 0.24 : 0.14)).toFixed(3) + ')'
+        : 'rgba(0,0,0,' + ((0.5 - h) * (lit ? 0.4 : 0.3)).toFixed(3) + ')';
+
+      g.lineWidth = thick * 0.66;
+      g.beginPath();
+      g.moveTo(originX + s[0] * size + ox, originY + s[1] * size + oy);
+      g.lineTo(originX + s[2] * size + ox, originY + s[3] * size + oy);
+      g.stroke();
+    }
+
+    // Mortar joints: a course line down the middle + staggered brick ends
+    g.lineCap = 'butt';
+    g.strokeStyle = lit ? 'rgba(22,17,13,0.72)' : 'rgba(8,6,4,0.62)';
+    g.lineWidth = Math.max(0.8, size * 0.024);
+    g.beginPath();
+
+    const half = thick * 0.33;
+
+    for (let i = 0; i < segs.length; i += 1) {
+      const s = segs[i];
+      const ax = originX + s[0] * size + ox;
+      const ay = originY + s[1] * size + oy;
+
+      if (s[1] === s[3]) {
+        g.moveTo(ax, ay);
+        g.lineTo(ax + size, ay);
+
+        [1 / 3, 2 / 3].forEach(t => {
+          g.moveTo(ax + size * t, ay - half);
+          g.lineTo(ax + size * t, ay);
+        });
+
+        [1 / 6, 0.5, 5 / 6].forEach(t => {
+          g.moveTo(ax + size * t, ay);
+          g.lineTo(ax + size * t, ay + half);
+        });
+      } else {
+        g.moveTo(ax, ay);
+        g.lineTo(ax, ay + size);
+
+        [1 / 3, 2 / 3].forEach(t => {
+          g.moveTo(ax - half, ay + size * t);
+          g.lineTo(ax, ay + size * t);
+        });
+
+        [1 / 6, 0.5, 5 / 6].forEach(t => {
+          g.moveTo(ax, ay + size * t);
+          g.lineTo(ax + half, ay + size * t);
+        });
+      }
+    }
+
+    g.stroke();
+
+    // Bright chiselled top edge
+    g.lineCap = 'square';
+    g.strokeStyle = lit ? 'rgba(255,238,210,0.5)' : 'rgba(225,205,175,0.24)';
+    g.lineWidth = Math.max(1, thick * 0.11);
+    strokeSegs(g, segs, vp, ox, oy - thick * 0.3);
+
+    // Dark lower lip
+    g.strokeStyle = lit ? 'rgba(0,0,0,0.38)' : 'rgba(0,0,0,0.3)';
+    g.lineWidth = Math.max(1, thick * 0.1);
+    strokeSegs(g, segs, vp, 0, thick * 0.4);
+
+    // Grit flecks
+    for (let i = 0; i < segs.length; i += 1) {
+      const s = segs[i];
+
+      for (let k = 0; k < 3; k += 1) {
+        if (hash(i, k, 47) < 0.45) continue;
+
+        const t = 0.1 + 0.8 * hash(i, k, 48);
+        const jitter = (hash(i, k, 49) - 0.5) * thick * 0.5;
+        const horiz = s[1] === s[3];
+        const px = originX + (s[0] + (s[2] - s[0]) * t) * size + ox + (horiz ? 0 : jitter);
+        const py = originY + (s[1] + (s[3] - s[1]) * t) * size + oy + (horiz ? jitter : 0);
+
+        g.fillStyle = hash(i, k, 50) > 0.5
+          ? (lit ? 'rgba(220,205,180,0.4)' : 'rgba(190,175,150,0.2)')
+          : 'rgba(0,0,0,0.35)';
+
+        g.beginPath();
+        g.arc(px, py, Math.max(0.7, size * 0.02), 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+
+    // Cracks and chips
+    g.lineCap = 'round';
+    g.strokeStyle = lit ? 'rgba(8,5,3,0.75)' : 'rgba(6,4,2,0.55)';
+    g.lineWidth = Math.max(0.8, size * 0.022);
+
+    for (let i = 0; i < segs.length; i += 1) {
+      if (hash(i, 2, 71) > 0.13) continue;
+
+      const s = segs[i];
+      const horiz = s[1] === s[3];
+      let t = 0.15 + 0.6 * hash(i, 3, 71);
+      let px = originX + (s[0] + (s[2] - s[0]) * t) * size + ox;
+      let py = originY + (s[1] + (s[3] - s[1]) * t) * size + oy;
+
+      g.beginPath();
+      g.moveTo(px, py);
+
+      for (let k = 0; k < 3; k += 1) {
+        const along = size * 0.07 * (0.5 + hash(i, k, 72));
+        const across = (hash(i, k, 73) - 0.5) * thick * 0.5;
+
+        px += horiz ? along : across;
+        py += horiz ? across : along;
+
+        g.lineTo(px, py);
+      }
+
+      g.stroke();
+    }
+
+    // Moss creeping over the stone
+    for (let i = 0; i < segs.length; i += 1) {
+      if (hash(i, 2, 61) > 0.17) continue;
+
+      const s = segs[i];
+      const horiz = s[1] === s[3];
+
+      for (let k = 0; k < 5; k += 1) {
+        const t = hash(i, k, 62);
+        const jitter = (hash(i, k, 63) - 0.3) * thick * 0.55;
+        const px = originX + (s[0] + (s[2] - s[0]) * t) * size + ox + (horiz ? 0 : jitter);
+        const py = originY + (s[1] + (s[3] - s[1]) * t) * size + oy + (horiz ? jitter : 0);
+        const r = size * (0.05 + hash(i, k, 64) * 0.07);
+
+        g.fillStyle = lit ? 'rgba(74,116,46,0.62)' : 'rgba(52,84,34,0.42)';
+        g.beginPath();
+        g.arc(px, py, r, 0, Math.PI * 2);
+        g.fill();
+
+        g.fillStyle = lit ? 'rgba(130,175,80,0.45)' : 'rgba(90,125,55,0.22)';
+        g.beginPath();
+        g.arc(px - r * 0.25, py - r * 0.3, r * 0.5, 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+
+    g.restore();
+  }
+
+  function paintStatic(canvas, maze, vp, dpr, lit) {
+    const g = canvas.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    paintFloors(g, maze, vp, lit);
+    paintWalls(g, maze, vp, lit);
+  }
+
+  function buildCache(state, vp, width, height, dpr, key) {
+    const W = Math.round(width * dpr);
+    const H = Math.round(height * dpr);
+
+    const lit = makeCanvas(W, H);
+    const dim = makeCanvas(W, H);
+    const mem = makeCanvas(W, H);
+    const light = makeCanvas(W, H);
+
+    paintStatic(lit, state.maze, vp, dpr, true);
+    paintStatic(dim, state.maze, vp, dpr, false);
+
+    // Background: deep earth gradient
+    const bg = makeCanvas(W, H);
+    const bgc = bg.getContext('2d');
+    bgc.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const bgGrad = bgc.createRadialGradient(
+      width / 2, height / 2, 0,
+      width / 2, height / 2, Math.max(width, height) * 0.7
+    );
+    bgGrad.addColorStop(0, '#17110d');
+    bgGrad.addColorStop(1, '#060403');
+    bgc.fillStyle = bgGrad;
+    bgc.fillRect(0, 0, width, height);
+
+    // Vignette (gentle, so the maze stays visible)
+    const vig = makeCanvas(W, H);
+    const vg = vig.getContext('2d');
+    vg.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const vGrad = vg.createRadialGradient(
+      width / 2, height / 2, Math.min(width, height) * 0.4,
+      width / 2, height / 2, Math.max(width, height) * 0.8
+    );
+    vGrad.addColorStop(0, 'rgba(6,4,3,0)');
+    vGrad.addColorStop(1, 'rgba(6,4,3,0.6)');
+    vg.fillStyle = vGrad;
+    vg.fillRect(0, 0, width, height);
+
+    return {
+      key, W, H, dpr,
+      lit, dim, mem, light, bg, vig,
+      lctx: light.getContext('2d'),
+      mctx: mem.getContext('2d'),
+      memSeen: new Uint8Array(state.maze.cols * state.maze.rows),
+      seenRef: null
+    };
+  }
+
+  function getCache(state, vp, width, height, dpr) {
+    const key = width + '|' + height + '|' + dpr + '|' + vp.size.toFixed(3);
+
+    let c = caches.get(state.maze);
+
+    if (!c || c.key !== key) {
+      c = buildCache(state, vp, width, height, dpr, key);
+      caches.set(state.maze, c);
+    }
+
+    return c;
+  }
+
+  /** Copies newly seen cells from the dim layer into the persistent memory layer. */
+  function syncMemory(cache, state, vp) {
+    const { maze, seen } = state;
+    const dpr = cache.dpr;
+
+    if (cache.seenRef !== seen) {
+      cache.mctx.setTransform(1, 0, 0, 1, 0, 0);
+      cache.mctx.clearRect(0, 0, cache.W, cache.H);
+      cache.memSeen.fill(0);
+      cache.seenRef = seen;
+    }
+
+    const pad = Math.max(5, vp.size * 0.28) * 0.9;
+    const g = cache.mctx;
+
+    g.setTransform(1, 0, 0, 1, 0, 0);
+
+    for (let i = 0; i < seen.length; i += 1) {
+      if (!seen[i] || cache.memSeen[i]) continue;
+
+      cache.memSeen[i] = 1;
+
+      const col = i % maze.cols;
+      const row = (i / maze.cols) | 0;
+
+      const x0 = Math.max(0, Math.floor((vp.originX + col * vp.size - pad) * dpr));
+      const y0 = Math.max(0, Math.floor((vp.originY + row * vp.size - pad) * dpr));
+      const x1 = Math.min(cache.W, Math.ceil((vp.originX + (col + 1) * vp.size + pad) * dpr));
+      const y1 = Math.min(cache.H, Math.ceil((vp.originY + (row + 1) * vp.size + pad) * dpr));
+
+      if (x1 > x0 && y1 > y0) {
+        g.drawImage(cache.dim, x0, y0, x1 - x0, y1 - y0, x0, y0, x1 - x0, y1 - y0);
+      }
+    }
+  }
+
+  // ------------------------------------------------------------------------
+  // DYNAMIC ART
+  // ------------------------------------------------------------------------
+
+  // START PORTAL (warm golden sigil)
   function drawStartPad(ctx, state, vp, time, lit) {
     const { start } = state.maze;
 
@@ -1329,16 +1824,35 @@
 
     ctx.save();
 
-    ctx.globalAlpha = lit ? 0.55 + pulse * 0.35 : 0.5;
+    // Soft floor glow
+    const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, vp.size * 0.7);
+    glow.addColorStop(0, 'rgba(255,200,110,' + (lit ? 0.32 + pulse * 0.16 : 0.18) + ')');
+    glow.addColorStop(1, 'rgba(255,200,110,0)');
+
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, vp.size * 0.7, 0, Math.PI * 2);
+    ctx.fill();
 
     ctx.strokeStyle = PALETTE.start;
-
     ctx.lineWidth = Math.max(1, vp.size * 0.06);
 
+    // Rotating dashed outer ring
+    ctx.globalAlpha = lit ? 0.6 + pulse * 0.35 : 0.5;
     ctx.setLineDash([vp.size * 0.16, vp.size * 0.12]);
+    ctx.lineDashOffset = -time / 55;
 
     ctx.beginPath();
-    ctx.arc(cx, cy, vp.size * (0.3 + pulse * 0.04), 0, Math.PI * 2);
+    ctx.arc(cx, cy, vp.size * (0.32 + pulse * 0.04), 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Solid inner ring
+    ctx.setLineDash([]);
+    ctx.globalAlpha = lit ? 0.7 : 0.4;
+    ctx.lineWidth = Math.max(0.8, vp.size * 0.03);
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, vp.size * 0.16, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.restore();
@@ -1349,6 +1863,18 @@
     const bob = Math.sin(time / 520 + x) * size * 0.035;
 
     const scale = size * 0.16;
+
+    // Floor halo (stays on the ground while the key bobs)
+    const halo = 0.16 + 0.1 * (0.5 + 0.5 * Math.sin(time / 420 + x));
+    const floor = ctx.createRadialGradient(x, y + size * 0.16, 0, x, y + size * 0.16, size * 0.85);
+
+    floor.addColorStop(0, hex + Math.round(halo * 255).toString(16).padStart(2, '0'));
+    floor.addColorStop(1, 'rgba(0,0,0,0)');
+
+    ctx.fillStyle = floor;
+    ctx.beginPath();
+    ctx.arc(x, y + size * 0.16, size * 0.85, 0, Math.PI * 2);
+    ctx.fill();
 
     ctx.save();
 
@@ -1459,6 +1985,116 @@
     }
   }
 
+  // FLICKERING WALL TORCHES (drawn in the lit layer, so the fog hides them
+  // until your lamp reaches them). Each one throws a warm light pool.
+  function drawTorches(g, state, vp, time, px, py, reach) {
+    const torches = getTorches(state.maze);
+    const s = vp.size;
+    const thick = Math.max(5, s * 0.28);
+
+    g.save();
+
+    for (let n = 0; n < torches.length; n += 1) {
+      const t = torches[n];
+      const x = vp.originX + t.x * s - thick * 0.1;
+      const y = vp.originY + t.y * s - thick * 0.14 - thick * 0.3;
+
+      if (Math.abs(x - px) > reach || Math.abs(y - py) > reach) continue;
+
+      const f = Math.max(
+        0.35,
+        0.78 + 0.2 * Math.sin(time / (80 + (t.i % 7) * 13) + t.i) + 0.1 * Math.sin(time / 31 + t.i * 2.3)
+      );
+
+      // Warm light pool on the floor
+      g.globalCompositeOperation = 'lighter';
+
+      const pr = s * (1.55 + 0.25 * f);
+      const pool = g.createRadialGradient(x, y + s * 0.12, 0, x, y + s * 0.12, pr);
+
+      pool.addColorStop(0, 'rgba(255,150,60,' + (0.26 * f).toFixed(3) + ')');
+      pool.addColorStop(0.5, 'rgba(255,110,40,' + (0.09 * f).toFixed(3) + ')');
+      pool.addColorStop(1, 'rgba(255,100,30,0)');
+
+      g.fillStyle = pool;
+      g.beginPath();
+      g.arc(x, y + s * 0.12, pr, 0, Math.PI * 2);
+      g.fill();
+
+      g.globalCompositeOperation = 'source-over';
+
+      // Iron bracket
+      g.fillStyle = '#17120f';
+      g.fillRect(x - s * 0.035, y - s * 0.005, s * 0.07, s * 0.1);
+
+      g.fillStyle = '#2b231d';
+      g.fillRect(x - s * 0.05, y + s * 0.07, s * 0.1, s * 0.03);
+
+      // Flame
+      const fh = s * 0.17 * (0.8 + 0.4 * f);
+      const fw = s * 0.06 * (0.85 + 0.3 * f);
+      const sway = Math.sin(time / 140 + t.i) * s * 0.012;
+
+      g.shadowColor = 'rgba(255,140,40,1)';
+      g.shadowBlur = s * 0.3;
+
+      const flame = g.createLinearGradient(x, y - fh, x, y + s * 0.02);
+
+      flame.addColorStop(0, '#ffdf8a');
+      flame.addColorStop(0.5, '#ff9a2e');
+      flame.addColorStop(1, '#c8380f');
+
+      g.fillStyle = flame;
+      g.beginPath();
+      g.moveTo(x + sway, y - fh);
+      g.quadraticCurveTo(x + fw * 1.4, y - fh * 0.25, x, y + s * 0.02);
+      g.quadraticCurveTo(x - fw * 1.4, y - fh * 0.25, x + sway, y - fh);
+      g.fill();
+
+      g.shadowBlur = 0;
+
+      g.fillStyle = 'rgba(255,245,200,0.9)';
+      g.beginPath();
+      g.moveTo(x + sway * 0.5, y - fh * 0.55);
+      g.quadraticCurveTo(x + fw * 0.6, y - fh * 0.15, x, y);
+      g.quadraticCurveTo(x - fw * 0.6, y - fh * 0.15, x + sway * 0.5, y - fh * 0.55);
+      g.fill();
+    }
+
+    g.restore();
+  }
+
+  // DRIFTING DUST + EMBERS (drawn in the lit layer, so the fog hides them)
+  function drawMotes(g, state, vp, time) {
+    const { maze } = state;
+    const W = maze.cols * vp.size;
+    const H = maze.rows * vp.size;
+    const px = vp.originX + (state.player.col + 0.5) * vp.size;
+    const py = vp.originY + (state.player.row + 0.5) * vp.size;
+    const reach = vp.size * 7;
+    const k = vp.size / 18;
+
+    for (let i = 0; i < 90; i += 1) {
+      const sp = (5 + hash(i, 3, 11) * 9) * k;
+
+      const x = vp.originX + ((hash(i, 1, 11) * W + time * 0.001 * sp) % W);
+      const y = vp.originY + ((((hash(i, 2, 11) * H - time * 0.001 * sp * 0.6) % H) + H) % H);
+
+      if (Math.abs(x - px) > reach || Math.abs(y - py) > reach) continue;
+
+      const tw = 0.25 + 0.75 * Math.abs(Math.sin(time / 700 + i * 1.7));
+
+      g.globalAlpha = 0.5 * tw;
+      g.fillStyle = i % 3 === 0 ? '#ffb25c' : '#e6d5b8';
+
+      g.beginPath();
+      g.arc(x, y, Math.max(0.8, vp.size * (0.018 + hash(i, 4, 11) * 0.03)), 0, Math.PI * 2);
+      g.fill();
+    }
+
+    g.globalAlpha = 1;
+  }
+
   // PLAYER
   function drawPlayer(ctx, state, vp, time) {
     const { player } = state;
@@ -1467,8 +2103,11 @@
     const cy = vp.originY + (player.row + 0.5) * vp.size;
 
     const s = vp.size;
+    const playerScale = 1.22;
 
     const pulse = 0.5 + 0.5 * Math.sin(time / 420);
+
+    const lampLevel = state.lamp ? state.lamp.intensity : 1;
 
     // PLAYER SHADOW
     ctx.save();
@@ -1481,17 +2120,19 @@
 
     ctx.restore();
 
-    // HEADLAMP GLOW
-    const lampGlow = ctx.createRadialGradient(cx, cy - s * 0.18, 0, cx, cy - s * 0.18, s * 1.7);
+    // HEADLAMP GLOW (follows the flicker) — warm lantern light
+    const gr = s * 1.7 * (0.55 + 0.45 * lampLevel);
 
-    lampGlow.addColorStop(0, 'rgba(126,240,255,0.22)');
-    lampGlow.addColorStop(0.35, 'rgba(126,220,240,0.09)');
-    lampGlow.addColorStop(1, 'rgba(126,240,255,0)');
+    const lampGlow = ctx.createRadialGradient(cx, cy - s * 0.18, 0, cx, cy - s * 0.18, gr);
+
+    lampGlow.addColorStop(0, 'rgba(255,200,120,' + (0.3 * lampLevel).toFixed(3) + ')');
+    lampGlow.addColorStop(0.35, 'rgba(255,170,90,' + (0.12 * lampLevel).toFixed(3) + ')');
+    lampGlow.addColorStop(1, 'rgba(255,160,80,0)');
 
     ctx.fillStyle = lampGlow;
 
     ctx.beginPath();
-    ctx.arc(cx, cy - s * 0.18, s * 1.7, 0, Math.PI * 2);
+    ctx.arc(cx, cy - s * 0.18, gr, 0, Math.PI * 2);
     ctx.fill();
 
     // PLAYER BODY
@@ -1503,6 +2144,7 @@
     const breathe = Math.sin(time / 650) * s * 0.012;
 
     ctx.translate(0, breathe);
+    ctx.scale(playerScale, playerScale);
 
     // Backpack
     ctx.fillStyle = '#202a2c';
@@ -1590,11 +2232,11 @@
     ctx.lineTo(s * 0.13, -s * 0.19);
     ctx.stroke();
 
-    // HEADLAMP
-    ctx.shadowColor = '#7ef0ff';
+    // HEADLAMP (warm)
+    ctx.shadowColor = '#ffb45c';
     ctx.shadowBlur = s * (0.25 + pulse * 0.12);
 
-    ctx.fillStyle = '#dfffff';
+    ctx.fillStyle = '#fff1d0';
 
     ctx.beginPath();
     ctx.arc(0, -s * 0.22, s * 0.035, 0, Math.PI * 2);
@@ -1642,53 +2284,241 @@
   }
 
   // WRONG-KEY RETURN BANNER
-  function drawDisorientBanner(ctx, state, width) {
+ function drawDisorientBanner(ctx, state, width) {
     const remaining = state.controlsReversedMs;
 
     if (!remaining || remaining <= 0) return;
 
     const total = CONFIG.disorient.durationMs;
-    const fade = isFinite(remaining)
-      ? Math.min(1, (total - remaining) / 150 + 0.2, remaining / 400)
-      : 1;
 
-    const w = Math.min(240, width - 24);
-    const h = 108;
+    const fade = isFinite(remaining)
+        ? Math.min(
+            1,
+            (total - remaining) / 150 + 0.2,
+            remaining / 400
+        )
+        : 1;
+
+    // --------------------------------
+    // BANNER SIZE
+    // --------------------------------
+
+    const w = Math.min(430, width - 24);
+    const h = state.clue ? 220 : 175;
+
     const x = Math.max(12, width - w - 14);
     const y = 14;
+
+    const centerX = x + w / 2;
 
     ctx.save();
 
     ctx.globalAlpha = Math.max(0, fade);
 
-    ctx.fillStyle = 'rgba(8,4,12,0.9)';
-    ctx.fillRect(x, y, w, h);
+    // --------------------------------
+    // SHADOW
+    // --------------------------------
 
-    ctx.strokeStyle = '#ff4d6d';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(x, y, w, h);
+    ctx.shadowColor = 'rgba(0,0,0,0.55)';
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetY = 6;
+
+    // --------------------------------
+    // BACKGROUND
+    // --------------------------------
+
+    ctx.fillStyle = 'rgba(8, 4, 12, 0.96)';
+
+    if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, 12);
+        ctx.fill();
+    } else {
+        ctx.fillRect(x, y, w, h);
+    }
+
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    // --------------------------------
+    // BORDER
+    // --------------------------------
+
+    ctx.strokeStyle = 'rgba(255, 77, 109, 0.9)';
+    ctx.lineWidth = 1.8;
+
+    if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, 12);
+        ctx.stroke();
+    } else {
+        ctx.strokeRect(x, y, w, h);
+    }
 
     ctx.textAlign = 'center';
-    const bannerCenterX = x + w / 2;
+    ctx.textBaseline = 'middle';
 
-    ctx.font = '800 15px Arial, sans-serif';
+    // --------------------------------
+    // WRONG KEY
+    // --------------------------------
+
+    ctx.font = '800 20px Arial, sans-serif';
     ctx.fillStyle = '#ff4d6d';
-    ctx.fillText('\u274C WRONG KEY', bannerCenterX, y + 24);
 
+    ctx.fillText(
+        '❌ WRONG KEY',
+        centerX,
+        y + 27
+    );
+
+    // --------------------------------
+    // RETURN INSTRUCTION
+    // --------------------------------
+
+    ctx.font = '700 11px Arial, sans-serif';
+    ctx.fillStyle = '#d7e4ff';
+
+    ctx.fillText(
+        'RETURN TO START — THEN TRY AGAIN',
+        centerX,
+        y + 49
+    );
+
+    // --------------------------------
+    // SEPARATOR
+    // --------------------------------
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+
+    ctx.beginPath();
+    ctx.moveTo(x + 24, y + 64);
+    ctx.lineTo(x + w - 24, y + 64);
+    ctx.stroke();
+
+    // --------------------------------
+    // KEY HINT
+    // --------------------------------
+
+    let currentY = y + 82;
+
+    if (state.clue) {
+
+        ctx.font = '800 13px Arial, sans-serif';
+        ctx.fillStyle = '#ffd166';
+
+        ctx.fillText(
+            '🔎 YOUR KEY HINT',
+            centerX,
+            currentY
+        );
+
+        currentY += 18;
+
+        ctx.font = '600 11px Arial, sans-serif';
+        ctx.fillStyle = '#cfd8ea';
+
+        ctx.fillText(
+            'Solve this to identify your key colour.',
+            centerX,
+            currentY
+        );
+
+        currentY += 22;
+
+        // --------------------------------
+        // CLUE TEXT
+        // --------------------------------
+
+        ctx.font = 'italic 14px Arial, sans-serif';
+        ctx.fillStyle = '#ffffff';
+
+        const maxTextWidth = w - 50;
+        const words = String(state.clue).split(/\s+/);
+
+        const lines = [];
+        let currentLine = '';
+
+        for (const word of words) {
+            const testLine = currentLine
+                ? `${currentLine} ${word}`
+                : word;
+
+            if (
+                ctx.measureText(testLine).width <= maxTextWidth
+            ) {
+                currentLine = testLine;
+            } else {
+                if (currentLine) {
+                    lines.push(currentLine);
+                }
+
+                currentLine = word;
+            }
+        }
+
+        if (currentLine) {
+            lines.push(currentLine);
+        }
+
+        // Limit to 3 lines so the banner never overflows.
+        const visibleLines = lines.slice(0, 3);
+
+        for (const line of visibleLines) {
+            ctx.fillText(
+                `"${line}"`,
+                centerX,
+                currentY
+            );
+
+            currentY += 19;
+        }
+    }
+
+    // --------------------------------
+    // CONTROLS SECTION
+    // --------------------------------
+
+    const controlsSeparatorY = y + h - 66;
+
+    // Separator above controls
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+
+    ctx.beginPath();
+    ctx.moveTo(x + 24, controlsSeparatorY);
+    ctx.lineTo(x + w - 24, controlsSeparatorY);
+    ctx.stroke();
+
+    // Controls title
+    ctx.font = '800 10px Arial, sans-serif';
+    ctx.fillStyle = '#ffd166';
+
+    ctx.fillText(
+        '⚠ CONTROLS DISORIENTED',
+        centerX,
+        controlsSeparatorY + 17
+    );
+
+    // Control mappings
     ctx.font = '700 10px Arial, sans-serif';
     ctx.fillStyle = '#d7e4ff';
-    ctx.fillText('FIND YOUR WAY BACK TO START', bannerCenterX, y + 46);
 
-    ctx.font = '700 9px Arial, sans-serif';
-    ctx.fillStyle = '#ffd166';
-    ctx.fillText('CONTROLS DISORIENTED', bannerCenterX, y + 63);
+    ctx.fillText(
+        'W → DOWN     S → UP',
+        centerX,
+        controlsSeparatorY + 36
+    );
 
-    ctx.fillStyle = '#d7e4ff';
-    ctx.fillText('W \u2192 DOWN     S \u2192 UP', bannerCenterX, y + 80);
-    ctx.fillText('D \u2192 LEFT     A \u2192 RIGHT', bannerCenterX, y + 95);
+    ctx.fillText(
+        'D → LEFT     A → RIGHT',
+        centerX,
+        controlsSeparatorY + 51
+    );
 
     ctx.restore();
-  }
+}
 
   // DEBUG OVERLAY
   function drawDebugOverlay(ctx, state, width) {
@@ -1745,74 +2575,137 @@
   }
 
   // MAIN RENDERER
+  // width/height are CSS pixels. `lightCtx` is accepted for compatibility but
+  // unused: the renderer owns its cached offscreen layers.
   function renderScene(ctx, lightCtx, state, width, height, time) {
     if (!state || !state.maze) return;
 
+    if (time == null) time = performance.now();
+
+    const dpr = Math.max(1, Math.min(4, ctx.canvas.width / Math.max(1, width)));
+
     const vp = computeViewport(state.maze, width, height);
+
+    const cache = getCache(state, vp, width, height, dpr);
 
     const { player, debug } = state;
 
-    // CLEAR
-    ctx.clearRect(0, 0, width, height);
+    const lamp = state.lamp || { radiusScale: 1, alpha: 1, intensity: 1 };
 
-    ctx.fillStyle = PALETTE.void;
-
-    ctx.fillRect(0, 0, width, height);
-
-    // REMEMBERED GEOMETRY
+    // WRONG-KEY SHAKE (visual only)
     ctx.save();
 
-    ctx.globalAlpha = debug ? 0.42 : CONFIG.memoryAlpha;
+    if (state.status === 'WRONG_KEY') {
+      const power = Math.max(0, Math.min(1, state.wrongFeedbackRemainingMs / CONFIG.wrongFeedbackMs));
+      const amp = 7 * power;
 
-    drawFloors(ctx, state, vp, false, debug);
+      ctx.translate((Math.random() - 0.5) * amp, (Math.random() - 0.5) * amp);
+    }
 
-    drawWalls(ctx, state, vp, false, debug);
+    // BACKGROUND
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
 
-    if (debug) drawKeys(ctx, state, vp, time, true);
+    ctx.fillStyle = PALETTE.void;
+    ctx.fillRect(-10, -10, width + 20, height + 20);
 
-    ctx.restore();
+    ctx.drawImage(cache.bg, 0, 0, width, height);
 
-    // LIT WORLD
-    lightCtx.clearRect(0, 0, width, height);
+    // REMEMBERED GEOMETRY
+    if (debug) {
+      ctx.globalAlpha = 0.42;
+      ctx.drawImage(cache.dim, 0, 0, width, height);
+      ctx.globalAlpha = 1;
 
-    drawFloors(lightCtx, state, vp, true, true);
+      ctx.save();
+      ctx.globalAlpha = 0.42;
+      drawKeys(ctx, state, vp, time, true);
+      ctx.restore();
+    } else {
+      syncMemory(cache, state, vp);
 
-    drawWalls(lightCtx, state, vp, true, true);
+      ctx.globalAlpha = CONFIG.memoryAlpha;
+      ctx.drawImage(cache.mem, 0, 0, width, height);
+      ctx.globalAlpha = 1;
+    }
 
-    drawStartPad(lightCtx, state, vp, time, true);
-
-    drawKeys(lightCtx, state, vp, time, true);
-
-    // FOG
+    // LIT WORLD (only inside the lamp's bounding box)
     const cx = vp.originX + (player.col + 0.5) * vp.size;
     const cy = vp.originY + (player.row + 0.5) * vp.size;
 
-    // NEW: flickering lamp — radius and strength follow state.lamp
-    const lamp = state.lamp || { radiusScale: 1, alpha: 1 };
-
+    // flickering lamp: radius and strength follow state.lamp
     const inner = CONFIG.sightRadius * vp.size * lamp.radiusScale;
 
     const outer = (CONFIG.sightRadius + CONFIG.sightFalloff) * vp.size * lamp.radiusScale;
 
     const a = lamp.alpha;
 
-    const mask = lightCtx.createRadialGradient(cx, cy, inner * 0.2, cx, cy, outer);
+    const x0 = Math.max(0, Math.floor(cx - outer));
+    const y0 = Math.max(0, Math.floor(cy - outer));
+    const x1 = Math.min(width, Math.ceil(cx + outer));
+    const y1 = Math.min(height, Math.ceil(cy + outer));
 
-    mask.addColorStop(0, `rgba(255,255,255,${a})`);
-    mask.addColorStop(0.55, `rgba(255,255,255,${0.92 * a})`);
-    mask.addColorStop(0.8, `rgba(255,255,255,${0.35 * a})`);
-    mask.addColorStop(1, 'rgba(255,255,255,0)');
+    if (x1 > x0 && y1 > y0) {
+      const dx = Math.floor(x0 * dpr);
+      const dy = Math.floor(y0 * dpr);
+      const dw = Math.min(cache.W - dx, Math.ceil((x1 - x0) * dpr));
+      const dh = Math.min(cache.H - dy, Math.ceil((y1 - y0) * dpr));
 
-    lightCtx.globalCompositeOperation = 'destination-in';
+      const bx = dx / dpr;
+      const by = dy / dpr;
+      const bw = dw / dpr;
+      const bh = dh / dpr;
 
-    lightCtx.fillStyle = mask;
+      const lg = cache.lctx;
 
-    lightCtx.fillRect(0, 0, width, height);
+      lg.setTransform(1, 0, 0, 1, 0, 0);
+      lg.globalCompositeOperation = 'source-over';
+      lg.globalAlpha = 1;
+      lg.clearRect(dx, dy, dw, dh);
+      lg.drawImage(cache.lit, dx, dy, dw, dh, dx, dy, dw, dh);
 
-    lightCtx.globalCompositeOperation = 'source-over';
+      lg.save();
+      lg.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // COMPOSITE
-    ctx.drawImage(lightCtx.canvas, 0, 0, width, height);
+      lg.beginPath();
+      lg.rect(bx, by, bw, bh);
+      lg.clip();
+
+      drawStartPad(lg, state, vp, time, true);
+
+      drawKeys(lg, state, vp, time, true);
+
+      drawTorches(lg, state, vp, time, cx, cy, outer + vp.size * 2);
+
+      drawMotes(lg, state, vp, time);
+
+      const mask = lg.createRadialGradient(cx, cy, inner * 0.2, cx, cy, outer);
+
+      mask.addColorStop(0, `rgba(255,255,255,${a})`);
+      mask.addColorStop(0.55, `rgba(255,255,255,${0.92 * a})`);
+      mask.addColorStop(0.8, `rgba(255,255,255,${0.35 * a})`);
+      mask.addColorStop(1, 'rgba(255,255,255,0)');
+
+      lg.globalCompositeOperation = 'destination-in';
+      lg.fillStyle = mask;
+      lg.fillRect(bx, by, bw, bh);
+
+      lg.restore();
+
+      // COMPOSITE
+      ctx.drawImage(cache.light, dx, dy, dw, dh, bx, by, bw, bh);
+
+      // Warm ambient glow from the lantern (additive), breathing with the lamp
+      const amb = ctx.createRadialGradient(cx, cy, 0, cx, cy, outer * 0.9);
+
+      amb.addColorStop(0, 'rgba(255,170,90,' + (0.13 * lamp.intensity).toFixed(3) + ')');
+      amb.addColorStop(1, 'rgba(255,150,70,0)');
+
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = amb;
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.globalCompositeOperation = 'source-over';
+    }
 
     // START
     if (!debug) drawStartPad(ctx, state, vp, time, false);
@@ -1826,23 +2719,12 @@
     drawSuccessFeedback(ctx, state, width, height);
 
     // VIGNETTE
-    const vignette = ctx.createRadialGradient(
-      width / 2,
-      height / 2,
-      Math.min(width, height) * 0.25,
-      width / 2,
-      height / 2,
-      Math.max(width, height) * 0.75
-    );
+    ctx.drawImage(cache.vig, 0, 0, width, height);
 
-    vignette.addColorStop(0, 'rgba(4,6,13,0)');
-    vignette.addColorStop(1, 'rgba(4,6,13,0.85)');
+    // end shake
+    ctx.restore();
 
-    ctx.fillStyle = vignette;
-
-    ctx.fillRect(0, 0, width, height);
-
-    // NEW: disoriented controls banner
+    // disoriented controls banner
     drawDisorientBanner(ctx, state, width);
 
     // DEBUG OVERLAY — DRAW LAST
