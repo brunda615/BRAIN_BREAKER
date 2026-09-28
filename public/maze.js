@@ -46,7 +46,7 @@
       dipMinMs: 260,       // length of one flicker
       dipMaxMs: 780,
       minIntensity: 0.01,   // lamp never goes fully dark
-      radiusFloor: 0.15    // smallest sight radius multiplier
+      radiusFloor: 0.12    // smallest sight radius multiplier
     },
 
     // KEYS
@@ -84,15 +84,15 @@
   };
 
   const PALETTE = {
-    void: '#04060d',
-    floor: '#0a1022',
-    floorLit: '#111c38',
-    wall: '#2f5a94',
-    wallGlow: '#4fd8ff',
-    player: '#7ef0ff',
-    start: '#4fd8ff',
-    wrong: '#ff4d6d',
-    success: '#3df5a5'
+   void: '#030712',
+  void: '#0a0908',
+  wallBase: '#22252a',
+  wallTop: '#3a3f47',
+  floorBase: '#141619',
+  floorLit: '#4a3b2c',    // Warm torchlight glow
+  player: '#ffaa00',      // Warm torch flame
+  success: '#4ade80',
+  wrong: '#ef4444'
   };
 
   const WALL = { N: 1, E: 2, S: 4, W: 8 };
