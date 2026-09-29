@@ -607,7 +607,7 @@
     <section id="viewLevel3" class="final hidden">
       <header>
         <h2 class="display print final-title">Stage 3</h2>
-        <p class="final-lede">The <strong id="cipherKeyUnlockPhrase">right key</strong> opened a scrap of an intercepted message. Decode it to find out where to go next.</p>
+        <p class="final-lede">The key you picked up in the maze didn't stay behind. That colour escaped into this round with you, and it opened a scrap of an intercepted message. Remember which one it was.</p>
         <dl id="lvl3Stats" class="final-stats"></dl>
       </header>
 
@@ -1297,7 +1297,6 @@
 
       const now = new Date();
       document.getElementById("cipherTimestamp").textContent = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-      document.getElementById("cipherKeyUnlockPhrase").textContent = `${color.toLowerCase()} key`;
 
       const payloadEl = document.getElementById("cipherPayload");
       if (cipherSolved || REDUCED_MOTION) {
@@ -1366,14 +1365,11 @@
       const color = ensureAssignedColor(stateData) || "BLUE";
       const statsEl = document.getElementById("lvl3Stats");
       if (statsEl && stateData) {
-        const pretty = color.charAt(0) + color.slice(1).toLowerCase();
         statsEl.innerHTML = `
           <div><dt>Puzzles solved</dt><dd>${Number(stateData.questions_solved) || 0}</dd></div>
           <div><dt>Maze time</dt><dd class="mono">${formatMazeTime(stateData.maze_elapsed_ms || 0)}</dd></div>
-          <div><dt>Maze attempts</dt><dd>${(stateData.maze_round || 0) + 1}</dd></div>
-          <div><dt>Your key</dt><dd>${pretty}</dd></div>`;
+          <div><dt>Maze attempts</dt><dd>${(stateData.maze_round || 0) + 1}</dd></div>`;
       }
-      document.getElementById("cipherKeyUnlockPhrase").textContent = `${color.toLowerCase()} key`;
       currentCipherPayload = getCipherPayloadForColor(color);
 
       finalWonAt = (stateData && stateData.final_won_at) || null;
