@@ -714,7 +714,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         # ── Team login ────────────────────────────────────────────────────────
         if path == "/api/login":
-            username = body.get("username", "").strip()
+            username = body.get("username", "").strip().lower()
             password = body.get("password", "").strip()
             if not username or not password:
                 self.json({"error": "Username and password are required."}, 400); return
@@ -753,7 +753,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.json({"error": "Unauthorized"}, 401); return
 
             team_name = body.get("team_name", "").strip()
-            username  = body.get("username",  "").strip()
+            username  = body.get("username",  "").strip().lower()
             password  = body.get("password",  "").strip()
             avatar    = body.get("avatar",    "🚀")
             color     = body.get("color",     "#3b82f6")
