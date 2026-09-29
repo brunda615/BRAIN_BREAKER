@@ -3,21 +3,13 @@
  *
  * Pure Vanilla JavaScript + HTML5 Canvas
  *
- * GAME LOGIC: identical to the previous version except for:
- * - Movement: exactly ONE cell per movement step (no leftover budget carried
- *   into the next cell inside a single update() call)
- * - Wrong-key clue: deterministic clue built from the real key positions,
- *   with three difficulty levels (exposed via snapshot.clue / snapshot.clueLevel
- *   and onWrongKey(color, clue, level))
+ * GAME LOGIC: unchanged.
+ * - Movement: exactly ONE cell per movement step
+ * - Wrong key: reversed controls until back at START, same maze, new key positions
  *
- * THE LOOK (renderer / PALETTE) IS UNCHANGED:
- * - Walls are real stone brick: mortar joints, weathered tone variation,
- *   chipped cracks, moss, lit top edge, cast shadow
- * - Floor is worn flagstone with cracks, dirt stains, moss and pebbles
- * - Warm torch-light palette: amber headlamp, ember dust, warm ambient glow
- * - Interactive lighting: flickering wall torches that throw light pools onto
- *   the floor (only visible inside your lamp), lamp-reactive glow
- * - Wrong-key screen shake
+ * THE LOOK: enchanted night-forest hedge maze (renderer section only).
+ * - Only the flickering lamp radius is visible (no explored-area memory)
+ * - Hedge walls, forest floor, glowing mushrooms, fireflies, drifting leaves
  * - Static art is cached once (no per-frame wall/floor redraw) for smoothness
  */
 
@@ -39,7 +31,7 @@
     // FOG
     sightRadius: 3.2,
     sightFalloff: 2.5,
-    memoryAlpha: 0.2,      // visual only: how visible explored (remembered) areas are
+    memoryAlpha: 0,        // 0 = only the lamp radius is ever visible (no explored-area memory)
 
     // FLICKERING LAMP
     flicker: {
@@ -86,23 +78,22 @@
     YELLOW: '#ffd166'
   };
 
-  // Torch-lit stone dungeon palette
   const PALETTE = {
-  void: '#061108',
+    void: '#061108',
 
-  wallBase: '#123b18',
-  wallDark: '#0a2810',
-  wallLight: '#2d6731',
+    wallBase: '#123b18',
+    wallDark: '#0a2810',
+    wallLight: '#2d6731',
 
-  start: '#d6c85a',
+    start: '#d6c85a',
 
-  fog: '#102916',
+    fog: '#102916',
 
-  text: '#e8f5e9',
-  muted: '#a8c5aa',
+    text: '#e8f5e9',
+    muted: '#a8c5aa',
 
-  keyGlow: '#ffffff'
-};
+    keyGlow: '#ffffff'
+  };
 
   const WALL = { N: 1, E: 2, S: 4, W: 8 };
 
@@ -546,163 +537,11 @@
     };
   }
 
-  // ==========================================================================
-  // WRONG-KEY CLUE TEXT
-  // ==========================================================================
+  // NOTE: the optional wrong-key colour-clue system (COLOR_CLUES /
+  // getColourClue / buildWrongKeyClue) was commented out in the original and
+  // is not part of this file. state.clue / state.clueLevel are therefore
+  // undefined, exactly as before.
 
-  // Wrong-key clue wording. Chosen deterministically from real key positions.
- // ==========================================================================
-// DIFFICULT COLOUR CLUES
-// ==========================================================================
-//
-// These clues NEVER reveal the colour directly.
-// They describe an association with the correct colour.
-//
-// Difficulty increases after every wrong attempt:
-//
-// WRONG #1 -> cryptic but solvable
-// WRONG #2 -> more abstract
-// WRONG #3+ -> very cryptic
-//
-// The correct colour is passed internally, but the actual colour name is
-// never sent in the clue text.
-//
-
-// const COLOR_CLUES = {
-//   RED: {
-//     1: [
-//       'The internet calls this a warning. Dating apps practically made it famous.',
-//       'Two card suits would answer this immediately.',
-//       'Mars has been carrying this association for centuries.',
-//       'A traffic light uses this when the conversation is over.',
-//       'If “danger” had a favourite outfit, this would be it.',
-//       'The opposite of a green flag, but somehow much better at getting ignored.',
-//       'A certain planet, two card suits, and a stop signal share something obvious.',
-//       'In Among Us, seeing this colour does not exactly improve your trust issues.'
-//     ],
-
-//     2: [
-//       'A carpet can have it, a flag can have it, and a person can see it when they are furious.',
-//       'The group chat would call it a red flag before you finished explaining the story.',
-//       'It can mean love, danger, debt, and embarrassment without changing its identity.',
-//       'In roulette, half the numbered pockets are associated with it.',
-//       'A superhero may wear it. A warning sign may use it. Your bank balance may fear it.',
-//       'One colour somehow connects roses, revolutions, rage, and roulette.'
-//     ],
-
-//     3: [
-//       '🚩 You know the meme. Now solve the colour without being told the meme.',
-//       'It can signal “stop”, “danger”, “passion”, or “you should probably leave.”',
-//       'A colour with enough meanings to start a fight, end a relationship, or win a card game.',
-//       'Think: Ferrari, Mars, roses, roulette. What do they secretly agree on?',
-//       'The answer is hiding in the sentence: “That was a massive warning sign, bro.”'
-//     ]
-//   },
-
-//   BLUE: {
-//     1: [
-//       'A person can be one without being painted.',
-//       'Some playlists are basically this colour in audio form.',
-//       'The sky gets accused of it every clear afternoon.',
-//       'A police officer might be described using this colour.',
-//       'A certain moon in the Solar System has this as its name.',
-//       'The opposite of “seeing red” in one very specific emotional sense.'
-//     ],
-
-//     2: [
-//       'A mood, a music genre, and a police uniform can all point to the same answer.',
-//       'Someone can have this colour without owning a single piece of clothing.',
-//       'If the playlist starts at midnight and every song hurts, you are getting warmer.',
-//       'It can describe an inexperienced worker, a sad mood, and a law-enforcement officer.',
-//       'A planet looks this way from space, but that is not the only reason you know it.'
-//     ],
-
-//     3: [
-//       '“I am fine” + headphones + rain outside = suspiciously specific clue.',
-//       'The answer can describe a mood without describing a facial expression.',
-//       'One word connects sadness, uniforms, music, and a planet.',
-//       'If the vibe is immaculate but emotionally devastating, think here.',
-//       'The colour is also hiding inside an adjective meaning inexperienced.'
-//     ]
-//   },
-
-//   GREEN: {
-//     1: [
-//       'Traffic says go. Dating advice says good sign.',
-//       'A beginner can be one.',
-//       'Fruit sometimes starts here before becoming edible.',
-//       'The opposite of a red flag.',
-//       'The Hulk would probably approve.',
-//       'Money can be associated with it even when nobody is talking about trees.'
-//     ],
-
-//     2: [
-//       'A traffic signal, a jealous person, and an inexperienced person can all point to the same word.',
-//       'The internet turned this colour into relationship approval.',
-//       'It can describe envy without ever mentioning jealousy directly.',
-//       'A monster, a beginner, and an environmental movement all share this clue.',
-//       'When the group chat says “he actually communicates,” this colour gets involved.'
-//     ],
-
-//     3: [
-//       '🚦 + “he respects boundaries” + 🌱 = solve the common denominator.',
-//       'The same word can describe a traffic instruction, jealousy, and someone new to the game.',
-//       'One colour became the internet’s shorthand for “okay, this person is probably safe.”',
-//       'It can mean “go”, “grow”, “beginner”, and “jealous” depending on what follows it.',
-//       'A flag, a traffic light, and a fruit before breakfast all know the answer.'
-//     ]
-//   },
-
-//   YELLOW: {
-//     1: [
-//       'Not stop. Not go. Basically “bro, wait.”',
-//       'A banana usually gives this one away.',
-//       'A school bus would know the answer.',
-//       'It appears between two more decisive choices on a traffic signal.',
-//       'The Sun gets drawn wearing it by approximately every five-year-old ever.',
-//       'A warning sign might choose this when red feels too aggressive.'
-//     ],
-
-//     2: [
-//       'A newspaper can practice it. A fruit can be it. A traffic light can flash it.',
-//       'It lives somewhere between “absolutely not” and “send it.”',
-//       'The colour equivalent of typing “hmmm…” before replying.',
-//       'A certain journalism style shares its name with this colour.',
-//       'If red says stop and green says go, this one says “your call.”'
-//     ],
-
-//     3: [
-//       'Traffic uses it for hesitation; journalism uses it for sensationalism.',
-//       'A banana, a school bus, and a controversial newspaper style walk into a room.',
-//       'Neither W nor L. Just pure “let me think about it.”',
-//       'The middle child of the traffic signal has an unexpectedly dramatic career in journalism.',
-//       'If a colour could leave you on read while technically responding, this would be it.'
-//     ]
-//   }
-// };
-
-/**
- * Return one difficult clue for the correct colour.
- *
- * The colour itself is NEVER included in the returned text.
-//  */
-// function getColourClue(correctColor, level) {
-//   const normalized = normalizeColor(correctColor);
-
-//   if (!normalized || !COLOR_CLUES[normalized]) {
-//     return 'Something remains hidden.';
-//   }
-
-//   const difficulty = Math.min(3, Math.max(1, level));
-
-//   const clues = COLOR_CLUES[normalized][difficulty];
-
-//   if (!clues || clues.length === 0) {
-//     return 'Something remains hidden.';
-//   }
-
-//   return clues[Math.floor(Math.random() * clues.length)];
-// }
   // ==========================================================================
   // GAME ENGINE
   // ==========================================================================
@@ -763,11 +602,7 @@
         lamp: newLamp(),
 
         // remaining time (ms) of reversed controls
-        controlsReversedMs: 0,
-
-        // // wrong-key clue (survives the reshuffle until the next wrong key)
-        // clue: null,
-        // clueLevel: 0
+        controlsReversedMs: 0
       };
 
       this.revealAroundPlayer();
@@ -1178,11 +1013,6 @@
       this.state.wrongKey = key.color;
       this.state.wrongKeyCount += 1;
 
-      // // Clue is computed BEFORE resetAfterWrongKey() reshuffles the keys.
-      // const level = Math.min(3, this.state.wrongKeyCount);
-      // this.state.clueLevel = level;
-      // this.state.clue = this.buildWrongKeyClue(key, level);
-
       this.state.status = 'WRONG_KEY';
       this.state.wrongFeedbackRemainingMs = CONFIG.wrongFeedbackMs;
 
@@ -1201,43 +1031,6 @@
         this.onWrongKey(key.color, this.state.clue, this.state.clueLevel);
       }
     }
-
-    // WRONG-KEY CLUE
-    // Built from the REAL positions before the reshuffle. Deterministic.
-    // level 1 = depth + direction, level 2 = depth only, level 3+ = one cryptic line.
-  // ==========================================================================
-// WRONG-KEY COLOUR CLUE
-// ==========================================================================
-//
-// IMPORTANT:
-//
-// The clue is generated BEFORE the keys are reshuffled.
-//
-// Example:
-//
-// Correct key = RED
-//
-// Player chooses BLUE
-//
-// They receive:
-// "An ember knows the answer."
-//
-// Then the four keys move to completely new positions.
-//
-// This means the clue tells them WHAT COLOUR to search for,
-// but not WHERE the key is.
-//
-// ==========================================================================
-
-// buildWrongKeyClue(wrongKey, level) {
-//   const correctColor = this.state.correctKey;
-
-//   if (!correctColor) {
-//     return 'Something remains hidden.';
-//   }
-
-//   return getColourClue(correctColor, level);
-// }
 
     // FOG OF WAR
     revealAroundPlayer() {
@@ -1281,9 +1074,6 @@
         wrongKey: this.state.wrongKey,
         wrongKeyCount: this.state.wrongKeyCount,
 
-        // clue: this.state.clue,
-        // clueLevel: this.state.clueLevel,
-
         controlsReversed: this.state.controlsReversedMs > 0,
         controlsReversedMs: isFinite(this.state.controlsReversedMs) ? this.state.controlsReversedMs : null,
 
@@ -1296,7 +1086,18 @@
   GameEngine.debugListenerInstalled = false;
 
   // ==========================================================================
-  // RENDERER — everything below is visual only
+  // RENDERER — ENCHANTED NIGHT-FOREST HEDGE MAZE (visual only)
+  //
+  // Replace EVERYTHING from the old "RENDERER" header down to the final
+  // "})(window);" with this file. The engine above it is untouched.
+  //
+  //  - Walls: tall layered hedges (dark base, mid foliage, sunlit top leaves,
+  //    leaf flecks, berries and wildflowers, long cast shadow)
+  //  - Floor: forest ground with dirt trails, grass blades, fallen autumn
+  //    leaves, pebbles, twigs, clover, wildflowers and dappled moonlight
+  //  - Light: glowing mushroom clusters (teal / violet / amber) throw coloured
+  //    light pools, fireflies, drifting leaves and mist (all lamp-limited)
+  //  - Keys, player, feedback banners and the public API are unchanged
   // ==========================================================================
 
   // Deterministic hash -> [0,1). Textures never shimmer between frames.
@@ -1309,6 +1110,35 @@
 
   const caches = new WeakMap();
 
+  // Forest colour palette (renderer only). [r, g, b]
+  const FOREST = {
+    hedgeDeep: [6, 30, 14],
+    hedgeDark: [14, 58, 24],
+    hedgeMid: [28, 96, 36],
+    hedgeLight: [66, 148, 52],
+    hedgeGlow: [140, 200, 84],
+
+    grassDeep: [26, 52, 24],
+    grassMid: [48, 90, 38],
+    grassLight: [70, 118, 46],
+    dirt: [96, 70, 44],
+    blade: [104, 160, 64],
+    bladeDark: [36, 78, 34],
+
+    leaves: [[200, 120, 34], [222, 168, 52], [168, 70, 34], [140, 96, 36], [190, 60, 40]],
+    berries: [[210, 40, 64], [150, 54, 150], [236, 200, 62]],
+    petals: [[250, 250, 240], [255, 190, 210], [255, 226, 110], [190, 170, 255]],
+    shroomHues: [[90, 255, 214], [196, 150, 255], [255, 196, 96]]
+  };
+
+  // rgba() string from an [r,g,b] array, brightness multiplier k and alpha a
+  function rgba(c, k, a) {
+    return 'rgba(' +
+      Math.max(0, Math.min(255, Math.round(c[0] * k))) + ',' +
+      Math.max(0, Math.min(255, Math.round(c[1] * k))) + ',' +
+      Math.max(0, Math.min(255, Math.round(c[2] * k))) + ',' + a + ')';
+  }
+
   /**
    * MAXIMISED VIEWPORT: the maze fills the canvas. The only margin left is
    * the small overhang needed so the outer wall stroke is not clipped.
@@ -1317,7 +1147,7 @@
     const safeWidth = Math.max(1, width);
     const safeHeight = Math.max(1, height);
 
-    const overhang = 0.42; // total extra cells (wall thickness + shadow)
+    const overhang = 0.5; // total extra cells (hedge thickness + shadow)
 
     const size = Math.max(
       1,
@@ -1351,7 +1181,7 @@
     return segs;
   }
 
-  // Wall-mounted torch positions (chosen once per maze, deterministic).
+  // Glow-mushroom positions (chosen once per maze, deterministic).
   function getTorches(maze) {
     if (maze._torches) return maze._torches;
 
@@ -1385,85 +1215,59 @@
   // STATIC ART (painted once per size)
   // ------------------------------------------------------------------------
 
-  // Worn flagstone floor
+  // Forest floor
   function paintFloors(g, maze, vp, lit) {
     const { size, originX, originY } = vp;
+    const K = lit ? 1 : 0.4;
     const W = maze.cols * size;
     const H = maze.rows * size;
 
-    // Warm earthen base with a soft centre glow
+    g.save();
+    g.beginPath();
+    g.rect(originX, originY, W, H);
+    g.clip();
+
+    // Mossy ground base with a soft centre glow
     const base = g.createRadialGradient(
       originX + W / 2, originY + H / 2, 0,
       originX + W / 2, originY + H / 2, Math.max(W, H) * 0.75
     );
 
-    if (lit) {
-      base.addColorStop(0, '#463b31');
-      base.addColorStop(1, '#2a221c');
-    } else {
-      base.addColorStop(0, '#2a231d');
-      base.addColorStop(1, '#15110e');
-    }
+    base.addColorStop(0, rgba(FOREST.grassMid, K, 1));
+    base.addColorStop(1, rgba(FOREST.grassDeep, K, 1));
 
     g.fillStyle = base;
     g.fillRect(originX, originY, W, H);
 
-    const tone = lit ? [66, 55, 46] : [38, 32, 27];
+    g.lineCap = 'round';
 
     for (let row = 0; row < maze.rows; row += 1) {
       for (let col = 0; col < maze.cols; col += 1) {
-        const x0 = Math.floor(originX + col * size);
-        const y0 = Math.floor(originY + row * size);
-        const x1 = Math.floor(originX + (col + 1) * size);
-        const y1 = Math.floor(originY + (row + 1) * size);
-        const cw = x1 - x0;
-        const ch = y1 - y0;
+        const x0 = originX + col * size;
+        const y0 = originY + row * size;
 
-        // Each flagstone gets its own slightly different tone
-        const v = (hash(col, row, 1) - 0.5) * (lit ? 20 : 11);
+        // Soft overlapping ground patch (dirt trail / grass): no visible grid
+        const t = hash(col, row, 1);
+        const ground = t < 0.3 ? FOREST.dirt : t < 0.65 ? FOREST.grassMid : FOREST.grassLight;
+        const gx = x0 + size * (0.3 + hash(col, row, 9) * 0.4);
+        const gy = y0 + size * (0.3 + hash(col, row, 10) * 0.4);
+        const gr = size * (0.8 + hash(col, row, 11) * 0.4);
+        const patch = g.createRadialGradient(gx, gy, 0, gx, gy, gr);
 
-        g.fillStyle =
-          'rgba(' + Math.round(tone[0] + v) + ',' + Math.round(tone[1] + v * 0.9) + ',' +
-          Math.round(tone[2] + v * 0.8) + ',0.82)';
-        g.fillRect(x0, y0, cw, ch);
+        patch.addColorStop(0, rgba(ground, K, 0.6));
+        patch.addColorStop(1, rgba(ground, K, 0));
 
-        // Mortar gap + bevel highlight
-        g.strokeStyle = lit ? 'rgba(6,4,3,0.42)' : 'rgba(4,3,2,0.38)';
-        g.lineWidth = Math.max(1, size * 0.045);
-        g.strokeRect(x0 + 0.5, y0 + 0.5, cw - 1, ch - 1);
+        g.fillStyle = patch;
+        g.fillRect(x0 - size * 0.5, y0 - size * 0.5, size * 2, size * 2);
 
-        g.strokeStyle = lit ? 'rgba(255,225,190,0.07)' : 'rgba(255,225,190,0.03)';
-        g.lineWidth = Math.max(1, size * 0.02);
-        g.beginPath();
-        g.moveTo(x0 + size * 0.05, y1 - size * 0.06);
-        g.lineTo(x0 + size * 0.05, y0 + size * 0.05);
-        g.lineTo(x1 - size * 0.06, y0 + size * 0.05);
-        g.stroke();
-
-        // Dirt stains
-        if (hash(col, row, 12) < 0.12) {
-          const sx = x0 + hash(col, row, 13) * cw;
-          const sy = y0 + hash(col, row, 14) * ch;
-          const sr = size * (0.25 + hash(col, row, 15) * 0.25);
-          const dirt = g.createRadialGradient(sx, sy, 0, sx, sy, sr);
-
-          dirt.addColorStop(0, lit ? 'rgba(20,12,6,0.4)' : 'rgba(10,6,3,0.3)');
-          dirt.addColorStop(1, 'rgba(0,0,0,0)');
-
-          g.fillStyle = dirt;
-          g.beginPath();
-          g.arc(sx, sy, sr, 0, Math.PI * 2);
-          g.fill();
-        }
-
-        // Moss patches
-        if (hash(col, row, 16) < 0.06) {
-          const mx = x0 + (0.25 + hash(col, row, 17) * 0.5) * cw;
-          const my = y0 + (0.25 + hash(col, row, 18) * 0.5) * ch;
-          const mr = size * 0.3;
+        // Clover / moss patches
+        if (hash(col, row, 16) < 0.09) {
+          const mx = x0 + (0.25 + hash(col, row, 17) * 0.5) * size;
+          const my = y0 + (0.25 + hash(col, row, 18) * 0.5) * size;
+          const mr = size * 0.32;
           const moss = g.createRadialGradient(mx, my, 0, mx, my, mr);
 
-          moss.addColorStop(0, lit ? 'rgba(88,128,52,0.42)' : 'rgba(70,100,42,0.22)');
+          moss.addColorStop(0, lit ? 'rgba(96,170,70,0.5)' : 'rgba(60,110,44,0.3)');
           moss.addColorStop(1, 'rgba(0,0,0,0)');
 
           g.fillStyle = moss;
@@ -1472,39 +1276,128 @@
           g.fill();
         }
 
-        // Pebbles / grit
-        if (hash(col, row, 2) < 0.45) {
-          g.fillStyle = lit ? 'rgba(210,190,160,0.16)' : 'rgba(210,190,160,0.07)';
+        // Dappled moonlight through the canopy (lit layer only)
+        if (lit && hash(col, row, 40) < 0.2) {
+          g.fillStyle = 'rgba(214,236,150,0.09)';
           g.beginPath();
-          g.arc(
-            x0 + hash(col, row, 3) * cw,
-            y0 + hash(col, row, 4) * ch,
-            Math.max(1, size * (0.02 + hash(col, row, 5) * 0.03)),
-            0, Math.PI * 2
+          g.ellipse(
+            x0 + hash(col, row, 41) * size,
+            y0 + hash(col, row, 42) * size,
+            size * (0.22 + hash(col, row, 43) * 0.2),
+            size * (0.14 + hash(col, row, 44) * 0.14),
+            hash(col, row, 45) * Math.PI, 0, Math.PI * 2
           );
           g.fill();
         }
 
-        // Hairline cracks
-        if (hash(col, row, 6) < 0.1) {
-          let px = x0 + (0.15 + hash(col, row, 7) * 0.7) * cw;
-          let py = y0 + (0.15 + hash(col, row, 8) * 0.7) * ch;
+        // Grass blades
+        g.lineWidth = Math.max(0.8, size * 0.024);
 
-          g.strokeStyle = lit ? 'rgba(8,5,3,0.55)' : 'rgba(6,4,2,0.4)';
-          g.lineWidth = Math.max(0.8, size * 0.025);
+        for (let b = 0; b < 8; b += 1) {
+          const bx = x0 + hash(col, row, 100 + b) * size;
+          const by = y0 + (0.15 + hash(col, row, 110 + b) * 0.85) * size;
+          const bh = size * (0.06 + hash(col, row, 120 + b) * 0.1);
+          const lean = (hash(col, row, 130 + b) - 0.5) * size * 0.1;
+
+          g.strokeStyle = rgba(
+            hash(col, row, 140 + b) > 0.5 ? FOREST.blade : FOREST.bladeDark,
+            K,
+            0.78
+          );
+
           g.beginPath();
-          g.moveTo(px, py);
+          g.moveTo(bx, by);
+          g.quadraticCurveTo(bx + lean * 0.3, by - bh * 0.6, bx + lean, by - bh);
+          g.stroke();
+        }
 
-          for (let k = 0; k < 3; k += 1) {
-            px += (hash(col, row, 20 + k) - 0.5) * size * 0.4;
-            py += (hash(col, row, 30 + k) - 0.2) * size * 0.25;
-            g.lineTo(px, py);
+        // Fallen autumn leaves
+        if (hash(col, row, 20) < 0.4) {
+          const n = hash(col, row, 21) > 0.6 ? 2 : 1;
+
+          for (let k = 0; k < n; k += 1) {
+            const lx = x0 + (0.12 + hash(col, row, 22 + k) * 0.76) * size;
+            const ly = y0 + (0.12 + hash(col, row, 25 + k) * 0.76) * size;
+            const rot = hash(col, row, 28 + k) * Math.PI;
+            const lc = FOREST.leaves[Math.floor(hash(col, row, 31 + k) * FOREST.leaves.length)];
+            const rx = size * 0.055;
+
+            g.fillStyle = rgba(lc, K, 0.92);
+            g.beginPath();
+            g.ellipse(lx, ly, rx, size * 0.028, rot, 0, Math.PI * 2);
+            g.fill();
+
+            g.strokeStyle = rgba([40, 24, 10], K, 0.5);
+            g.lineWidth = Math.max(0.5, size * 0.008);
+            g.beginPath();
+            g.moveTo(lx - Math.cos(rot) * rx, ly - Math.sin(rot) * rx);
+            g.lineTo(lx + Math.cos(rot) * rx, ly + Math.sin(rot) * rx);
+            g.stroke();
+          }
+        }
+
+        // Pebbles
+        if (hash(col, row, 2) < 0.3) {
+          const pxx = x0 + hash(col, row, 3) * size;
+          const pyy = y0 + hash(col, row, 4) * size;
+          const pr = Math.max(1, size * (0.025 + hash(col, row, 5) * 0.03));
+
+          g.fillStyle = rgba([120, 122, 116], K, 0.85);
+          g.beginPath();
+          g.ellipse(pxx, pyy, pr * 1.2, pr, 0, 0, Math.PI * 2);
+          g.fill();
+
+          g.fillStyle = rgba([210, 214, 200], K, 0.4);
+          g.beginPath();
+          g.arc(pxx - pr * 0.3, pyy - pr * 0.3, pr * 0.4, 0, Math.PI * 2);
+          g.fill();
+        }
+
+        // Twigs
+        if (hash(col, row, 6) < 0.1) {
+          const tx = x0 + (0.15 + hash(col, row, 7) * 0.7) * size;
+          const ty = y0 + (0.15 + hash(col, row, 8) * 0.7) * size;
+          const ta = hash(col, row, 50) * Math.PI;
+          const tl = size * 0.2;
+
+          g.strokeStyle = rgba([70, 48, 28], K, 0.9);
+          g.lineWidth = Math.max(0.8, size * 0.026);
+          g.beginPath();
+          g.moveTo(tx, ty);
+          g.lineTo(tx + Math.cos(ta) * tl, ty + Math.sin(ta) * tl);
+          g.moveTo(tx + Math.cos(ta) * tl * 0.5, ty + Math.sin(ta) * tl * 0.5);
+          g.lineTo(
+            tx + Math.cos(ta + 0.7) * tl * 0.8,
+            ty + Math.sin(ta + 0.7) * tl * 0.8
+          );
+          g.stroke();
+        }
+
+        // Tiny wildflowers
+        if (hash(col, row, 60) < 0.06) {
+          const fx = x0 + (0.2 + hash(col, row, 61) * 0.6) * size;
+          const fy = y0 + (0.2 + hash(col, row, 62) * 0.6) * size;
+          const fc = FOREST.petals[Math.floor(hash(col, row, 63) * FOREST.petals.length)];
+          const pr = size * 0.024;
+
+          g.fillStyle = rgba(fc, K, 0.95);
+
+          for (let p = 0; p < 5; p += 1) {
+            const a = (p / 5) * Math.PI * 2;
+            g.beginPath();
+            g.arc(fx + Math.cos(a) * pr * 1.3, fy + Math.sin(a) * pr * 1.3, pr, 0, Math.PI * 2);
+            g.fill();
           }
 
-          g.stroke();
+          g.fillStyle = rgba([255, 200, 60], K, 1);
+          g.beginPath();
+          g.arc(fx, fy, pr * 0.8, 0, Math.PI * 2);
+          g.fill();
         }
       }
     }
+
+    g.restore();
   }
 
   function strokeSegs(g, segs, vp, ox, oy) {
@@ -1519,187 +1412,128 @@
     g.stroke();
   }
 
-  // Real stone brick walls
+  // Tall layered hedge walls
   function paintWalls(g, maze, vp, lit) {
     const segs = getSegments(maze);
     const { size, originX, originY } = vp;
-    const thick = Math.max(5, size * 0.28);
-    const ox = -thick * 0.1;
-    const oy = -thick * 0.14;
+    const K = lit ? 1 : 0.42;
+    const thick = Math.max(6, size * 0.36);
 
     g.save();
-    g.lineCap = 'square';
-    g.lineJoin = 'miter';
-
-    // Cast shadow: gives the walls height
-    g.strokeStyle = 'rgba(0,0,0,0.6)';
-    g.lineWidth = thick * 1.3;
-    strokeSegs(g, segs, vp, thick * 0.12, thick * 0.3);
-
-    // Dark stone body (faint warm torch bounce when lit)
-    g.strokeStyle = lit ? '#4b433b' : '#2a2520';
-    g.lineWidth = thick;
-
-    if (lit) {
-      g.shadowColor = 'rgba(255,150,70,0.4)';
-      g.shadowBlur = size * 0.32;
-    }
-
-    strokeSegs(g, segs, vp, 0, 0);
-    g.shadowBlur = 0;
-
-    // Lighter top face of the stone
-    g.strokeStyle = lit ? '#82776a' : '#463f38';
-    g.lineWidth = thick * 0.66;
-    strokeSegs(g, segs, vp, ox, oy);
-
-    // Per-segment weathering: every wall piece gets its own tone
-    for (let i = 0; i < segs.length; i += 1) {
-      const s = segs[i];
-      const h = hash(i, 1, 41);
-
-      g.strokeStyle = h > 0.5
-        ? 'rgba(255,236,205,' + ((h - 0.5) * (lit ? 0.24 : 0.14)).toFixed(3) + ')'
-        : 'rgba(0,0,0,' + ((0.5 - h) * (lit ? 0.4 : 0.3)).toFixed(3) + ')';
-
-      g.lineWidth = thick * 0.66;
-      g.beginPath();
-      g.moveTo(originX + s[0] * size + ox, originY + s[1] * size + oy);
-      g.lineTo(originX + s[2] * size + ox, originY + s[3] * size + oy);
-      g.stroke();
-    }
-
-    // Mortar joints: a course line down the middle + staggered brick ends
-    g.lineCap = 'butt';
-    g.strokeStyle = lit ? 'rgba(22,17,13,0.72)' : 'rgba(8,6,4,0.62)';
-    g.lineWidth = Math.max(0.8, size * 0.024);
-    g.beginPath();
-
-    const half = thick * 0.33;
-
-    for (let i = 0; i < segs.length; i += 1) {
-      const s = segs[i];
-      const ax = originX + s[0] * size + ox;
-      const ay = originY + s[1] * size + oy;
-
-      if (s[1] === s[3]) {
-        g.moveTo(ax, ay);
-        g.lineTo(ax + size, ay);
-
-        [1 / 3, 2 / 3].forEach(t => {
-          g.moveTo(ax + size * t, ay - half);
-          g.lineTo(ax + size * t, ay);
-        });
-
-        [1 / 6, 0.5, 5 / 6].forEach(t => {
-          g.moveTo(ax + size * t, ay);
-          g.lineTo(ax + size * t, ay + half);
-        });
-      } else {
-        g.moveTo(ax, ay);
-        g.lineTo(ax, ay + size);
-
-        [1 / 3, 2 / 3].forEach(t => {
-          g.moveTo(ax - half, ay + size * t);
-          g.lineTo(ax, ay + size * t);
-        });
-
-        [1 / 6, 0.5, 5 / 6].forEach(t => {
-          g.moveTo(ax, ay + size * t);
-          g.lineTo(ax + half, ay + size * t);
-        });
-      }
-    }
-
-    g.stroke();
-
-    // Bright chiselled top edge
-    g.lineCap = 'square';
-    g.strokeStyle = lit ? 'rgba(255,238,210,0.5)' : 'rgba(225,205,175,0.24)';
-    g.lineWidth = Math.max(1, thick * 0.11);
-    strokeSegs(g, segs, vp, ox, oy - thick * 0.3);
-
-    // Dark lower lip
-    g.strokeStyle = lit ? 'rgba(0,0,0,0.38)' : 'rgba(0,0,0,0.3)';
-    g.lineWidth = Math.max(1, thick * 0.1);
-    strokeSegs(g, segs, vp, 0, thick * 0.4);
-
-    // Grit flecks
-    for (let i = 0; i < segs.length; i += 1) {
-      const s = segs[i];
-
-      for (let k = 0; k < 3; k += 1) {
-        if (hash(i, k, 47) < 0.45) continue;
-
-        const t = 0.1 + 0.8 * hash(i, k, 48);
-        const jitter = (hash(i, k, 49) - 0.5) * thick * 0.5;
-        const horiz = s[1] === s[3];
-        const px = originX + (s[0] + (s[2] - s[0]) * t) * size + ox + (horiz ? 0 : jitter);
-        const py = originY + (s[1] + (s[3] - s[1]) * t) * size + oy + (horiz ? jitter : 0);
-
-        g.fillStyle = hash(i, k, 50) > 0.5
-          ? (lit ? 'rgba(220,205,180,0.4)' : 'rgba(190,175,150,0.2)')
-          : 'rgba(0,0,0,0.35)';
-
-        g.beginPath();
-        g.arc(px, py, Math.max(0.7, size * 0.02), 0, Math.PI * 2);
-        g.fill();
-      }
-    }
-
-    // Cracks and chips
     g.lineCap = 'round';
-    g.strokeStyle = lit ? 'rgba(8,5,3,0.75)' : 'rgba(6,4,2,0.55)';
-    g.lineWidth = Math.max(0.8, size * 0.022);
+    g.lineJoin = 'round';
 
-    for (let i = 0; i < segs.length; i += 1) {
-      if (hash(i, 2, 71) > 0.13) continue;
+    // Long cast shadow: gives the hedges height
+    g.strokeStyle = 'rgba(0,0,0,0.55)';
+    g.lineWidth = thick * 1.5;
+    strokeSegs(g, segs, vp, thick * 0.18, thick * 0.4);
 
-      const s = segs[i];
-      const horiz = s[1] === s[3];
-      let t = 0.15 + 0.6 * hash(i, 3, 71);
-      let px = originX + (s[0] + (s[2] - s[0]) * t) * size + ox;
-      let py = originY + (s[1] + (s[3] - s[1]) * t) * size + oy;
+    // Deep undergrowth base
+    g.strokeStyle = rgba(FOREST.hedgeDeep, K, 1);
+    g.lineWidth = thick * 1.05;
+    strokeSegs(g, segs, vp, 0, 0);
 
-      g.beginPath();
-      g.moveTo(px, py);
+    // One layer of overlapping foliage blobs along every wall piece
+    function foliage(count, rMin, rVar, color, offX, offY, alpha, skip, salt) {
+      for (let i = 0; i < segs.length; i += 1) {
+        const s = segs[i];
+        const horiz = s[1] === s[3];
 
-      for (let k = 0; k < 3; k += 1) {
-        const along = size * 0.07 * (0.5 + hash(i, k, 72));
-        const across = (hash(i, k, 73) - 0.5) * thick * 0.5;
+        for (let k = 0; k < count; k += 1) {
+          if (skip && hash(i, k, salt + 1) < skip) continue;
 
-        px += horiz ? along : across;
-        py += horiz ? across : along;
+          const t = -0.03 + ((k + hash(i, k, salt) * 0.8) / count) * 1.06;
+          const jit = (hash(i, k, salt + 2) - 0.5) * thick * 0.5;
+          const px = originX + (s[0] + (s[2] - s[0]) * t) * size + offX + (horiz ? 0 : jit);
+          const py = originY + (s[1] + (s[3] - s[1]) * t) * size + offY + (horiz ? jit : 0);
+          const r = thick * (rMin + hash(i, k, salt + 3) * rVar);
+          const v = 0.8 + hash(i, k, salt + 4) * 0.4;
 
-        g.lineTo(px, py);
+          g.fillStyle = rgba(color, K * v, alpha);
+          g.beginPath();
+          g.arc(px, py, r, 0, Math.PI * 2);
+          g.fill();
+        }
       }
-
-      g.stroke();
     }
 
-    // Moss creeping over the stone
-    for (let i = 0; i < segs.length; i += 1) {
-      if (hash(i, 2, 61) > 0.17) continue;
+    foliage(9, 0.5, 0.2, FOREST.hedgeDark, 0, 0, 1, 0, 200);
+    foliage(8, 0.4, 0.2, FOREST.hedgeMid, -thick * 0.03, -thick * 0.1, 1, 0, 300);
+    foliage(7, 0.28, 0.18, FOREST.hedgeLight, -thick * 0.06, -thick * 0.22, 0.95, 0.25, 400);
+    foliage(4, 0.13, 0.1, FOREST.hedgeGlow, -thick * 0.1, -thick * 0.3, 0.55, 0.35, 500);
 
+    // Individual leaf flecks for a leafy texture
+    for (let i = 0; i < segs.length; i += 1) {
       const s = segs[i];
       const horiz = s[1] === s[3];
 
-      for (let k = 0; k < 5; k += 1) {
-        const t = hash(i, k, 62);
-        const jitter = (hash(i, k, 63) - 0.3) * thick * 0.55;
-        const px = originX + (s[0] + (s[2] - s[0]) * t) * size + ox + (horiz ? 0 : jitter);
-        const py = originY + (s[1] + (s[3] - s[1]) * t) * size + oy + (horiz ? jitter : 0);
-        const r = size * (0.05 + hash(i, k, 64) * 0.07);
+      for (let k = 0; k < 12; k += 1) {
+        const t = hash(i, k, 700);
+        const jit = (hash(i, k, 701) - 0.5) * thick * 0.85;
+        const px = originX + (s[0] + (s[2] - s[0]) * t) * size - thick * 0.05 + (horiz ? 0 : jit);
+        const py = originY + (s[1] + (s[3] - s[1]) * t) * size - thick * 0.15 + (horiz ? jit : 0);
+        const rot = hash(i, k, 702) * Math.PI;
+        const bright = hash(i, k, 703);
 
-        g.fillStyle = lit ? 'rgba(74,116,46,0.62)' : 'rgba(52,84,34,0.42)';
-        g.beginPath();
-        g.arc(px, py, r, 0, Math.PI * 2);
-        g.fill();
+        g.fillStyle = bright > 0.5
+          ? rgba(FOREST.hedgeLight, K * (0.85 + bright * 0.4), 0.85)
+          : rgba(FOREST.hedgeDeep, K * (0.8 + bright), 0.75);
 
-        g.fillStyle = lit ? 'rgba(130,175,80,0.45)' : 'rgba(90,125,55,0.22)';
         g.beginPath();
-        g.arc(px - r * 0.25, py - r * 0.3, r * 0.5, 0, Math.PI * 2);
+        g.ellipse(px, py, thick * 0.12, thick * 0.055, rot, 0, Math.PI * 2);
         g.fill();
+      }
+    }
+
+    // Berries and wildflowers tucked into the hedge
+    for (let i = 0; i < segs.length; i += 1) {
+      const s = segs[i];
+      const horiz = s[1] === s[3];
+      const roll = hash(i, 2, 610);
+
+      if (roll > 0.22) continue;
+
+      const isBerry = roll < 0.12;
+      const t0 = 0.15 + hash(i, 3, 611) * 0.7;
+      const clusterColor = isBerry
+        ? FOREST.berries[Math.floor(hash(i, 4, 612) * FOREST.berries.length)]
+        : FOREST.petals[Math.floor(hash(i, 4, 613) * FOREST.petals.length)];
+
+      for (let k = 0; k < 3; k += 1) {
+        const t = Math.min(0.95, Math.max(0.05, t0 + (hash(i, k, 614) - 0.5) * 0.14));
+        const jit = (hash(i, k, 615) - 0.5) * thick * 0.5;
+        const px = originX + (s[0] + (s[2] - s[0]) * t) * size - thick * 0.08 + (horiz ? 0 : jit);
+        const py = originY + (s[1] + (s[3] - s[1]) * t) * size - thick * 0.22 + (horiz ? jit : 0);
+
+        if (isBerry) {
+          const r = Math.max(1, size * 0.028);
+
+          g.fillStyle = rgba(clusterColor, K, 1);
+          g.beginPath();
+          g.arc(px, py, r, 0, Math.PI * 2);
+          g.fill();
+
+          g.fillStyle = 'rgba(255,255,255,' + (lit ? 0.6 : 0.25) + ')';
+          g.beginPath();
+          g.arc(px - r * 0.3, py - r * 0.3, r * 0.35, 0, Math.PI * 2);
+          g.fill();
+        } else {
+          const pr = Math.max(0.8, size * 0.022);
+
+          g.fillStyle = rgba(clusterColor, K, 0.95);
+
+          for (let p = 0; p < 5; p += 1) {
+            const a = (p / 5) * Math.PI * 2;
+            g.beginPath();
+            g.arc(px + Math.cos(a) * pr * 1.3, py + Math.sin(a) * pr * 1.3, pr, 0, Math.PI * 2);
+            g.fill();
+          }
+
+          g.fillStyle = rgba([255, 200, 60], K, 1);
+          g.beginPath();
+          g.arc(px, py, pr * 0.75, 0, Math.PI * 2);
+          g.fill();
+        }
       }
     }
 
@@ -1726,7 +1560,7 @@
     paintStatic(lit, state.maze, vp, dpr, true);
     paintStatic(dim, state.maze, vp, dpr, false);
 
-    // Background: deep earth gradient
+    // Background: deep forest gradient
     const bg = makeCanvas(W, H);
     const bgc = bg.getContext('2d');
     bgc.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1735,8 +1569,8 @@
       width / 2, height / 2, 0,
       width / 2, height / 2, Math.max(width, height) * 0.7
     );
-    bgGrad.addColorStop(0, '#17110d');
-    bgGrad.addColorStop(1, '#060403');
+    bgGrad.addColorStop(0, '#0f2014');
+    bgGrad.addColorStop(1, '#030804');
     bgc.fillStyle = bgGrad;
     bgc.fillRect(0, 0, width, height);
 
@@ -1749,8 +1583,8 @@
       width / 2, height / 2, Math.min(width, height) * 0.4,
       width / 2, height / 2, Math.max(width, height) * 0.8
     );
-    vGrad.addColorStop(0, 'rgba(6,4,3,0)');
-    vGrad.addColorStop(1, 'rgba(6,4,3,0.6)');
+    vGrad.addColorStop(0, 'rgba(2,6,3,0)');
+    vGrad.addColorStop(1, 'rgba(2,6,3,0.62)');
     vg.fillStyle = vGrad;
     vg.fillRect(0, 0, width, height);
 
@@ -1789,7 +1623,7 @@
       cache.seenRef = seen;
     }
 
-    const pad = Math.max(5, vp.size * 0.28) * 0.9;
+    const pad = Math.max(6, vp.size * 0.36) * 0.9;
     const g = cache.mctx;
 
     g.setTransform(1, 0, 0, 1, 0, 0);
@@ -1989,114 +1823,161 @@
     }
   }
 
-  // FLICKERING WALL TORCHES (drawn in the lit layer, so the fog hides them
-  // until your lamp reaches them). Each one throws a warm light pool.
-  function drawTorches(g, state, vp, time, px, py, reach) {
+  // GLOWING MUSHROOM CLUSTERS growing on the hedges (drawn in the lit layer,
+  // so the fog hides them until your lamp reaches them). Each throws a
+  // coloured light pool onto the forest floor.
+  function drawGlowShrooms(g, state, vp, time, px, py, reach) {
     const torches = getTorches(state.maze);
     const s = vp.size;
-    const thick = Math.max(5, s * 0.28);
+    const thick = Math.max(6, s * 0.36);
 
     g.save();
 
     for (let n = 0; n < torches.length; n += 1) {
       const t = torches[n];
-      const x = vp.originX + t.x * s - thick * 0.1;
-      const y = vp.originY + t.y * s - thick * 0.14 - thick * 0.3;
+      const x = vp.originX + t.x * s - thick * 0.06;
+      const y = vp.originY + t.y * s - thick * 0.22;
 
       if (Math.abs(x - px) > reach || Math.abs(y - py) > reach) continue;
 
-      const f = Math.max(
-        0.35,
-        0.78 + 0.2 * Math.sin(time / (80 + (t.i % 7) * 13) + t.i) + 0.1 * Math.sin(time / 31 + t.i * 2.3)
-      );
+      const h = FOREST.shroomHues[t.i % FOREST.shroomHues.length];
+      const hs = h.join(',');
+      const f = 0.72 + 0.28 * Math.sin(time / (520 + (t.i % 5) * 110) + t.i);
 
-      // Warm light pool on the floor
+      // Coloured light pool on the floor
       g.globalCompositeOperation = 'lighter';
 
-      const pr = s * (1.55 + 0.25 * f);
-      const pool = g.createRadialGradient(x, y + s * 0.12, 0, x, y + s * 0.12, pr);
+      const pr = s * (1.4 + 0.2 * f);
+      const pool = g.createRadialGradient(x, y + s * 0.15, 0, x, y + s * 0.15, pr);
 
-      pool.addColorStop(0, 'rgba(255,150,60,' + (0.26 * f).toFixed(3) + ')');
-      pool.addColorStop(0.5, 'rgba(255,110,40,' + (0.09 * f).toFixed(3) + ')');
-      pool.addColorStop(1, 'rgba(255,100,30,0)');
+      pool.addColorStop(0, 'rgba(' + hs + ',' + (0.26 * f).toFixed(3) + ')');
+      pool.addColorStop(0.5, 'rgba(' + hs + ',' + (0.08 * f).toFixed(3) + ')');
+      pool.addColorStop(1, 'rgba(' + hs + ',0)');
 
       g.fillStyle = pool;
       g.beginPath();
-      g.arc(x, y + s * 0.12, pr, 0, Math.PI * 2);
+      g.arc(x, y + s * 0.15, pr, 0, Math.PI * 2);
       g.fill();
 
       g.globalCompositeOperation = 'source-over';
 
-      // Iron bracket
-      g.fillStyle = '#17120f';
-      g.fillRect(x - s * 0.035, y - s * 0.005, s * 0.07, s * 0.1);
+      // Cluster of three mushrooms
+      const caps = [[-0.07, 0.02, 0.075], [0.03, -0.02, 0.095], [0.1, 0.04, 0.06]];
 
-      g.fillStyle = '#2b231d';
-      g.fillRect(x - s * 0.05, y + s * 0.07, s * 0.1, s * 0.03);
+      for (let c = 0; c < caps.length; c += 1) {
+        const mx = x + caps[c][0] * s;
+        const my = y + caps[c][1] * s;
+        const r = caps[c][2] * s;
 
-      // Flame
-      const fh = s * 0.17 * (0.8 + 0.4 * f);
-      const fw = s * 0.06 * (0.85 + 0.3 * f);
-      const sway = Math.sin(time / 140 + t.i) * s * 0.012;
+        // Stem
+        g.fillStyle = '#d9e8d0';
+        g.fillRect(mx - s * 0.012, my, s * 0.024, s * 0.07);
 
-      g.shadowColor = 'rgba(255,140,40,1)';
-      g.shadowBlur = s * 0.3;
+        // Glowing cap
+        g.shadowColor = 'rgba(' + hs + ',1)';
+        g.shadowBlur = s * 0.28 * f;
 
-      const flame = g.createLinearGradient(x, y - fh, x, y + s * 0.02);
+        const cg = g.createLinearGradient(mx, my - r, mx, my);
+        cg.addColorStop(0, 'rgba(255,255,255,0.95)');
+        cg.addColorStop(0.35, rgba(h, 1, 1));
+        cg.addColorStop(1, rgba(h, 0.55, 1));
 
-      flame.addColorStop(0, '#ffdf8a');
-      flame.addColorStop(0.5, '#ff9a2e');
-      flame.addColorStop(1, '#c8380f');
+        g.fillStyle = cg;
+        g.beginPath();
+        g.ellipse(mx, my, r, r * 0.62, 0, Math.PI, Math.PI * 2);
+        g.closePath();
+        g.fill();
 
-      g.fillStyle = flame;
-      g.beginPath();
-      g.moveTo(x + sway, y - fh);
-      g.quadraticCurveTo(x + fw * 1.4, y - fh * 0.25, x, y + s * 0.02);
-      g.quadraticCurveTo(x - fw * 1.4, y - fh * 0.25, x + sway, y - fh);
-      g.fill();
+        g.shadowBlur = 0;
 
-      g.shadowBlur = 0;
-
-      g.fillStyle = 'rgba(255,245,200,0.9)';
-      g.beginPath();
-      g.moveTo(x + sway * 0.5, y - fh * 0.55);
-      g.quadraticCurveTo(x + fw * 0.6, y - fh * 0.15, x, y);
-      g.quadraticCurveTo(x - fw * 0.6, y - fh * 0.15, x + sway * 0.5, y - fh * 0.55);
-      g.fill();
+        // Spot
+        g.fillStyle = 'rgba(255,255,255,0.75)';
+        g.beginPath();
+        g.arc(mx - r * 0.35, my - r * 0.28, Math.max(0.7, s * 0.011), 0, Math.PI * 2);
+        g.fill();
+      }
     }
 
     g.restore();
   }
 
-  // DRIFTING DUST + EMBERS (drawn in the lit layer, so the fog hides them)
-  function drawMotes(g, state, vp, time) {
+  // FIREFLIES, FALLING LEAVES AND MIST (drawn in the lit layer, so the fog
+  // hides them outside the lamp)
+  function drawAmbience(g, state, vp, time) {
     const { maze } = state;
-    const W = maze.cols * vp.size;
-    const H = maze.rows * vp.size;
-    const px = vp.originX + (state.player.col + 0.5) * vp.size;
-    const py = vp.originY + (state.player.row + 0.5) * vp.size;
-    const reach = vp.size * 7;
-    const k = vp.size / 18;
+    const s = vp.size;
+    const W = maze.cols * s;
+    const H = maze.rows * s;
+    const px = vp.originX + (state.player.col + 0.5) * s;
+    const py = vp.originY + (state.player.row + 0.5) * s;
+    const reach = s * 7;
 
-    for (let i = 0; i < 90; i += 1) {
-      const sp = (5 + hash(i, 3, 11) * 9) * k;
+    g.save();
 
-      const x = vp.originX + ((hash(i, 1, 11) * W + time * 0.001 * sp) % W);
-      const y = vp.originY + ((((hash(i, 2, 11) * H - time * 0.001 * sp * 0.6) % H) + H) % H);
+    // Drifting mist wisps around the player
+    for (let i = 0; i < 6; i += 1) {
+      const ang = time / 9000 + i * 1.05;
+      const mx = px + Math.cos(ang * (0.6 + i * 0.1)) * s * 3.2;
+      const my = py + Math.sin(ang * 0.8 + i) * s * 2.4;
+      const mist = g.createRadialGradient(mx, my, 0, mx, my, s * 2.2);
+
+      mist.addColorStop(0, 'rgba(170,215,200,0.075)');
+      mist.addColorStop(1, 'rgba(170,215,200,0)');
+
+      g.fillStyle = mist;
+      g.beginPath();
+      g.arc(mx, my, s * 2.2, 0, Math.PI * 2);
+      g.fill();
+    }
+
+    // Falling leaves
+    for (let i = 0; i < 26; i += 1) {
+      const sp = (6 + hash(i, 3, 21) * 8) * (s / 18);
+      const x = vp.originX + hash(i, 1, 21) * W + Math.sin(time / 1300 + i) * s * 0.5;
+      const y = vp.originY + (((hash(i, 2, 21) * H + time * 0.001 * sp) % H) + H) % H;
 
       if (Math.abs(x - px) > reach || Math.abs(y - py) > reach) continue;
 
-      const tw = 0.25 + 0.75 * Math.abs(Math.sin(time / 700 + i * 1.7));
+      const lc = FOREST.leaves[i % FOREST.leaves.length];
 
-      g.globalAlpha = 0.5 * tw;
-      g.fillStyle = i % 3 === 0 ? '#ffb25c' : '#e6d5b8';
-
+      g.globalAlpha = 0.85;
+      g.fillStyle = rgba(lc, 1, 1);
       g.beginPath();
-      g.arc(x, y, Math.max(0.8, vp.size * (0.018 + hash(i, 4, 11) * 0.03)), 0, Math.PI * 2);
+      g.ellipse(x, y, s * 0.05, s * 0.026, time / 900 + i, 0, Math.PI * 2);
       g.fill();
     }
 
     g.globalAlpha = 1;
+
+    // Fireflies
+    g.globalCompositeOperation = 'lighter';
+
+    for (let i = 0; i < 110; i += 1) {
+      const x = vp.originX + hash(i, 1, 11) * W +
+        Math.sin(time / (1400 + hash(i, 3, 11) * 1800) + i) * s * 0.9;
+      const y = vp.originY + hash(i, 2, 11) * H +
+        Math.cos(time / (1700 + hash(i, 4, 11) * 1500) + i * 1.3) * s * 0.7;
+
+      if (Math.abs(x - px) > reach || Math.abs(y - py) > reach) continue;
+
+      const blink = Math.pow(0.5 + 0.5 * Math.sin(time / (500 + hash(i, 5, 11) * 600) + i * 2.1), 3);
+
+      if (blink < 0.03) continue;
+
+      const gr = s * 0.24;
+      const fg = g.createRadialGradient(x, y, 0, x, y, gr);
+
+      fg.addColorStop(0, 'rgba(210,255,130,' + (0.9 * blink).toFixed(3) + ')');
+      fg.addColorStop(0.3, 'rgba(180,255,100,' + (0.3 * blink).toFixed(3) + ')');
+      fg.addColorStop(1, 'rgba(160,255,90,0)');
+
+      g.fillStyle = fg;
+      g.beginPath();
+      g.arc(x, y, gr, 0, Math.PI * 2);
+      g.fill();
+    }
+
+    g.restore();
   }
 
   // PLAYER
@@ -2288,124 +2169,125 @@
   }
 
   // WRONG-KEY RETURN BANNER
- function drawDisorientBanner(ctx, state, width) {
-  const remaining = state.controlsReversedMs;
+  function drawDisorientBanner(ctx, state, width) {
+    const remaining = state.controlsReversedMs;
 
-  if (!remaining || remaining <= 0) return;
+    if (!remaining || remaining <= 0) return;
 
-  const total = CONFIG.disorient.durationMs;
+    const total = CONFIG.disorient.durationMs;
 
-  const fade = isFinite(remaining)
-    ? Math.min(
-        1,
-        (total - remaining) / 150 + 0.2,
-        remaining / 400
-      )
-    : 1;
+    const fade = isFinite(remaining)
+      ? Math.min(
+          1,
+          (total - remaining) / 150 + 0.2,
+          remaining / 400
+        )
+      : 1;
 
-  const w = Math.min(300, width - 24);
-  const h = 135;
+    const w = Math.min(300, width - 24);
+    const h = 135;
 
-  const x = Math.max(12, width - w - 14);
-  const y = 14;
+    const x = Math.max(12, width - w - 14);
+    const y = 14;
 
-  const centerX = x + w / 2;
+    const centerX = x + w / 2;
 
-  ctx.save();
+    ctx.save();
 
-  ctx.globalAlpha = Math.max(0, fade);
+    ctx.globalAlpha = Math.max(0, fade);
 
-  // Background
-  ctx.shadowColor = 'rgba(0,0,0,0.55)';
-  ctx.shadowBlur = 16;
-  ctx.shadowOffsetY = 5;
+    // Background
+    ctx.shadowColor = 'rgba(0,0,0,0.55)';
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 5;
 
-  ctx.fillStyle = 'rgba(8,4,12,0.95)';
+    ctx.fillStyle = 'rgba(8,4,12,0.95)';
 
-  if (ctx.roundRect) {
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, 12);
+      ctx.fill();
+    } else {
+      ctx.fillRect(x, y, w, h);
+    }
+
+    // Border
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    ctx.strokeStyle = '#ff4d6d';
+    ctx.lineWidth = 1.8;
+
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, 12);
+      ctx.stroke();
+    } else {
+      ctx.strokeRect(x, y, w, h);
+    }
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Title
+    ctx.font = '800 19px Arial, sans-serif';
+    ctx.fillStyle = '#ff4d6d';
+
+    ctx.fillText(
+      '❌ WRONG KEY',
+      centerX,
+      y + 27
+    );
+
+    // Instruction
+    ctx.font = '700 11px Arial, sans-serif';
+    ctx.fillStyle = '#d7e4ff';
+
+    ctx.fillText(
+      'RETURN TO START — THEN TRY AGAIN',
+      centerX,
+      y + 49
+    );
+
+    // Separator
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 12);
-    ctx.fill();
-  } else {
-    ctx.fillRect(x, y, w, h);
-  }
-
-  // Border
-  ctx.shadowColor = 'transparent';
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetY = 0;
-
-  ctx.strokeStyle = '#ff4d6d';
-  ctx.lineWidth = 1.8;
-
-  if (ctx.roundRect) {
-    ctx.beginPath();
-    ctx.roundRect(x, y, w, h, 12);
+    ctx.moveTo(x + 22, y + 66);
+    ctx.lineTo(x + w - 22, y + 66);
     ctx.stroke();
-  } else {
-    ctx.strokeRect(x, y, w, h);
+
+    // Controls warning
+    ctx.font = '800 10px Arial, sans-serif';
+    ctx.fillStyle = '#ffd166';
+
+    ctx.fillText(
+      '⚠ CONTROLS DISORIENTED',
+      centerX,
+      y + 86
+    );
+
+    // Controls
+    ctx.font = '700 10px Arial, sans-serif';
+    ctx.fillStyle = '#d7e4ff';
+
+    ctx.fillText(
+      'W → DOWN     S → UP',
+      centerX,
+      y + 105
+    );
+
+    ctx.fillText(
+      'D → LEFT     A → RIGHT',
+      centerX,
+      y + 121
+    );
+
+    ctx.restore();
   }
 
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  // Title
-  ctx.font = '800 19px Arial, sans-serif';
-  ctx.fillStyle = '#ff4d6d';
-
-  ctx.fillText(
-    '❌ WRONG KEY',
-    centerX,
-    y + 27
-  );
-
-  // Instruction
-  ctx.font = '700 11px Arial, sans-serif';
-  ctx.fillStyle = '#d7e4ff';
-
-  ctx.fillText(
-    'RETURN TO START — THEN TRY AGAIN',
-    centerX,
-    y + 49
-  );
-
-  // Separator
-  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-  ctx.lineWidth = 1;
-
-  ctx.beginPath();
-  ctx.moveTo(x + 22, y + 66);
-  ctx.lineTo(x + w - 22, y + 66);
-  ctx.stroke();
-
-  // Controls warning
-  ctx.font = '800 10px Arial, sans-serif';
-  ctx.fillStyle = '#ffd166';
-
-  ctx.fillText(
-    '⚠ CONTROLS DISORIENTED',
-    centerX,
-    y + 86
-  );
-
-  // Controls
-  ctx.font = '700 10px Arial, sans-serif';
-  ctx.fillStyle = '#d7e4ff';
-
-  ctx.fillText(
-    'W → DOWN     S → UP',
-    centerX,
-    y + 105
-  );
-
-  ctx.fillText(
-    'D → LEFT     A → RIGHT',
-    centerX,
-    y + 121
-  );
-
-  ctx.restore();
-}
   // DEBUG OVERLAY
   function drawDebugOverlay(ctx, state, width) {
     if (!state.debug) return;
@@ -2499,6 +2381,7 @@
 
     // REMEMBERED GEOMETRY
     if (debug) {
+      // Organizer-only debug view: reveals the whole maze and all keys.
       ctx.globalAlpha = 0.42;
       ctx.drawImage(cache.dim, 0, 0, width, height);
       ctx.globalAlpha = 1;
@@ -2507,7 +2390,8 @@
       ctx.globalAlpha = 0.42;
       drawKeys(ctx, state, vp, time, true);
       ctx.restore();
-    } else {
+    } else if (CONFIG.memoryAlpha > 0) {
+      // Explored-area memory (disabled when memoryAlpha is 0).
       syncMemory(cache, state, vp);
 
       ctx.globalAlpha = CONFIG.memoryAlpha;
@@ -2561,9 +2445,9 @@
 
       drawKeys(lg, state, vp, time, true);
 
-      drawTorches(lg, state, vp, time, cx, cy, outer + vp.size * 2);
+      drawGlowShrooms(lg, state, vp, time, cx, cy, outer + vp.size * 2);
 
-      drawMotes(lg, state, vp, time);
+      drawAmbience(lg, state, vp, time);
 
       const mask = lg.createRadialGradient(cx, cy, inner * 0.2, cx, cy, outer);
 
@@ -2592,9 +2476,6 @@
       ctx.fillRect(bx, by, bw, bh);
       ctx.globalCompositeOperation = 'source-over';
     }
-
-    // START
-    if (!debug) drawStartPad(ctx, state, vp, time, false);
 
     // PLAYER
     drawPlayer(ctx, state, vp, time);
