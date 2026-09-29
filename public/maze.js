@@ -1553,12 +1553,9 @@
     const H = Math.round(height * dpr);
 
     const lit = makeCanvas(W, H);
-    const dim = makeCanvas(W, H);
-    const mem = makeCanvas(W, H);
     const light = makeCanvas(W, H);
 
     paintStatic(lit, state.maze, vp, dpr, true);
-    paintStatic(dim, state.maze, vp, dpr, false);
 
     // Background: deep forest gradient
     const bg = makeCanvas(W, H);
@@ -1588,14 +1585,37 @@
     vg.fillStyle = vGrad;
     vg.fillRect(0, 0, width, height);
 
-    return {
+    const cache = {
       key, W, H, dpr,
-      lit, dim, mem, light, bg, vig,
+      lit, light, bg, vig,
       lctx: light.getContext('2d'),
-      mctx: mem.getContext('2d'),
       memSeen: new Uint8Array(state.maze.cols * state.maze.rows),
-      seenRef: null
+      seenRef: null,
+      _dim: null,
+      _mem: null,
+      _mctx: null
     };
+
+    // The dim (unlit) art and the memory layer are only needed for debug mode
+    // or when memoryAlpha > 0, so they are built lazily. This halves startup
+    // paint time and saves two full-size canvases of memory.
+    cache.getDim = function () {
+      if (!cache._dim) {
+        cache._dim = makeCanvas(W, H);
+        paintStatic(cache._dim, state.maze, vp, dpr, false);
+      }
+      return cache._dim;
+    };
+
+    cache.getMem = function () {
+      if (!cache._mem) {
+        cache._mem = makeCanvas(W, H);
+        cache._mctx = cache._mem.getContext('2d');
+      }
+      return cache._mem;
+    };
+
+    return cache;
   }
 
   function getCache(state, vp, width, height, dpr) {
@@ -1616,15 +1636,18 @@
     const { maze, seen } = state;
     const dpr = cache.dpr;
 
+    cache.getMem();
+
     if (cache.seenRef !== seen) {
-      cache.mctx.setTransform(1, 0, 0, 1, 0, 0);
-      cache.mctx.clearRect(0, 0, cache.W, cache.H);
+      cache._mctx.setTransform(1, 0, 0, 1, 0, 0);
+      cache._mctx.clearRect(0, 0, cache.W, cache.H);
       cache.memSeen.fill(0);
       cache.seenRef = seen;
     }
 
     const pad = Math.max(6, vp.size * 0.36) * 0.9;
-    const g = cache.mctx;
+    const g = cache._mctx;
+    const dimCanvas = cache.getDim();
 
     g.setTransform(1, 0, 0, 1, 0, 0);
 
@@ -1642,7 +1665,7 @@
       const y1 = Math.min(cache.H, Math.ceil((vp.originY + (row + 1) * vp.size + pad) * dpr));
 
       if (x1 > x0 && y1 > y0) {
-        g.drawImage(cache.dim, x0, y0, x1 - x0, y1 - y0, x0, y0, x1 - x0, y1 - y0);
+        g.drawImage(dimCanvas, x0, y0, x1 - x0, y1 - y0, x0, y0, x1 - x0, y1 - y0);
       }
     }
   }
@@ -1696,110 +1719,140 @@
     ctx.restore();
   }
 
-  // KEY
+  // KEY — high-visibility version: dark contrast disc, floor beacon + ripples,
+  // dark/white outlined body filled with the key colour, glowing gem, sparkles.
   function drawKey(ctx, x, y, size, hex, time) {
-    const bob = Math.sin(time / 520 + x) * size * 0.035;
-
-    const scale = size * 0.16;
-
-    // Floor halo (stays on the ground while the key bobs)
-    const halo = 0.16 + 0.1 * (0.5 + 0.5 * Math.sin(time / 420 + x));
-    const floor = ctx.createRadialGradient(x, y + size * 0.16, 0, x, y + size * 0.16, size * 0.85);
-
-    floor.addColorStop(0, hex + Math.round(halo * 255).toString(16).padStart(2, '0'));
-    floor.addColorStop(1, 'rgba(0,0,0,0)');
-
-    ctx.fillStyle = floor;
-    ctx.beginPath();
-    ctx.arc(x, y + size * 0.16, size * 0.85, 0, Math.PI * 2);
-    ctx.fill();
+    const pulse = 0.5 + 0.5 * Math.sin(time / 420 + x);
+    const bob = Math.sin(time / 520 + x) * size * 0.05;
+    const scale = size * 0.18;
+    const w = Math.max(3, size * 0.09);
+    const floorY = y + size * 0.16;
 
     ctx.save();
 
-    ctx.translate(x, y + bob);
+    // FLOOR BEACON (additive colour pool, pulsing)
+    ctx.globalCompositeOperation = 'lighter';
 
-    // MAGICAL GLOW
-    const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 0.65);
+    const beacon = ctx.createRadialGradient(x, floorY, 0, x, floorY, size * 1.15);
+    beacon.addColorStop(0, hex + Math.round((0.38 + 0.18 * pulse) * 255).toString(16).padStart(2, '0'));
+    beacon.addColorStop(0.5, hex + '22');
+    beacon.addColorStop(1, hex + '00');
 
-    glow.addColorStop(0, hex + '55');
-    glow.addColorStop(0.45, hex + '22');
-    glow.addColorStop(1, 'rgba(0,0,0,0)');
-
-    ctx.fillStyle = glow;
-
+    ctx.fillStyle = beacon;
     ctx.beginPath();
-    ctx.arc(0, 0, size * 0.65, 0, Math.PI * 2);
+    ctx.arc(x, floorY, size * 1.15, 0, Math.PI * 2);
     ctx.fill();
 
-    // KEY SHADOW
-    ctx.shadowColor = hex;
-    ctx.shadowBlur = size * 0.35;
+    // EXPANDING RIPPLES on the ground
+    ctx.strokeStyle = hex;
+    ctx.lineWidth = Math.max(1.5, size * 0.04);
 
-    // KEY METAL BODY
-    const metal = ctx.createLinearGradient(-scale, -scale * 2, scale, scale * 2);
+    for (let r = 0; r < 2; r += 1) {
+      const phase = ((time / 1400 + r * 0.5 + x * 0.013) % 1 + 1) % 1;
+      const rad = size * (0.22 + 0.6 * phase);
 
-    metal.addColorStop(0, '#d8d5c8');
-    metal.addColorStop(0.35, '#77766f');
-    metal.addColorStop(0.6, '#393b38');
-    metal.addColorStop(1, '#171918');
+      ctx.globalAlpha = (1 - phase) * 0.85;
+      ctx.beginPath();
+      ctx.ellipse(x, floorY, rad, rad * 0.55, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
 
-    ctx.strokeStyle = metal;
-    ctx.lineWidth = Math.max(2, size * 0.065);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+
+    // DARK BACKING DISC: makes every colour (especially green) pop on the forest
+    const backing = ctx.createRadialGradient(x, y + bob, 0, x, y + bob, size * 0.52);
+    backing.addColorStop(0, 'rgba(0,0,0,0.72)');
+    backing.addColorStop(0.7, 'rgba(0,0,0,0.42)');
+    backing.addColorStop(1, 'rgba(0,0,0,0)');
+
+    ctx.fillStyle = backing;
+    ctx.beginPath();
+    ctx.arc(x, y + bob, size * 0.52, 0, Math.PI * 2);
+    ctx.fill();
+
+    // KEY BODY
+    ctx.translate(x, y + bob);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // KEY BOW
-    ctx.beginPath();
-    ctx.arc(0, -scale * 0.65, scale, 0, Math.PI * 2);
-    ctx.stroke();
+    const keyPath = function () {
+      ctx.beginPath();
+      ctx.arc(0, -scale * 0.65, scale, 0, Math.PI * 2);
+      ctx.moveTo(0, scale * 0.35);
+      ctx.lineTo(0, scale * 2.15);
+      ctx.moveTo(0, scale * 1.25);
+      ctx.lineTo(scale * 0.7, scale * 1.25);
+      ctx.lineTo(scale * 0.7, scale * 1.6);
+      ctx.moveTo(0, scale * 1.8);
+      ctx.lineTo(scale * 0.55, scale * 1.8);
+      ctx.lineTo(scale * 0.55, scale * 2.1);
+    };
 
-    // Inner hole
-    ctx.strokeStyle = hex;
-    ctx.lineWidth = Math.max(1, size * 0.035);
-
-    ctx.beginPath();
-    ctx.arc(0, -scale * 0.65, scale * 0.35, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // SHAFT
-    ctx.strokeStyle = metal;
-    ctx.lineWidth = Math.max(2, size * 0.065);
-
-    ctx.beginPath();
-    ctx.moveTo(0, scale * 0.25);
-    ctx.lineTo(0, scale * 2.15);
-    ctx.stroke();
-
-    // KEY TEETH
-    ctx.beginPath();
-    ctx.moveTo(0, scale * 1.25);
-    ctx.lineTo(scale * 0.65, scale * 1.25);
-    ctx.lineTo(scale * 0.65, scale * 1.55);
-    ctx.moveTo(0, scale * 1.75);
-    ctx.lineTo(scale * 0.5, scale * 1.75);
-    ctx.lineTo(scale * 0.5, scale * 2.05);
-    ctx.stroke();
-
-    // MAGIC CORE
+    // 1) dark outline with coloured glow
     ctx.shadowColor = hex;
-    ctx.shadowBlur = size * 0.3;
+    ctx.shadowBlur = size * 0.5;
+    ctx.strokeStyle = '#050805';
+    ctx.lineWidth = w + size * 0.07;
+    keyPath();
+    ctx.stroke();
 
+    // 2) white rim
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = w + size * 0.03;
+    keyPath();
+    ctx.stroke();
+
+    // 3) key colour body
+    ctx.strokeStyle = hex;
+    ctx.lineWidth = w;
+    keyPath();
+    ctx.stroke();
+
+    // 4) specular highlight
+    ctx.save();
+    ctx.translate(-w * 0.18, -w * 0.18);
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = w * 0.28;
+    keyPath();
+    ctx.stroke();
+    ctx.restore();
+
+    // GLOWING GEM in the bow
+    ctx.shadowColor = hex;
+    ctx.shadowBlur = size * (0.3 + pulse * 0.2);
     ctx.fillStyle = hex;
-
     ctx.beginPath();
-    ctx.arc(0, -scale * 0.65, scale * 0.25, 0, Math.PI * 2);
+    ctx.arc(0, -scale * 0.65, scale * 0.3, 0, Math.PI * 2);
     ctx.fill();
 
-    // SMALL SPARK
-    const sparkle = 0.5 + 0.5 * Math.sin(time / 260);
-
-    ctx.globalAlpha = 0.35 + sparkle * 0.5;
-
+    ctx.shadowBlur = 0;
     ctx.fillStyle = '#ffffff';
-
     ctx.beginPath();
-    ctx.arc(-scale * 0.45, -scale * 1.05, Math.max(0.8, size * 0.025), 0, Math.PI * 2);
+    ctx.arc(0, -scale * 0.65, scale * 0.13, 0, Math.PI * 2);
     ctx.fill();
+
+    // ORBITING SPARKLES
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineWidth = Math.max(1, size * 0.02);
+
+    for (let i = 0; i < 4; i += 1) {
+      const ang = time / 900 + i * (Math.PI / 2);
+      const sx = Math.cos(ang) * scale * 2.0;
+      const sy = Math.sin(ang) * scale * 1.7 + scale * 0.5;
+      const blink = 0.5 + 0.5 * Math.sin(time / 240 + i * 1.7);
+      const arm = size * (0.03 + 0.05 * blink);
+
+      ctx.globalAlpha = 0.35 + 0.65 * blink;
+      ctx.strokeStyle = i % 2 === 0 ? '#ffffff' : hex;
+      ctx.beginPath();
+      ctx.moveTo(sx - arm, sy);
+      ctx.lineTo(sx + arm, sy);
+      ctx.moveTo(sx, sy - arm);
+      ctx.lineTo(sx, sy + arm);
+      ctx.stroke();
+    }
 
     ctx.restore();
   }
@@ -2383,7 +2436,7 @@
     if (debug) {
       // Organizer-only debug view: reveals the whole maze and all keys.
       ctx.globalAlpha = 0.42;
-      ctx.drawImage(cache.dim, 0, 0, width, height);
+      ctx.drawImage(cache.getDim(), 0, 0, width, height);
       ctx.globalAlpha = 1;
 
       ctx.save();
@@ -2395,7 +2448,7 @@
       syncMemory(cache, state, vp);
 
       ctx.globalAlpha = CONFIG.memoryAlpha;
-      ctx.drawImage(cache.mem, 0, 0, width, height);
+      ctx.drawImage(cache.getMem(), 0, 0, width, height);
       ctx.globalAlpha = 1;
     }
 
